@@ -17,8 +17,8 @@ export default class HQ extends ObjectWithPosition {
     this.height = 2;
   }
 
-  @computed get battle() {
-    return this.team.battle;
+  @computed get game() {
+    return this.team.game;
   }
 
   @action takeDamage(damage) {
@@ -27,7 +27,7 @@ export default class HQ extends ObjectWithPosition {
   }
 
   die() {
-    this.battle.killHQ(this);
+    this.game.killHQ(this);
   }
 
   get positions() {
@@ -44,8 +44,8 @@ export default class HQ extends ObjectWithPosition {
     for (let i = 0; i < options.length; i++) {
       const position = options[i];
       if (
-        !this.team.battle.citizens[position.key] &&
-        !this.team.battle.fighters[position.key]
+        !this.team.game.citizens[position.key] &&
+        !this.team.game.fighters[position.key]
       ) {
         return position;
       }

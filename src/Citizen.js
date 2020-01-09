@@ -1,7 +1,7 @@
 import { observable, action } from "mobx";
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
-import { Action } from "./Battle";
+import { Action } from "./Game";
 
 export default class Citizen extends ObjectWithPosition {
   class = "Citizen";
@@ -15,8 +15,8 @@ export default class Citizen extends ObjectWithPosition {
     this.team = team;
   }
 
-  get battle() {
-    return this.team.battle;
+  get game() {
+    return this.team.game;
   }
 
   toJSON() {
@@ -36,7 +36,7 @@ export default class Citizen extends ObjectWithPosition {
   }
 
   die() {
-    this.battle.killCitizen(this);
+    this.game.killCitizen(this);
   }
 
   @action eatFood(food) {

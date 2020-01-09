@@ -4,17 +4,16 @@ import ObjectWithPosition, {
   randomPosition
 } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
-import cloneDeep from "lodash/cloneDeep";
-import Team, { HQ } from "./Team";
+import Team from "./Team";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
 import Lambda from "aws-sdk/clients/lambda";
 
-class Wall extends ObjectWithPosition {
+export class Wall extends ObjectWithPosition {
   class = "Wall";
 }
 
-class Food extends ObjectWithPosition {
+export class Food extends ObjectWithPosition {
   class = "Food";
 
   @observable eatenBy = null;
@@ -40,7 +39,7 @@ export class Action {
   }
 }
 
-export default class Battle {
+export default class Game {
   @observable teams = [];
   @observable hqs = {};
   @observable citizens = {};
@@ -59,7 +58,6 @@ export default class Battle {
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.tickTimer = null;
     this.tickTime = props.tickTime || 200;
-    // this.actionHistory = [[]];
     // Setup teams
     this.createTeams();
     // Setup board
@@ -217,7 +215,6 @@ export default class Battle {
       });
     });
     await Promise.all(promises);
-    console.log("Collected actions", performance.now() - tickTimeStart);
     console.log("TICK", attacks, moves, spawns);
     // Attacks
     const attackPromises = shuffle(attacks).map(action => {
@@ -246,33 +243,25 @@ export default class Battle {
 
   getNextActionsWithTimeout(team, timeout) {
     return new Promise(async (resolve, reject) => {
-      const timeStart = performance.now();
       // const timer = setTimeout(() => {
       //   console.log("TIMEOUT");
       //   reject([]);
       // }, timeout);
       const lambda = new Lambda();
-      const actions = await fetch(
-        "https://gtdjruzqr3.execute-api.us-west-2.amazonaws.com/battle-basic-greedy",
-        {
-          method: "POST",
-          body: JSON.stringify({ battle: this.toJSON(), team: team.toJSON() }),
-          headers: {
-            "Content-Type": "application/json"
-          }
-        }
-      ).then(res => {
-        return res.json();
-      });
+      // const actions = await fetch(
+      //   "https://gtdjruzqr3.execute-api.us-west-2.amazonaws.com/battle-basic-greedy",
+      //   {
+      //     method: "POST",
+      //     body: JSON.stringify({ game: this.toJSON(), team: team.toJSON() }),
+      //     headers: {
+      //       "Content-Type": "application/json"
+      //     }
+      //   }
+      // ).then(res => {
+      //   return res.json();
+      // });
       // clearTimeout(timer);
-      resolve(actions);
-      // worker
-      //   .getNextActions(this, team)
-      //   .then(actions => {
-      //     console.log("Action time", performance.now() - timeStart);
-
-      //   })
-      //   .finally(async () => await Thread.terminate(worker));
+      resolve([]);
     });
   }
 

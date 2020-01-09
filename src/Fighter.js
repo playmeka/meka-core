@@ -4,7 +4,7 @@ import ObjectWithPosition, {
   Position,
   randomPosition
 } from "./ObjectWithPosition";
-import { Action } from "./Battle";
+import { Action } from "./Game";
 
 export default class Fighter extends ObjectWithPosition {
   class = "Fighter";
@@ -27,8 +27,8 @@ export default class Fighter extends ObjectWithPosition {
     };
   }
 
-  get battle() {
-    return this.team.battle;
+  get game() {
+    return this.team.game;
   }
 
   @action move(position) {
@@ -42,6 +42,6 @@ export default class Fighter extends ObjectWithPosition {
   }
 
   die() {
-    this.battle.killFighter(this);
+    this.game.killFighter(this);
   }
 }

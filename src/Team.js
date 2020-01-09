@@ -6,14 +6,14 @@ import ObjectWithPosition, {
 import shuffle from "lodash/shuffle";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
-import { Action } from "./Battle";
+import { Action } from "./Game";
 import HQ from "./HQ";
 
 export default class Team {
   @observable foodCount = 0;
 
-  constructor(battle, props = {}) {
-    this.battle = battle;
+  constructor(game, props = {}) {
+    this.game = game;
     this.id = props.id || Math.floor(Math.random() * 10000);
     this.color = props.color || "blue";
     this.maxPop = props.maxPop;
@@ -31,15 +31,11 @@ export default class Team {
   }
 
   @computed get citizens() {
-    return this.battle.citizensList.filter(
-      citizen => citizen.team.id == this.id
-    );
+    return this.game.citizensList.filter(citizen => citizen.team.id == this.id);
   }
 
   @computed get fighters() {
-    return this.battle.fightersList.filter(
-      fighter => fighter.team.id == this.id
-    );
+    return this.game.fightersList.filter(fighter => fighter.team.id == this.id);
   }
 
   toJSON() {
@@ -70,7 +66,7 @@ export default class Team {
       this.foodCount -= 2;
     }
     const newCitizen = new Citizen(this, { ...spawnLocation });
-    this.battle.addCitizen(newCitizen);
+    this.game.addCitizen(newCitizen);
   }
 
   spawnFighter(skipFood = false) {
@@ -89,7 +85,7 @@ export default class Team {
       this.foodCount -= 4;
     }
     const newFighter = new Fighter(this, { ...spawnLocation });
-    this.battle.addFighter(newFighter);
+    this.game.addFighter(newFighter);
   }
 
   addFood(newFood) {
