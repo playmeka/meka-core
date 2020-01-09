@@ -4,6 +4,7 @@ import ObjectWithPosition, {
   Position,
   randomPosition
 } from "./ObjectWithPosition";
+import uuid from "uuid/v1";
 import { Action } from "./Game";
 
 export default class Fighter extends ObjectWithPosition {
@@ -14,7 +15,7 @@ export default class Fighter extends ObjectWithPosition {
 
   constructor(team, props = {}) {
     super(props);
-    this.id = props.id || Math.floor(Math.random() * 10000);
+    this.id = `${uuid()}@Fighter`;
     this.team = team;
   }
 

@@ -1,6 +1,7 @@
 import { observable, action } from "mobx";
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
+import uuid from "uuid/v1";
 import { Action } from "./Game";
 
 export default class Citizen extends ObjectWithPosition {
@@ -11,7 +12,7 @@ export default class Citizen extends ObjectWithPosition {
 
   constructor(team, props = {}) {
     super(props);
-    this.id = props.id || Math.floor(Math.random() * 10000);
+    this.id = `${uuid()}@Citizen`;
     this.team = team;
   }
 

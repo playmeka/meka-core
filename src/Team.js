@@ -4,6 +4,7 @@ import ObjectWithPosition, {
   randomPosition
 } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
+import uuid from "uuid/v1";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
 import { Action } from "./Game";
@@ -14,16 +15,9 @@ export default class Team {
 
   constructor(game, props = {}) {
     this.game = game;
-    this.id = props.id || Math.floor(Math.random() * 10000);
+    this.id = props.id || `${uuid()}@Team`;
     this.color = props.color || "blue";
-    this.maxPop = props.maxPop;
     this.hq = new HQ(this, props.hq);
-    // Spawn initial citizens
-    const citizenCount = props.citizenCount || 1;
-    for (let i = 0; i < citizenCount; i++) {
-      this.spawnCitizen(true);
-    }
-    // this.spawnFighter(true);
   }
 
   @computed get pop() {
@@ -51,44 +45,11 @@ export default class Team {
     return [];
   }
 
-  spawnCitizen(skipFood = false) {
-    if (this.pop >= this.maxPop) {
-      return false;
-    }
-    const spawnLocation = this.hq.nextSpawnPosition;
-    if (!spawnLocation) {
-      return false;
-    }
-    if (!skipFood && this.foodCount < 2) {
-      return false;
-    }
-    if (!skipFood) {
-      this.foodCount -= 2;
-    }
-    const newCitizen = new Citizen(this, { ...spawnLocation });
-    this.game.addCitizen(newCitizen);
-  }
-
-  spawnFighter(skipFood = false) {
-    if (this.pop >= this.maxPop) {
-      return false;
-    }
-    // Spend food
-    const spawnLocation = this.hq.nextSpawnPosition;
-    if (!spawnLocation) {
-      return false;
-    }
-    if (!skipFood && this.foodCount < 4) {
-      return false;
-    }
-    if (!skipFood) {
-      this.foodCount -= 4;
-    }
-    const newFighter = new Fighter(this, { ...spawnLocation });
-    this.game.addFighter(newFighter);
-  }
-
-  addFood(newFood) {
+  @action addFood(newFood) {
     this.foodCount += 1;
+  }
+
+  @action spendFood(spendCount) {
+    this.foodCount -= spendCount;
   }
 }

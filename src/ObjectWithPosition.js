@@ -1,4 +1,5 @@
 import { observable, computed } from "mobx";
+import uuid from "uuid/v1";
 
 export const randomPosition = (width, height) => {
   return new Position(
@@ -31,8 +32,13 @@ export class Position {
 }
 
 export default class ObjectWithPosition {
+  class = "ObjectWithPosition";
+
   constructor(props = {}) {
     this.position = new Position(props.x || 0, props.y || 0);
+    this.width = props.width || 1;
+    this.height = props.height || 1;
+    this.id = `${uuid()}@${this.class}`;
   }
 
   // Computed values
@@ -46,5 +52,15 @@ export default class ObjectWithPosition {
 
   @computed get y() {
     return this.position.y;
+  }
+
+  @computed get covering() {
+    const positions = [];
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        positions.push(new Position(this.x + x, this.y + y));
+      }
+    }
+    return positions;
   }
 }

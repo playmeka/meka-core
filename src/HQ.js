@@ -4,6 +4,7 @@ import ObjectWithPosition, {
   randomPosition
 } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
+import uuid from "uuid/v1";
 
 export default class HQ extends ObjectWithPosition {
   class = "HQ";
@@ -13,8 +14,9 @@ export default class HQ extends ObjectWithPosition {
   constructor(team, props = {}) {
     super(props);
     this.team = team;
-    this.width = 2;
-    this.height = 2;
+    this.id = `${uuid()}@HQ`;
+    this.width = props.width || 2;
+    this.height = props.height || 2;
   }
 
   @computed get game() {
@@ -30,17 +32,8 @@ export default class HQ extends ObjectWithPosition {
     this.game.killHQ(this);
   }
 
-  get positions() {
-    return [
-      new Position(this.x, this.y),
-      new Position(this.x + 1, this.y),
-      new Position(this.x, this.y + 1),
-      new Position(this.x + 1, this.y + 1)
-    ];
-  }
-
   get nextSpawnPosition() {
-    const options = shuffle(this.positions);
+    const options = shuffle(this.covering);
     for (let i = 0; i < options.length; i++) {
       const position = options[i];
       if (

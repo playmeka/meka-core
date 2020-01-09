@@ -51,6 +51,7 @@ export default class Game {
   @observable tickTimeMean = 0;
   @observable isOver = false;
   @observable actionHistory = [[]];
+  @observable lookup = {};
 
   constructor(props = {}) {
     this.width = props.width;
@@ -58,6 +59,12 @@ export default class Game {
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.tickTimer = null;
     this.tickTime = props.tickTime || 200;
+    this.lambda = new Lambda({
+      region: "us-west-2",
+      credentials: props.awsCredentials
+    });
+    this.citizenCost = props.citizenCost || 2;
+    this.fighterCost = props.fighterCost || 4;
     // Setup teams
     this.createTeams();
     // Setup board
@@ -113,6 +120,7 @@ export default class Game {
       hq: { x: this.width - 4, y: 2 } // Top right
     });
     this.addTeam(homeTeam);
+    this.spawnCitizen(homeTeam.hq, { skipFood: true });
     const awayTeam = new Team(this, {
       id: "away",
       color: "red",
@@ -120,11 +128,28 @@ export default class Game {
       hq: { x: 2, y: this.height - 4 } // Bottom left
     });
     this.addTeam(awayTeam);
+    this.spawnCitizen(awayTeam.hq, { skipFood: true });
   }
 
   addTeam(team) {
     this.teams.push(team);
-    team.hq.positions.forEach(position => (this.hqs[position.key] = team.hq));
+    this.registerAgent(team.hq, this.hqs);
+  }
+
+  addCitizen(newCitizen) {
+    console.log(newCitizen);
+    this.registerAgent(newCitizen, this.citizens);
+  }
+
+  addFighter(newFighter) {
+    this.registerAgent(newFighter, this.fighters);
+  }
+
+  registerAgent(agent, mapping) {
+    this.lookup[agent.id] = agent;
+    agent.covering.forEach(position => {
+      mapping[position.key] = agent;
+    });
   }
 
   createWalls(wallCount) {
@@ -141,15 +166,7 @@ export default class Game {
     this.walls[newWall.key] = newWall;
   }
 
-  addCitizen(newCitizen) {
-    this.citizens[newCitizen.key] = newCitizen;
-  }
-
-  addFighter(newFighter) {
-    this.fighters[newFighter.key] = newFighter;
-  }
-
-  @action addFood(props = {}) {
+  addFood(props = {}) {
     const newFood = new Food({ ...props });
     if (!this.isValidMove(newFood.position)) {
       return false;
@@ -216,21 +233,13 @@ export default class Game {
     });
     await Promise.all(promises);
     console.log("TICK", attacks, moves, spawns);
-    // Attacks
-    const attackPromises = shuffle(attacks).map(action => {
-      this.executeAction(action);
-    });
-    await Promise.all(attackPromises);
-    // Moves
-    const movePromises = shuffle(moves).map(action =>
-      this.executeAction(action)
+    await Promise.all(
+      shuffle(attacks).map(action => this.executeAction(action))
     );
-    await Promise.all(movePromises);
-    // Spawns
-    const spawnPromises = shuffle(spawns).map(action =>
-      this.executeAction(action)
+    await Promise.all(shuffle(moves).map(action => this.executeAction(action)));
+    await Promise.all(
+      shuffle(spawns).map(action => this.executeAction(action))
     );
-    await Promise.all(spawnPromises);
     const tickTimeEnd = performance.now();
     this.tickTimeMean =
       (this.tickTimeMean * (this.turn - 1) + (tickTimeEnd - tickTimeStart)) /
@@ -247,21 +256,20 @@ export default class Game {
       //   console.log("TIMEOUT");
       //   reject([]);
       // }, timeout);
-      const lambda = new Lambda();
-      // const actions = await fetch(
-      //   "https://gtdjruzqr3.execute-api.us-west-2.amazonaws.com/battle-basic-greedy",
-      //   {
-      //     method: "POST",
-      //     body: JSON.stringify({ game: this.toJSON(), team: team.toJSON() }),
-      //     headers: {
-      //       "Content-Type": "application/json"
-      //     }
-      //   }
-      // ).then(res => {
-      //   return res.json();
-      // });
-      // clearTimeout(timer);
-      resolve([]);
+      const lambdaParams = {
+        FunctionName:
+          "arn:aws:lambda:us-west-2:310221343320:function:battle-basic-greedy",
+        Payload: JSON.stringify({
+          game: this.toJSON(),
+          team: team.toJSON()
+        })
+      };
+      this.lambda.invoke(lambdaParams, (err, data) => {
+        if (data.StatusCode == 200) {
+          const actions = JSON.parse(data.Payload);
+          resolve(actions);
+        }
+      });
     });
   }
 
@@ -270,12 +278,14 @@ export default class Game {
     const actionFunctionMap = {
       move: (agent, args) => this.executeMove(agent, args),
       attack: (fighter, args) => this.executeAttack(fighter, args),
-      spawnCitizen: (hq, args) => hq.team.spawnCitizen(),
-      spawnFighter: (hq, args) => hq.team.spawnFighter()
+      spawnCitizen: (hq, args) => this.spawnCitizen(hq),
+      spawnFighter: (hq, args) => this.spawnFighter(hq)
     };
+    const agent = this.lookup[action.agent.id];
+    if (!agent) return false;
     return new Promise((resolve, reject) => {
       const actionFunction = actionFunctionMap[action.type];
-      actionFunction(action.agent, action.args);
+      actionFunction(agent, action.args);
       this.actionHistory[this.turn].push(action);
       resolve(true);
     });
@@ -290,6 +300,44 @@ export default class Game {
       return false; // miss!
     }
     target.takeDamage(fighter.attackDamage);
+  }
+
+  spawnCitizen(hq, props = {}) {
+    const { team } = hq;
+    if (team.pop >= this.maxPop) {
+      return false;
+    }
+    const spawnLocation = hq.nextSpawnPosition;
+    if (!spawnLocation) {
+      return false;
+    }
+    if (!props.skipFood && team.foodCount < this.citizenCost) {
+      return false; // Insufficient food
+    }
+    if (!props.skipFood) {
+      team.spendFood(this.citizenCost);
+    }
+    const newCitizen = new Citizen(team, { ...spawnLocation });
+    this.addCitizen(newCitizen);
+  }
+
+  spawnFighter(hq, props = {}) {
+    const { team } = hq;
+    if (team.pop >= this.maxPop) {
+      return false;
+    }
+    const spawnLocation = hq.nextSpawnPosition;
+    if (!spawnLocation) {
+      return false;
+    }
+    if (!props.skipFood && team.foodCount < this.fighterCost) {
+      return false;
+    }
+    if (!props.skipFood) {
+      team.spendFood(this.fighterCost);
+    }
+    const newFighter = new Fighter(team, { ...spawnLocation });
+    this.addFighter(newFighter);
   }
 
   @action killFighter(fighter) {
@@ -316,14 +364,15 @@ export default class Game {
   }
 
   executeMove(agent, args = {}) {
-    if (!this.isValidMove(args.position, agent.team) || agent.hp <= 0) {
+    const newPosition = new Position(args.position.x, args.position.y);
+    if (!this.isValidMove(newPosition, agent.team) || agent.hp <= 0) {
       return false;
     }
     if (agent.class == "Citizen") {
-      this.handleCitizenMove(agent, args.position);
+      this.handleCitizenMove(agent, newPosition);
     }
     if (agent.class == "Fighter") {
-      this.handleFighterMove(agent, args.position);
+      this.handleFighterMove(agent, newPosition);
     }
     return true;
   }
