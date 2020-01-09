@@ -1,11 +1,11 @@
-# @meka/core
+# @meka-js/core
 
 ## Get started
 
 ```
-yarn add @meka/core
+yarn add @meka-js/core
 ```
 
 ```
-import { Game, Team } from "@meka/core";
+import { Game, Team } from "@meka-js/core";
 ```
