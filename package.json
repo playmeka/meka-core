@@ -1,5 +1,5 @@
 {
-  "name": "meka-js",
+  "name": "@meka/core",
   "version": "0.0.1",
   "main": "dist/index.js",
   "author": "Hill Street Labs",
