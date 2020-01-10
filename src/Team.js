@@ -17,6 +17,7 @@ export default class Team {
     this.game = game;
     this.id = props.id || `${uuid()}@Team`;
     this.color = props.color || "blue";
+    this.strategy = props.strategy;
     this.hq = new HQ(this, props.hq);
   }
 
@@ -39,10 +40,6 @@ export default class Team {
       citizens: this.citizens.map(citizen => citizen.toJSON()),
       fighters: this.fighters.map(fighter => fighter.toJSON())
     };
-  }
-
-  getNextActions() {
-    return [];
   }
 
   @action addFood(newFood) {

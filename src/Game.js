@@ -1,13 +1,13 @@
-import { observable, action, computed } from "mobx";
+import { observable, action, computed, observe, when } from "mobx";
 import ObjectWithPosition, {
   Position,
   randomPosition
 } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
+import now from "performance-now";
 import Team from "./Team";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
-import Lambda from "aws-sdk/clients/lambda";
 
 export class Wall extends ObjectWithPosition {
   class = "Wall";
@@ -49,24 +49,22 @@ export default class Game {
   @observable autoTick = false;
   @observable turn = 1;
   @observable tickTimeMean = 0;
-  @observable isOver = false;
   @observable actionHistory = [[]];
   @observable lookup = {};
 
   constructor(props = {}) {
     this.width = props.width;
     this.height = props.height;
+    this.maxTurns = props.maxTurns;
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.tickTimer = null;
     this.tickTime = props.tickTime || 200;
-    this.lambda = new Lambda({
-      region: "us-west-2",
-      credentials: props.awsCredentials
-    });
+    if (props.onTick) this.setupTickCallback(props.onTick);
+    if (props.onGameOver) this.setupGameOverCallback(props.onGameOver);
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
     // Setup teams
-    this.createTeams();
+    this.createTeams(props.homeStrategy, props.awayStrategy);
     // Setup board
     const wallCount =
       props.wallCount || Math.floor(this.width * this.height * 0.2);
@@ -77,6 +75,19 @@ export default class Game {
     for (let i = 0; i < foodCount; i++) {
       this.addFood(randomPosition(this.width, this.height));
     }
+  }
+
+  setupTickCallback(callback) {
+    observe(this, "turn", change => {
+      callback(this);
+    });
+  }
+
+  setupGameOverCallback(callback) {
+    when(
+      () => this.isOver,
+      () => callback(this)
+    );
   }
 
   @computed get wallsList() {
@@ -99,6 +110,18 @@ export default class Game {
     return this.foodsList.filter(food => !food.eatenBy).length;
   }
 
+  @computed get isOver() {
+    if (this.maxTurns && this.turn > this.maxTurns) {
+      return true;
+    }
+    this.teams.forEach(team => {
+      if (team.hq.hp <= 0) {
+        return true;
+      }
+    });
+    return false;
+  }
+
   // TODO: add walls, food, and more
   toJSON() {
     return {
@@ -112,11 +135,11 @@ export default class Game {
     clearTimeout(this.tickTimer);
   }
 
-  createTeams() {
+  createTeams(homeStrategy, awayStrategy) {
     const homeTeam = new Team(this, {
       id: "home",
       color: "blue",
-      maxPop: this.maxPop,
+      strategy: homeStrategy,
       hq: { x: this.width - 4, y: 2 } // Top right
     });
     this.addTeam(homeTeam);
@@ -124,7 +147,7 @@ export default class Game {
     const awayTeam = new Team(this, {
       id: "away",
       color: "red",
-      maxPop: this.maxPop,
+      strategy: awayStrategy,
       hq: { x: 2, y: this.height - 4 } // Bottom left
     });
     this.addTeam(awayTeam);
@@ -137,7 +160,6 @@ export default class Game {
   }
 
   addCitizen(newCitizen) {
-    console.log(newCitizen);
     this.registerAgent(newCitizen, this.citizens);
   }
 
@@ -174,9 +196,10 @@ export default class Game {
     this.foods[newFood.key] = newFood;
   }
 
-  @action play() {
+  @action play(props = {}) {
     this.autoTick = true;
     this.tick();
+    this.tickCallback = props.onTick;
   }
 
   @action stop() {
@@ -210,13 +233,14 @@ export default class Game {
   }
 
   @action async tick() {
-    const tickTimeStart = performance.now();
+    const tickTimeStart = now();
     this.actionHistory.push([]); // Start new history for tick
     const attacks = [];
     const moves = [];
     const spawns = [];
     const promises = this.teams.map(team => {
-      return this.getNextActionsWithTimeout(team, 250).then(actions => {
+      const stateJson = { battle: this.toJSON(), team: team.toJSON() };
+      return team.strategy.getNextActions(stateJson).then(actions => {
         actions.forEach(action => {
           if (!action || !action.type) {
             return null;
@@ -232,7 +256,6 @@ export default class Game {
       });
     });
     await Promise.all(promises);
-    console.log("TICK", attacks, moves, spawns);
     await Promise.all(
       shuffle(attacks).map(action => this.executeAction(action))
     );
@@ -240,37 +263,17 @@ export default class Game {
     await Promise.all(
       shuffle(spawns).map(action => this.executeAction(action))
     );
-    const tickTimeEnd = performance.now();
+    const tickTimeEnd = now();
     this.tickTimeMean =
       (this.tickTimeMean * (this.turn - 1) + (tickTimeEnd - tickTimeStart)) /
       this.turn;
+    if (this.tickCallback) {
+      this.tickCallback(this);
+    }
     this.turn += 1;
     if (this.autoTick && !this.isOver) {
       this.tickTimer = setTimeout(() => this.tick(), this.tickTime);
     }
-  }
-
-  getNextActionsWithTimeout(team, timeout) {
-    return new Promise(async (resolve, reject) => {
-      // const timer = setTimeout(() => {
-      //   console.log("TIMEOUT");
-      //   reject([]);
-      // }, timeout);
-      const lambdaParams = {
-        FunctionName:
-          "arn:aws:lambda:us-west-2:310221343320:function:battle-basic-greedy",
-        Payload: JSON.stringify({
-          game: this.toJSON(),
-          team: team.toJSON()
-        })
-      };
-      this.lambda.invoke(lambdaParams, (err, data) => {
-        if (data.StatusCode == 200) {
-          const actions = JSON.parse(data.Payload);
-          resolve(actions);
-        }
-      });
-    });
   }
 
   // Action(agent, type, args)
@@ -358,9 +361,8 @@ export default class Game {
     this.citizens[citizen.key] = null;
   }
 
-  @action killHQ(hq) {
+  killHQ(hq) {
     console.log("GAME OVER");
-    this.isOver = true;
   }
 
   executeMove(agent, args = {}) {
