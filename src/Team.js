@@ -33,10 +33,15 @@ export default class Team {
     return this.game.fightersList.filter(fighter => fighter.team.id == this.id);
   }
 
+  static fromJSON(game, json) {
+    return new Team(game, json);
+  }
+
   toJSON() {
     return {
       id: this.id,
       color: this.color,
+      hq: this.hq.toJSON(),
       citizens: this.citizens.map(citizen => citizen.toJSON()),
       fighters: this.fighters.map(fighter => fighter.toJSON())
     };

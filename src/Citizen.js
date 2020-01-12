@@ -24,6 +24,8 @@ export default class Citizen extends ObjectWithPosition {
     return {
       id: this.id,
       class: this.class,
+      hp: this.hp,
+      food: this.food,
       team: { id: this.team.id },
       position: { x: this.x, y: this.y }
     };

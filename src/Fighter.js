@@ -23,6 +23,7 @@ export default class Fighter extends ObjectWithPosition {
     return {
       id: this.id,
       class: this.class,
+      hp: this.hp,
       team: { id: this.team.id },
       position: { x: this.x, y: this.y }
     };

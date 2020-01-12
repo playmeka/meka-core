@@ -11,15 +11,35 @@ import Fighter from "./Fighter";
 
 export class Wall extends ObjectWithPosition {
   class = "Wall";
+
+  static fromJSON(json) {
+    return new Wall(json);
+  }
 }
 
 export class Food extends ObjectWithPosition {
   class = "Food";
 
   @observable eatenBy = null;
-  // TODO:
-  // - position can change
-  // - collected by team
+
+  constructor(props = {}) {
+    super(props);
+    this.eatenBy = props.eatenBy;
+  }
+
+  static fromJSON(json) {
+    return new Food(json);
+  }
+
+  toJSON() {
+    const { id, width, height, eatenBy } = this;
+    return {
+      id,
+      width,
+      height,
+      position: this.position.toJSON()
+    };
+  }
 }
 
 export class Action {
@@ -64,16 +84,26 @@ export default class Game {
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
     // Setup teams
-    this.createTeams(props.homeStrategy, props.awayStrategy);
+    if (props.teams) {
+      this.importTeams(props.teams);
+    } else {
+      this.createTeams(props.homeStrategy, props.awayStrategy);
+    }
     // Setup board
-    const wallCount =
-      props.wallCount || Math.floor(this.width * this.height * 0.2);
-    this.createWalls(wallCount);
-    // Add food
-    const foodCount =
-      props.foodCount || Math.floor(this.width * this.height * 0.2);
-    for (let i = 0; i < foodCount; i++) {
-      this.addFood(randomPosition(this.width, this.height));
+    if (props.walls) {
+      this.importWalls(props.walls);
+    } else {
+      const wallCount =
+        props.wallCount || Math.floor(this.width * this.height * 0.2);
+      this.createWalls(wallCount);
+    }
+    // Setup food
+    if (props.foods) {
+      this.importFoods(props.foods);
+    } else {
+      const foodCount =
+        props.foodCount || Math.floor(this.width * this.height * 0.2);
+      this.createFoods(foodCount);
     }
   }
 
@@ -106,6 +136,10 @@ export default class Game {
     return Object.values(this.fighters).filter(fighter => !!fighter);
   }
 
+  @computed get hqsList() {
+    return Object.values(this.hqs).filter(hq => !!hq);
+  }
+
   @computed get foodLeft() {
     return this.foodsList.filter(food => !food.eatenBy).length;
   }
@@ -122,13 +156,39 @@ export default class Game {
     return false;
   }
 
-  // TODO: add walls, food, and more
   toJSON() {
+    const {
+      width,
+      height,
+      maxTurns,
+      maxPop,
+      tickTime,
+      citizenCost,
+      fighterCost,
+      wallCount,
+      foodCount,
+      autoTick,
+      turn
+    } = this;
     return {
+      width,
+      height,
+      maxTurns,
+      maxPop,
+      tickTime,
+      turn,
+      autoTick,
+      citizenCost,
+      fighterCost,
+      walls: this.wallsList.map(wall => wall.toJSON()),
+      foods: this.foodsList.map(food => food.toJSON()),
       teams: this.teams.map(team => team.toJSON()),
-      width: this.width,
-      height: this.height
+      actionHistory: this.actionHistory.map(action => action.toJSON())
     };
+  }
+
+  static fromJSON(json) {
+    return new Game(json);
   }
 
   exit() {
@@ -154,6 +214,21 @@ export default class Game {
     this.spawnCitizen(awayTeam.hq, { skipFood: true });
   }
 
+  importTeams(teams) {
+    teams.forEach(teamJson => {
+      const team = Team.fromJSON(this, teamJson);
+      this.addTeam(team);
+      teamJson.citizens.forEach(citizenJson => {
+        const newCitizen = new Citizen(team, citizenJson);
+        this.addCitizen(newCitizen);
+      });
+      teamJson.fighters.forEach(fighterJson => {
+        const newFighter = new Fighter(team, fighterJson);
+        this.addFighter(newFighter);
+      });
+    });
+  }
+
   addTeam(team) {
     this.teams.push(team);
     this.registerAgent(team.hq, this.hqs);
@@ -175,24 +250,39 @@ export default class Game {
   }
 
   createWalls(wallCount) {
+    console.log("Create walls", wallCount);
     for (let i = 0; i < wallCount; i++) {
-      this.addWall(randomPosition(this.width, this.height));
+      const newWall = new Wall(randomPosition(this.width, this.height));
+      if (!this.walls[newWall.key]) this.addWall(newWall);
     }
   }
 
-  addWall(props = {}) {
-    const newWall = new Wall({ ...props });
-    if (this.walls[newWall.key]) {
-      return false;
-    }
+  importWalls(walls) {
+    walls.forEach(wallJson => {
+      const wall = Wall.fromJSON(wallJson);
+      this.addWall(wall);
+    });
+  }
+
+  addWall(newWall) {
     this.walls[newWall.key] = newWall;
   }
 
-  addFood(props = {}) {
-    const newFood = new Food({ ...props });
-    if (!this.isValidMove(newFood.position)) {
-      return false;
+  importFoods(foods) {
+    foods.forEach(foodJson => {
+      const food = Food.fromJSON(foodJson);
+      this.addFood(food);
+    });
+  }
+
+  createFoods(foodCount) {
+    for (let i = 0; i < foodCount; i++) {
+      const newFood = new Food(randomPosition(this.width, this.height));
+      if (this.isValidMove(newFood.position)) this.addFood(newFood);
     }
+  }
+
+  addFood(newFood) {
     this.foods[newFood.key] = newFood;
   }
 

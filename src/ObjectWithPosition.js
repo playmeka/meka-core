@@ -29,13 +29,20 @@ export class Position {
       new Position(this.x, this.y - 1)
     ];
   }
+
+  toJSON() {
+    return { x: this.x, y: this.y };
+  }
 }
 
 export default class ObjectWithPosition {
   class = "ObjectWithPosition";
 
   constructor(props = {}) {
-    this.position = new Position(props.x || 0, props.y || 0);
+    this.position = new Position(
+      (props.position || {}).x || props.x || 0,
+      (props.position || {}).y || props.y || 0
+    );
     this.width = props.width || 1;
     this.height = props.height || 1;
     this.id = `${uuid()}@${this.class}`;
@@ -62,5 +69,15 @@ export default class ObjectWithPosition {
       }
     }
     return positions;
+  }
+
+  toJSON() {
+    const { id, width, height } = this;
+    return {
+      id,
+      width,
+      height,
+      position: this.position.toJSON()
+    };
   }
 }
