@@ -66,9 +66,7 @@ export default class Game {
   @observable fighters = {};
   @observable foods = {};
   @observable walls = {};
-  @observable autoTick = false;
   @observable turn = 1;
-  @observable tickTimeMean = 0;
   @observable actionHistory = [[]];
   @observable lookup = {};
 
@@ -77,17 +75,13 @@ export default class Game {
     this.height = props.height;
     this.maxTurns = props.maxTurns;
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
-    this.tickTimer = null;
-    this.tickTime = props.tickTime || 200;
-    if (props.onTick) this.setupTickCallback(props.onTick);
-    if (props.onGameOver) this.setupGameOverCallback(props.onGameOver);
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
     // Setup teams
     if (props.teams) {
       this.importTeams(props.teams);
     } else {
-      this.createTeams(props.homeStrategy, props.awayStrategy);
+      this.createTeams();
     }
     // Setup board
     if (props.walls) {
@@ -105,19 +99,6 @@ export default class Game {
         props.foodCount || Math.floor(this.width * this.height * 0.2);
       this.createFoods(foodCount);
     }
-  }
-
-  setupTickCallback(callback) {
-    observe(this, "turn", change => {
-      callback(this);
-    });
-  }
-
-  setupGameOverCallback(callback) {
-    when(
-      () => this.isOver,
-      () => callback(this)
-    );
   }
 
   @computed get wallsList() {
@@ -162,12 +143,10 @@ export default class Game {
       height,
       maxTurns,
       maxPop,
-      tickTime,
       citizenCost,
       fighterCost,
       wallCount,
       foodCount,
-      autoTick,
       turn
     } = this;
     return {
@@ -175,9 +154,7 @@ export default class Game {
       height,
       maxTurns,
       maxPop,
-      tickTime,
       turn,
-      autoTick,
       citizenCost,
       fighterCost,
       walls: this.wallsList.map(wall => wall.toJSON()),
@@ -191,15 +168,10 @@ export default class Game {
     return new Game(json);
   }
 
-  exit() {
-    clearTimeout(this.tickTimer);
-  }
-
-  createTeams(homeStrategy, awayStrategy) {
+  createTeams() {
     const homeTeam = new Team(this, {
       id: "home",
       color: "blue",
-      strategy: homeStrategy,
       hq: { x: this.width - 4, y: 2 } // Top right
     });
     this.addTeam(homeTeam);
@@ -207,7 +179,6 @@ export default class Game {
     const awayTeam = new Team(this, {
       id: "away",
       color: "red",
-      strategy: awayStrategy,
       hq: { x: 2, y: this.height - 4 } // Bottom left
     });
     this.addTeam(awayTeam);
@@ -286,17 +257,6 @@ export default class Game {
     this.foods[newFood.key] = newFood;
   }
 
-  @action play(props = {}) {
-    this.autoTick = true;
-    this.tick();
-    this.tickCallback = props.onTick;
-  }
-
-  @action stop() {
-    this.autoTick = false;
-    clearTimeout(this.tickTimer);
-  }
-
   isValidMove(position, team = null) {
     if (
       position.x >= this.width ||
@@ -322,30 +282,23 @@ export default class Game {
     return true;
   }
 
-  @action async tick() {
-    const tickTimeStart = now();
+  async executeTurn(actions = []) {
+    this.turn += 1;
     this.actionHistory.push([]); // Start new history for tick
     const attacks = [];
     const moves = [];
     const spawns = [];
-    const promises = this.teams.map(team => {
-      const stateJson = { battle: this.toJSON(), team: team.toJSON() };
-      return team.strategy.getNextActions(stateJson).then(actions => {
-        actions.forEach(action => {
-          if (!action || !action.type) {
-            return null;
-          }
-          if (action.type == "attack") {
-            attacks.push(action);
-          } else if (action.type == "move") {
-            moves.push(action);
-          } else {
-            spawns.push(action);
-          }
-        });
-      });
+    // Assign actions to queus
+    actions.forEach(action => {
+      if (!action || !action.type) return null;
+      if (action.type == "attack") {
+        attacks.push(action);
+      } else if (action.type == "move") {
+        moves.push(action);
+      } else {
+        spawns.push(action);
+      }
     });
-    await Promise.all(promises);
     await Promise.all(
       shuffle(attacks).map(action => this.executeAction(action))
     );
@@ -353,17 +306,7 @@ export default class Game {
     await Promise.all(
       shuffle(spawns).map(action => this.executeAction(action))
     );
-    const tickTimeEnd = now();
-    this.tickTimeMean =
-      (this.tickTimeMean * (this.turn - 1) + (tickTimeEnd - tickTimeStart)) /
-      this.turn;
-    if (this.tickCallback) {
-      this.tickCallback(this);
-    }
-    this.turn += 1;
-    if (this.autoTick && !this.isOver) {
-      this.tickTimer = setTimeout(() => this.tick(), this.tickTime);
-    }
+    return true;
   }
 
   // Action(agent, type, args)
