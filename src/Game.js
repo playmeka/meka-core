@@ -66,13 +66,14 @@ export default class Game {
   @observable fighters = {};
   @observable foods = {};
   @observable walls = {};
-  @observable turn = 1;
+  @observable turn;
   @observable actionHistory = [[]];
   @observable lookup = {};
 
   constructor(props = {}) {
     this.width = props.width;
     this.height = props.height;
+    this.turn = props.turn || 1;
     this.maxTurns = props.maxTurns;
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.citizenCost = props.citizenCost || 2;
