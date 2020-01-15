@@ -71,6 +71,8 @@ export default class Game {
   @observable lookup = {};
 
   constructor(props = {}) {
+    this.homeId = props.homeId;
+    this.awayId = props.awayId;
     this.width = props.width;
     this.height = props.height;
     this.turn = props.turn || 1;
@@ -148,6 +150,8 @@ export default class Game {
       fighterCost,
       wallCount,
       foodCount,
+      homeId,
+      awayId,
       turn
     } = this;
     return {
@@ -158,6 +162,8 @@ export default class Game {
       turn,
       citizenCost,
       fighterCost,
+      homeId,
+      awayId,
       walls: this.wallsList.map(wall => wall.toJSON()),
       foods: this.foodsList.map(food => food.toJSON()),
       teams: this.teams.map(team => team.toJSON()),
@@ -171,14 +177,14 @@ export default class Game {
 
   createTeams() {
     const homeTeam = new Team(this, {
-      id: "home",
+      id: this.homeId,
       color: "blue",
       hq: { x: this.width - 4, y: 2 } // Top right
     });
     this.addTeam(homeTeam);
     this.spawnCitizen(homeTeam.hq, { skipFood: true });
     const awayTeam = new Team(this, {
-      id: "away",
+      id: this.awayId,
       color: "red",
       hq: { x: 2, y: this.height - 4 } // Bottom left
     });
@@ -204,6 +210,10 @@ export default class Game {
   addTeam(team) {
     this.teams.push(team);
     this.registerAgent(team.hq, this.hqs);
+  }
+
+  getTeam(teamId) {
+    return this.teams.filter(team => team.id == teamId)[0];
   }
 
   addCitizen(newCitizen) {
