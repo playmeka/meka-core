@@ -14,7 +14,7 @@ export default class HQ extends ObjectWithPosition {
   constructor(team, props = {}) {
     super(props);
     this.team = team;
-    this.id = `${uuid()}@HQ`;
+    this.id = props.id || `${uuid()}@HQ`;
     this.width = props.width || 2;
     this.height = props.height || 2;
   }

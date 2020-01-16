@@ -75,7 +75,7 @@ export default class Game {
     this.awayId = props.awayId;
     this.width = props.width;
     this.height = props.height;
-    this.turn = props.turn || 1;
+    this.turn = props.turn || 0;
     this.maxTurns = props.maxTurns;
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.citizenCost = props.citizenCost || 2;
@@ -232,7 +232,6 @@ export default class Game {
   }
 
   createWalls(wallCount) {
-    console.log("Create walls", wallCount);
     for (let i = 0; i < wallCount; i++) {
       const newWall = new Wall(randomPosition(this.width, this.height));
       if (!this.walls[newWall.key]) this.addWall(newWall);

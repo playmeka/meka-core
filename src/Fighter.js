@@ -15,7 +15,7 @@ export default class Fighter extends ObjectWithPosition {
 
   constructor(team, props = {}) {
     super(props);
-    this.id = `${uuid()}@Fighter`;
+    this.id = propds.id || `${uuid()}@Fighter`;
     this.team = team;
   }
 

@@ -45,7 +45,7 @@ export default class ObjectWithPosition {
     );
     this.width = props.width || 1;
     this.height = props.height || 1;
-    this.id = `${uuid()}@${this.class}`;
+    this.id = props.id || `${uuid()}@${this.class}`;
   }
 
   // Computed values

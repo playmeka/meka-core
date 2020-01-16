@@ -12,7 +12,7 @@ export default class Citizen extends ObjectWithPosition {
 
   constructor(team, props = {}) {
     super(props);
-    this.id = `${uuid()}@Citizen`;
+    this.id = props.id || `${uuid()}@Citizen`;
     this.team = team;
   }
 
