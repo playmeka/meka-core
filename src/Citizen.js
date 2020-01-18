@@ -1,19 +1,24 @@
 import { observable, action } from "mobx";
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
-import uuid from "uuid/v1";
+import uuid from "uuid/v4";
 import { Action } from "./Game";
 
 export default class Citizen extends ObjectWithPosition {
   class = "Citizen";
 
-  @observable food = null;
+  @observable foodId = null;
   @observable hp = 10;
 
   constructor(team, props = {}) {
     super(props);
-    this.id = props.id || `${uuid()}@Citizen`;
+    this.id = props.id || uuid();
+    this.foodId = props.foodId;
     this.team = team;
+  }
+
+  get food() {
+    return this.game.lookup[this.foodId];
   }
 
   get game() {
@@ -25,7 +30,7 @@ export default class Citizen extends ObjectWithPosition {
       id: this.id,
       class: this.class,
       hp: this.hp,
-      food: this.food,
+      foodId: this.foodId,
       team: { id: this.team.id },
       position: { x: this.x, y: this.y }
     };
@@ -43,15 +48,15 @@ export default class Citizen extends ObjectWithPosition {
   }
 
   @action eatFood(food) {
-    this.food = food;
+    this.foodId = food.id;
   }
 
-  @action dropFood() {
+  @action dropOffFood() {
     if (!this.food) {
       return false;
     }
-    this.team.addFood(this.food);
-    this.food = null;
+    this.foodId = null;
+    return true;
   }
 
   @action move(position) {

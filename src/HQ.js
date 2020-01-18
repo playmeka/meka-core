@@ -4,7 +4,7 @@ import ObjectWithPosition, {
   randomPosition
 } from "./ObjectWithPosition";
 import shuffle from "lodash/shuffle";
-import uuid from "uuid/v1";
+import uuid from "uuid/v4";
 
 export default class HQ extends ObjectWithPosition {
   class = "HQ";
@@ -14,7 +14,7 @@ export default class HQ extends ObjectWithPosition {
   constructor(team, props = {}) {
     super(props);
     this.team = team;
-    this.id = props.id || `${uuid()}@HQ`;
+    this.id = props.id || uuid();
     this.width = props.width || 2;
     this.height = props.height || 2;
   }
@@ -26,6 +26,10 @@ export default class HQ extends ObjectWithPosition {
   @action takeDamage(damage) {
     this.hp -= damage;
     if (this.hp <= 0) this.die();
+  }
+
+  eatFood(food) {
+    return this.team.addFood(food);
   }
 
   die() {
@@ -44,5 +48,25 @@ export default class HQ extends ObjectWithPosition {
       }
     }
     return false;
+  }
+
+  toJSON() {
+    return [
+      this.id,
+      this.team.id,
+      this.width,
+      this.height,
+      this.position.x,
+      this.position.y
+    ];
+  }
+
+  static fromJSON(team, json) {
+    return new HQ(team, {
+      id: json[0],
+      width: json[2],
+      height: json[3],
+      position: { x: json[4], y: json[5] }
+    });
   }
 }

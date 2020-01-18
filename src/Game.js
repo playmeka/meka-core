@@ -8,37 +8,19 @@ import now from "performance-now";
 import Team from "./Team";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
+import Food from "./Food";
 
 export class Wall extends ObjectWithPosition {
   class = "Wall";
 
-  static fromJSON(json) {
-    return new Wall(json);
-  }
-}
-
-export class Food extends ObjectWithPosition {
-  class = "Food";
-
-  @observable eatenBy = null;
-
-  constructor(props = {}) {
-    super(props);
-    this.eatenBy = props.eatenBy;
-  }
-
-  static fromJSON(json) {
-    return new Food(json);
-  }
-
   toJSON() {
-    const { id, width, height, eatenBy } = this;
-    return {
-      id,
-      width,
-      height,
-      position: this.position.toJSON()
-    };
+    return [this.x, this.y];
+  }
+
+  static fromJSON(json) {
+    return new Wall({
+      position: { x: json[0], y: json[1] }
+    });
   }
 }
 
@@ -91,7 +73,9 @@ export default class Game {
       this.importWalls(props.walls);
     } else {
       const wallCount =
-        props.wallCount || Math.floor(this.width * this.height * 0.2);
+        props.wallCount == 0 || props.wallCount
+          ? props.wallCount
+          : props.wallCount || Math.floor(this.width * this.height * 0.2);
       this.createWalls(wallCount);
     }
     // Setup food
@@ -99,7 +83,9 @@ export default class Game {
       this.importFoods(props.foods);
     } else {
       const foodCount =
-        props.foodCount || Math.floor(this.width * this.height * 0.2);
+        props.foodCount == 0 || props.foodCount
+          ? props.foodCount
+          : Math.floor(this.width * this.height * 0.2);
       this.createFoods(foodCount);
     }
   }
@@ -233,8 +219,16 @@ export default class Game {
 
   createWalls(wallCount) {
     for (let i = 0; i < wallCount; i++) {
-      const newWall = new Wall(randomPosition(this.width, this.height));
-      if (!this.walls[newWall.key]) this.addWall(newWall);
+      this.createRandomWall();
+    }
+  }
+
+  createRandomWall() {
+    const newWall = new Wall(randomPosition(this.width, this.height));
+    if (!this.walls[newWall.key]) {
+      this.addWall(newWall);
+    } else {
+      this.createRandomWall();
     }
   }
 
@@ -251,23 +245,41 @@ export default class Game {
 
   importFoods(foods) {
     foods.forEach(foodJson => {
-      const food = Food.fromJSON(foodJson);
+      const food = Food.fromJSON(this, foodJson);
       this.addFood(food);
     });
   }
 
   createFoods(foodCount) {
     for (let i = 0; i < foodCount; i++) {
-      const newFood = new Food(randomPosition(this.width, this.height));
-      if (this.isValidMove(newFood.position)) this.addFood(newFood);
+      this.createRandomFood();
+    }
+  }
+
+  createRandomFood() {
+    const newFood = new Food(this, randomPosition(this.width, this.height));
+    if (this.isValidMove(newFood.position)) {
+      this.addFood(newFood);
+    } else {
+      this.createRandomFood();
     }
   }
 
   addFood(newFood) {
     this.foods[newFood.key] = newFood;
+    this.lookup[newFood.id] = newFood;
   }
 
-  isValidMove(position, team = null) {
+  isInBounds(position) {
+    return (
+      position.x < this.width &&
+      position.x >= 0 &&
+      position.y < this.height &&
+      position.y >= 0
+    );
+  }
+
+  isValidMove(position, teamId = null) {
     if (
       position.x >= this.width ||
       position.x < 0 ||
@@ -286,7 +298,7 @@ export default class Game {
       return false;
     }
     const hq = this.hqs[position.key];
-    if (hq && hq.team.id != (team || {}).id) {
+    if (hq && hq.team.id != teamId) {
       return false;
     }
     return true;
@@ -391,17 +403,13 @@ export default class Game {
   }
 
   @action killCitizen(citizen) {
-    if (citizen.food) {
-      // TODO: abstract food dropping
-      const food = citizen.food;
-      citizen.food = null;
-      this.foods[food.key] = null;
-      food.eatenBy = null;
-      food.position.x = citizen.x;
-      food.position.y = citizen.y;
+    const food = citizen.food;
+    this.citizens[citizen.key] = null;
+    if (food) {
+      citizen.dropOffFood();
+      food.eatenById = null;
       this.foods[food.key] = food;
     }
-    this.citizens[citizen.key] = null;
   }
 
   killHQ(hq) {
@@ -410,7 +418,7 @@ export default class Game {
 
   executeMove(agent, args = {}) {
     const newPosition = new Position(args.position.x, args.position.y);
-    if (!this.isValidMove(newPosition, agent.team) || agent.hp <= 0) {
+    if (!this.isValidMove(newPosition, agent.team.id) || agent.hp <= 0) {
       return false;
     }
     if (agent.class == "Citizen") {
@@ -423,17 +431,31 @@ export default class Game {
   }
 
   @action handleCitizenMove(citizen, position) {
+    // Move citizen
     this.citizens[citizen.key] = null;
     citizen.move(position);
     this.citizens[citizen.key] = citizen;
+    // Move citizen's food (if applicable)
+    const citizenFood = citizen.food;
+    if (citizenFood) {
+      this.foods[citizenFood.key] = null;
+      citizenFood.move(position);
+      this.foods[citizenFood.key] = citizenFood;
+    }
+    // Pick up food
     const food = this.foods[citizen.key];
     if (food && !food.eatenBy && !citizen.food) {
       citizen.eatFood(food);
-      food.eatenBy = citizen;
+      food.getEatenBy(citizen);
     }
+    // Drop off food
     const hq = this.hqs[citizen.key];
     if (hq && citizen.food) {
-      citizen.dropFood(food);
+      const food = citizen.food;
+      citizen.dropOffFood();
+      hq.eatFood(food);
+      food.getEatenBy(hq);
+      this.foods[food.key] = null; // Unregister food
     }
   }
 

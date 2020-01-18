@@ -33,7 +33,8 @@ export default class Team {
   }
 
   static fromJSON(game, json) {
-    return new Team(game, json);
+    const hq = HQ.fromJSON(this, json.hq);
+    return new Team(game, { ...json, hq });
   }
 
   toJSON() {
