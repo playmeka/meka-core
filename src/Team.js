@@ -17,6 +17,7 @@ export default class Team {
     this.game = game;
     this.id = props.id || `${uuid()}@Team`;
     this.color = props.color || "blue";
+    this.foodCount = props.foodCount || 0;
     this.hq = new HQ(this, props.hq);
   }
 
@@ -41,6 +42,7 @@ export default class Team {
     return {
       id: this.id,
       color: this.color,
+      foodCount: this.foodCount,
       hq: this.hq.toJSON(),
       citizens: this.citizens.map(citizen => citizen.toJSON()),
       fighters: this.fighters.map(fighter => fighter.toJSON())

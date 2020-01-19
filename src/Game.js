@@ -225,10 +225,10 @@ export default class Game {
 
   createRandomWall() {
     const newWall = new Wall(randomPosition(this.width, this.height));
-    if (!this.walls[newWall.key]) {
-      this.addWall(newWall);
-    } else {
+    if (this.walls[newWall.key] || this.hqs[newWall.key]) {
       this.createRandomWall();
+    } else {
+      this.addWall(newWall);
     }
   }
 
@@ -279,7 +279,8 @@ export default class Game {
     );
   }
 
-  isValidMove(position, teamId = null) {
+  isValidMove(rawPosition, teamId = null) {
+    const position = new Position(rawPosition.x, rawPosition.y);
     if (
       position.x >= this.width ||
       position.x < 0 ||
@@ -350,10 +351,11 @@ export default class Game {
   }
 
   executeAttack(fighter, args = {}) {
+    const position = new Position(args.position.x, args.position.y);
     const target =
-      this.citizens[args.position.key] ||
-      this.fighters[args.position.key] ||
-      this.hqs[args.position.key];
+      this.citizens[position.key] ||
+      this.fighters[position.key] ||
+      this.hqs[position.key];
     if (!target) {
       return false; // miss!
     }

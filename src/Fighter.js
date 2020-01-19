@@ -4,7 +4,7 @@ import ObjectWithPosition, {
   Position,
   randomPosition
 } from "./ObjectWithPosition";
-import uuid from "uuid/v1";
+import uuid from "uuid/v4";
 import { Action } from "./Game";
 
 export default class Fighter extends ObjectWithPosition {
@@ -15,7 +15,7 @@ export default class Fighter extends ObjectWithPosition {
 
   constructor(team, props = {}) {
     super(props);
-    this.id = propds.id || `${uuid()}@Fighter`;
+    this.id = props.id || uuid();
     this.team = team;
   }
 
