@@ -18,7 +18,7 @@ export class Wall extends ObjectWithPosition {
 
   static fromJSON(json: any) {
     return new Wall({
-      position: { x: json[0], y: json[1] }
+      position: new Position(json[0], json[1])
     });
   }
 }
@@ -55,7 +55,7 @@ export default class Game {
   foods: { [key: string]: Food } = {};
   walls: { [key: string]: Wall } = {};
   actionHistory: Action[][] = [[]];
-  lookup: any = {};
+  lookup: { [id: string]: Agent | Food } = {};
   homeId: string;
   awayId: string;
   width: number;
@@ -200,14 +200,14 @@ export default class Game {
     const homeTeam = new Team(this, {
       id: this.homeId,
       color: "blue",
-      hq: { x: this.width - 4, y: 2 } // Top right
+      hq: { position: new Position(this.width - 4, 2), teamId: this.homeId } // Top right
     });
     this.addTeam(homeTeam);
     this.spawnCitizen(homeTeam.hq, { skipFood: true });
     const awayTeam = new Team(this, {
       id: this.awayId,
       color: "red",
-      hq: { x: 2, y: this.height - 4 } // Bottom left
+      hq: { teamId: this.awayId, position: new Position(2, this.height - 4) } // Bottom left
     });
     this.addTeam(awayTeam);
     this.spawnCitizen(awayTeam.hq, { skipFood: true });
@@ -259,9 +259,8 @@ export default class Game {
   }
 
   createRandomWall() {
-    const randomPos = randomPosition(this.width, this.height);
     const newWall = new Wall({
-      position: { x: randomPos.x, y: randomPos.y }
+      position: randomPosition(this.width, this.height)
     });
     if (this.walls[newWall.key] || this.hqs[newWall.key]) {
       this.createRandomWall();
@@ -295,9 +294,8 @@ export default class Game {
   }
 
   createRandomFood() {
-    const randomPos = randomPosition(this.width, this.height);
     const newFood = new Food(this, {
-      position: { x: randomPos.x, y: randomPos.y }
+      position: randomPosition(this.width, this.height)
     });
     if (this.isValidMove(newFood.position)) {
       this.addFood(newFood);
@@ -374,7 +372,8 @@ export default class Game {
       spawnCitizen: (hq: HQ, _args: any) => this.spawnCitizen(hq),
       spawnFighter: (hq: HQ, _args: any) => this.spawnFighter(hq)
     };
-    const agent = this.lookup[action.agent.id];
+    // TODO
+    const agent = this.lookup[action.agent.id] as any;
     if (!agent) return false;
     return new Promise((resolve, _reject) => {
       const actionFunction = actionFunctionMap[action.type];
@@ -414,7 +413,7 @@ export default class Game {
     if (!props.skipFood) {
       team.spendFood(this.citizenCost);
     }
-    const newCitizen = new Citizen(team, { ...spawnLocation });
+    const newCitizen = new Citizen(team, { position: spawnLocation });
     this.addCitizen(newCitizen);
   }
 
@@ -433,7 +432,7 @@ export default class Game {
     if (!props.skipFood) {
       team.spendFood(this.fighterCost);
     }
-    const newFighter = new Fighter(team, { ...spawnLocation });
+    const newFighter = new Fighter(team, { position: spawnLocation });
     this.addFighter(newFighter);
   }
 

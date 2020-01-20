@@ -1,6 +1,7 @@
 const uuidv4 = require("uuid/v4");
 import HQ from "./HQ";
 import Game from "./Game";
+import { Position } from "./ObjectWithPosition";
 
 export default class Team {
   game: Game;
@@ -11,13 +12,18 @@ export default class Team {
 
   constructor(
     game: Game,
-    props: { id?: string; color?: string; foodCount?: number; hq?: any } = {}
+    props: {
+      id?: string;
+      color?: string;
+      foodCount?: number;
+      hq: { position: Position; teamId: string };
+    }
   ) {
     this.game = game;
-    this.id = props.id || `${uuidv4()}@Team`;
+    this.id = props.id || `${uuidv4()}`;
     this.color = props.color || "blue";
     this.foodCount = props.foodCount || 0;
-    this.hq = new HQ(this, props.hq);
+    this.hq = new HQ(game, props.hq);
   }
 
   get pop() {
@@ -33,7 +39,7 @@ export default class Team {
   }
 
   static fromJSON(game: Game, json: any) {
-    const hq = HQ.fromJSON(this as any, json.hq);
+    const hq = HQ.fromJSON(game, json.hq);
     return new Team(game, { ...json, hq });
   }
 

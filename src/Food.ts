@@ -1,3 +1,4 @@
+const uuidv4 = require("uuid/v4");
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import HQ from "./HQ";
 import Game from "./Game";
@@ -7,18 +8,20 @@ export default class Food extends ObjectWithPosition {
   class = "Food";
   eatenById: string = null;
   game: Game;
+  id: string;
 
   constructor(
     game: Game,
     props: {
       id?: string;
       eatenById?: string;
-      position?: { x: number; y: number };
-    } = {}
+      position: Position;
+    }
   ) {
     super(props);
+    this.id = props.id || uuidv4();
     this.game = game;
-    this.eatenById = props.eatenById;
+    this.eatenById = props.eatenById || null;
   }
 
   get eatenBy() {
@@ -41,7 +44,7 @@ export default class Food extends ObjectWithPosition {
   static fromJSON(game: Game, json: any) {
     return new Food(game, {
       id: json[0],
-      position: { x: json[1], y: json[2] },
+      position: new Position(json[1], json[2]),
       eatenById: json[3]
     });
   }

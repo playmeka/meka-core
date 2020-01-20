@@ -1,34 +1,37 @@
 const uuidv4 = require("uuid/v4");
-import ObjectWithPosition from "./ObjectWithPosition";
-import Team from "./Team";
+import ObjectWithPosition, { Position } from "./ObjectWithPosition";
+import Game from "./Game";
 import shuffle from "./utils/shuffle";
 
 export default class HQ extends ObjectWithPosition {
   class: string = "HQ";
   hp: number = 100;
-  team: Team;
+  teamId: string;
   id: string;
   width: number;
   height: number;
+  game: Game;
 
   constructor(
-    team: Team,
+    game: Game,
     props: {
+      teamId: string;
       id?: string;
       width?: number;
       height?: number;
-      position?: { x: number; y: number };
-    } = {}
+      position: Position;
+    }
   ) {
     super(props);
-    this.team = team;
+    this.game = game;
+    this.teamId = props.teamId;
     this.id = props.id || uuidv4();
     this.width = props.width || 2;
     this.height = props.height || 2;
   }
 
-  get game() {
-    return this.team.game;
+  get team() {
+    return this.game.getTeam(this.teamId);
   }
 
   takeDamage(damage: number) {
@@ -69,12 +72,13 @@ export default class HQ extends ObjectWithPosition {
     ];
   }
 
-  static fromJSON(team: Team, json: any) {
-    return new HQ(team, {
+  static fromJSON(game: Game, json: any) {
+    return new HQ(game, {
       id: json[0],
+      teamId: json[1],
       width: json[2],
       height: json[3],
-      position: { x: json[4], y: json[5] }
+      position: new Position(json[4], json[5])
     });
   }
 }

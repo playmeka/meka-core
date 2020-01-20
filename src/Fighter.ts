@@ -9,10 +9,7 @@ export default class Fighter extends ObjectWithPosition {
   team: Team;
   id: string;
 
-  constructor(
-    team: Team,
-    props: { id?: string; team?: Team; x?: number; y?: number } = {}
-  ) {
+  constructor(team: Team, props: { id?: string; position: Position }) {
     super(props);
     this.id = props.id || uuidv4();
     this.team = team;
@@ -33,8 +30,7 @@ export default class Fighter extends ObjectWithPosition {
   }
 
   move(position: Position) {
-    this.position.x = position.x;
-    this.position.y = position.y;
+    this.position = position;
   }
 
   takeDamage(damage: number) {

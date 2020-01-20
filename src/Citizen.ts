@@ -12,16 +12,16 @@ export default class Citizen extends ObjectWithPosition {
 
   constructor(
     team: Team,
-    props: { id?: string; foodId?: string; x?: number; y?: number } = {}
+    props: { id?: string; foodId?: string; position: Position }
   ) {
     super(props);
     this.id = props.id || uuidv4();
-    this.foodId = props.foodId;
+    this.foodId = props.foodId || null;
     this.team = team;
   }
 
-  get food() {
-    return this.game.lookup[this.foodId];
+  get food(): Food {
+    return this.game.lookup[this.foodId] as Food;
   }
 
   get game() {
@@ -35,7 +35,7 @@ export default class Citizen extends ObjectWithPosition {
       hp: this.hp,
       foodId: this.foodId,
       team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
+      position: new Position(this.x, this.y)
     };
   }
 
@@ -63,7 +63,6 @@ export default class Citizen extends ObjectWithPosition {
   }
 
   move(position: Position) {
-    this.position.x = position.x;
-    this.position.y = position.y;
+    this.position = position;
   }
 }

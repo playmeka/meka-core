@@ -41,20 +41,13 @@ export default class ObjectWithPosition {
   width: number;
   height: number;
 
-  constructor(
-    props: {
-      id?: string;
-      position?: { x: number; y: number };
-      width?: number;
-      height?: number;
-      x?: number;
-      y?: number;
-    } = {}
-  ) {
-    this.position = new Position(
-      (props.position || {}).x || props.x || 0,
-      (props.position || {}).y || props.y || 0
-    );
+  constructor(props: {
+    id?: string;
+    width?: number;
+    height?: number;
+    position: Position;
+  }) {
+    this.position = props.position;
     this.width = props.width || 1;
     this.height = props.height || 1;
     this.id = props.id || uuidv4();
