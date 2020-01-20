@@ -1,40 +1,45 @@
-import { observable, action, computed } from "mobx";
-import ObjectWithPosition, {
-  Position,
-  randomPosition
-} from "./ObjectWithPosition";
-import shuffle from "lodash/shuffle";
-import uuid from "uuid/v1";
-import Citizen from "./Citizen";
-import Fighter from "./Fighter";
-import { Action } from "./Game";
+const uuidv4 = require("uuid/v4");
 import HQ from "./HQ";
+import Game from "./Game";
+import { Position } from "./ObjectWithPosition";
 
 export default class Team {
-  @observable foodCount = 0;
+  game: Game;
+  id: string;
+  color: string;
+  foodCount: number;
+  hq: HQ;
 
-  constructor(game, props = {}) {
+  constructor(
+    game: Game,
+    props: {
+      id?: string;
+      color?: string;
+      foodCount?: number;
+      hq: { position: Position; teamId: string };
+    }
+  ) {
     this.game = game;
-    this.id = props.id || `${uuid()}@Team`;
+    this.id = props.id || `${uuidv4()}`;
     this.color = props.color || "blue";
     this.foodCount = props.foodCount || 0;
-    this.hq = new HQ(this, props.hq);
+    this.hq = new HQ(game, props.hq);
   }
 
-  @computed get pop() {
+  get pop() {
     return this.citizens.length + this.fighters.length;
   }
 
-  @computed get citizens() {
+  get citizens() {
     return this.game.citizensList.filter(citizen => citizen.team.id == this.id);
   }
 
-  @computed get fighters() {
+  get fighters() {
     return this.game.fightersList.filter(fighter => fighter.team.id == this.id);
   }
 
-  static fromJSON(game, json) {
-    const hq = HQ.fromJSON(this, json.hq);
+  static fromJSON(game: Game, json: any) {
+    const hq = HQ.fromJSON(game, json.hq);
     return new Team(game, { ...json, hq });
   }
 
@@ -49,11 +54,11 @@ export default class Team {
     };
   }
 
-  @action addFood(newFood) {
+  addFood() {
     this.foodCount += 1;
   }
 
-  @action spendFood(spendCount) {
+  spendFood(spendCount: number) {
     this.foodCount -= spendCount;
   }
 }

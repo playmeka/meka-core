@@ -5,26 +5,16 @@
   "author": "Hill Street Labs",
   "license": "MIT",
   "scripts": {
-    "dev": "babel src -d dist --watch -s -D",
-    "build": "babel src -s -D -d dist",
+    "build": "tsc",
+    "dev": "tsc --watch",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@types/node": "^13.1.0",
-    "dotenv": "^8.2.0",
-    "isomorphic-fetch": "^2.2.1",
-    "lodash": "^4.17.15",
-    "mobx": "^5.15.1",
-    "performance-now": "^2.1.0",
     "uuid": "^3.3.3"
   },
   "devDependencies": {
-    "@babel/cli": "^7.7.7",
-    "@babel/core": "^7.7.7",
-    "@babel/plugin-proposal-class-properties": "^7.7.4",
-    "@babel/plugin-proposal-decorators": "^7.7.4",
-    "@babel/plugin-transform-runtime": "^7.7.6",
-    "@babel/preset-env": "^7.7.7",
-    "@babel/runtime": "^7.7.7"
+    "@types/node": "^13.1.8",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.5"
   }
 }

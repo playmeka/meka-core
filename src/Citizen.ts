@@ -1,24 +1,27 @@
-import { observable, action } from "mobx";
+const uuidv4 = require("uuid/v4");
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
-import shuffle from "lodash/shuffle";
-import uuid from "uuid/v4";
-import { Action } from "./Game";
+import Team from "./Team";
+import Food from "./Food";
 
 export default class Citizen extends ObjectWithPosition {
-  class = "Citizen";
+  class: string = "Citizen";
+  foodId?: string = null;
+  hp: number = 10;
+  id: string;
+  team: Team;
 
-  @observable foodId = null;
-  @observable hp = 10;
-
-  constructor(team, props = {}) {
+  constructor(
+    team: Team,
+    props: { id?: string; foodId?: string; position: Position }
+  ) {
     super(props);
-    this.id = props.id || uuid();
-    this.foodId = props.foodId;
+    this.id = props.id || uuidv4();
+    this.foodId = props.foodId || null;
     this.team = team;
   }
 
-  get food() {
-    return this.game.lookup[this.foodId];
+  get food(): Food {
+    return this.game.lookup[this.foodId] as Food;
   }
 
   get game() {
@@ -32,11 +35,11 @@ export default class Citizen extends ObjectWithPosition {
       hp: this.hp,
       foodId: this.foodId,
       team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
+      position: new Position(this.x, this.y)
     };
   }
 
-  @action takeDamage(damage) {
+  takeDamage(damage: number) {
     this.hp -= damage;
     if (this.hp <= 0) {
       this.die();
@@ -47,11 +50,11 @@ export default class Citizen extends ObjectWithPosition {
     this.game.killCitizen(this);
   }
 
-  @action eatFood(food) {
+  eatFood(food: Food) {
     this.foodId = food.id;
   }
 
-  @action dropOffFood() {
+  dropOffFood() {
     if (!this.food) {
       return false;
     }
@@ -59,8 +62,7 @@ export default class Citizen extends ObjectWithPosition {
     return true;
   }
 
-  @action move(position) {
-    this.position.x = position.x;
-    this.position.y = position.y;
+  move(position: Position) {
+    this.position = position;
   }
 }
