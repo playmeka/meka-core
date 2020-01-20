@@ -8,38 +8,9 @@ import now from "performance-now";
 import Team from "./Team";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
+import Wall from "./Wall";
 import Food from "./Food";
-
-export class Wall extends ObjectWithPosition {
-  class = "Wall";
-
-  toJSON() {
-    return [this.x, this.y];
-  }
-
-  static fromJSON(json) {
-    return new Wall({
-      position: { x: json[0], y: json[1] }
-    });
-  }
-}
-
-export class Action {
-  constructor(agent, actionType, args = {}) {
-    this.agent = agent;
-    this.type = actionType;
-    this.args = args;
-  }
-
-  // TODO improve serialization
-  toJSON() {
-    return {
-      agent: { class: this.agent.class, id: this.agent.id },
-      type: this.type,
-      args: this.args
-    };
-  }
-}
+import Action from "./Action";
 
 export default class Game {
   @observable teams = [];
@@ -118,12 +89,7 @@ export default class Game {
     if (this.maxTurns && this.turn > this.maxTurns) {
       return true;
     }
-    this.teams.forEach(team => {
-      if (team.hq.hp <= 0) {
-        return true;
-      }
-    });
-    return false;
+    return this.teams.some(team => team.hq.hp <= 0);
   }
 
   toJSON() {
@@ -306,29 +272,36 @@ export default class Game {
   }
 
   async executeTurn(actions = []) {
+    if (this.isOver) return false;
+    // Start new turn and history
     this.turn += 1;
-    this.actionHistory.push([]); // Start new history for tick
+    this.actionHistory.push([]);
+    // Create action queues
     const attacks = [];
     const moves = [];
     const spawns = [];
-    // Assign actions to queus
-    actions.forEach(action => {
-      if (!action || !action.type) return null;
+    // Create map for ensuring one action per agent
+    const agentActionMap = {};
+    // Assign actions to queues
+    shuffle(actions).forEach(action => {
+      // Do nothing if action is invalid or agent already has an action this turn
+      if (!action || !action.type || agentActionMap[action.agent.id])
+        return null;
       if (action.type == "attack") {
+        agentActionMap[action.agent.id] = action;
         attacks.push(action);
       } else if (action.type == "move") {
+        agentActionMap[action.agent.id] = action;
         moves.push(action);
       } else {
+        agentActionMap[action.agent.id] = action;
         spawns.push(action);
       }
     });
-    await Promise.all(
-      shuffle(attacks).map(action => this.executeAction(action))
-    );
-    await Promise.all(shuffle(moves).map(action => this.executeAction(action)));
-    await Promise.all(
-      shuffle(spawns).map(action => this.executeAction(action))
-    );
+    // Execute attacks, moves, spawns in order
+    await Promise.all(attacks.map(action => this.executeAttack(action)));
+    await Promise.all(moves.map(action => this.executeMove(action)));
+    await Promise.all(spawns.map(action => this.executeSpawn(action)));
     return true;
   }
 
@@ -350,16 +323,72 @@ export default class Game {
     });
   }
 
-  executeAttack(fighter, args = {}) {
+  executeAttack(action) {
+    if (action.type != "attack") return false;
+    const fighter = this.lookup[action.agent.id];
     const position = new Position(args.position.x, args.position.y);
     const target =
       this.citizens[position.key] ||
       this.fighters[position.key] ||
       this.hqs[position.key];
-    if (!target) {
-      return false; // miss!
-    }
+    if (!target) return false; // miss!
     target.takeDamage(fighter.attackDamage);
+    this.actionHistory[this.turn].push(action);
+  }
+
+  executeMove(action) {
+    if (action.type != "move") return false;
+    const agent = this.lookup[action.agent.id];
+    if (!agent) return false;
+    const newPosition = new Position(
+      action.args.position.x,
+      action.args.position.y
+    );
+    if (!this.isValidMove(newPosition, agent.team.id) || agent.hp <= 0) {
+      return false;
+    }
+    if (agent.class == "Citizen") {
+      this.handleCitizenMove(agent, newPosition);
+    }
+    if (agent.class == "Fighter") {
+      this.handleFighterMove(agent, newPosition);
+    }
+    return true;
+  }
+
+  handleCitizenMove(citizen, position) {
+    // Move citizen
+    this.citizens[citizen.key] = null;
+    citizen.move(position);
+    this.citizens[citizen.key] = citizen;
+    // Move citizen's food (if applicable)
+    const citizenFood = citizen.food;
+    if (citizenFood) {
+      this.foods[citizenFood.key] = null;
+      citizenFood.move(position);
+      this.foods[citizenFood.key] = citizenFood;
+    }
+    // Pick up food
+    const food = this.foods[citizen.key];
+    if (food && !food.eatenBy && !citizen.food) {
+      citizen.eatFood(food);
+      food.getEatenBy(citizen);
+    }
+    // Drop off food
+    const hq = this.hqs[citizen.key];
+    if (hq && citizen.food) {
+      const food = citizen.food;
+      citizen.dropOffFood();
+      hq.eatFood(food);
+      food.getEatenBy(hq);
+      this.foods[food.key] = null; // Unregister food
+    }
+  }
+
+  handleFighterMove(fighter, position) {
+    this.fighters[fighter.key] = null;
+    fighter.move(position);
+    this.fighters[fighter.key] = fighter;
   }
 
   spawnCitizen(hq, props = {}) {
@@ -400,11 +429,11 @@ export default class Game {
     this.addFighter(newFighter);
   }
 
-  @action killFighter(fighter) {
+  killFighter(fighter) {
     this.fighters[fighter.key] = null;
   }
 
-  @action killCitizen(citizen) {
+  killCitizen(citizen) {
     const food = citizen.food;
     this.citizens[citizen.key] = null;
     if (food) {
@@ -412,58 +441,5 @@ export default class Game {
       food.eatenById = null;
       this.foods[food.key] = food;
     }
-  }
-
-  killHQ(hq) {
-    console.log("GAME OVER");
-  }
-
-  executeMove(agent, args = {}) {
-    const newPosition = new Position(args.position.x, args.position.y);
-    if (!this.isValidMove(newPosition, agent.team.id) || agent.hp <= 0) {
-      return false;
-    }
-    if (agent.class == "Citizen") {
-      this.handleCitizenMove(agent, newPosition);
-    }
-    if (agent.class == "Fighter") {
-      this.handleFighterMove(agent, newPosition);
-    }
-    return true;
-  }
-
-  @action handleCitizenMove(citizen, position) {
-    // Move citizen
-    this.citizens[citizen.key] = null;
-    citizen.move(position);
-    this.citizens[citizen.key] = citizen;
-    // Move citizen's food (if applicable)
-    const citizenFood = citizen.food;
-    if (citizenFood) {
-      this.foods[citizenFood.key] = null;
-      citizenFood.move(position);
-      this.foods[citizenFood.key] = citizenFood;
-    }
-    // Pick up food
-    const food = this.foods[citizen.key];
-    if (food && !food.eatenBy && !citizen.food) {
-      citizen.eatFood(food);
-      food.getEatenBy(citizen);
-    }
-    // Drop off food
-    const hq = this.hqs[citizen.key];
-    if (hq && citizen.food) {
-      const food = citizen.food;
-      citizen.dropOffFood();
-      hq.eatFood(food);
-      food.getEatenBy(hq);
-      this.foods[food.key] = null; // Unregister food
-    }
-  }
-
-  @action handleFighterMove(fighter, position) {
-    this.fighters[fighter.key] = null;
-    fighter.move(position);
-    this.fighters[fighter.key] = fighter;
   }
 }

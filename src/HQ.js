@@ -33,7 +33,7 @@ export default class HQ extends ObjectWithPosition {
   }
 
   die() {
-    this.game.killHQ(this);
+    // TODO
   }
 
   get nextSpawnPosition() {
