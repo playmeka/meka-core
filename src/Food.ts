@@ -1,26 +1,35 @@
-import { observable, computed, action } from "mobx";
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
+import HQ from "./HQ";
+import Game from "./Game";
+import Citizen from "./Citizen";
 
 export default class Food extends ObjectWithPosition {
   class = "Food";
+  eatenById: string = null;
+  game: Game;
 
-  @observable eatenById = null;
-
-  constructor(game, props = {}) {
+  constructor(
+    game: Game,
+    props: {
+      id?: string;
+      eatenById?: string;
+      position?: { x: number; y: number };
+    } = {}
+  ) {
     super(props);
     this.game = game;
     this.eatenById = props.eatenById;
   }
 
-  @computed get eatenBy() {
+  get eatenBy() {
     return this.game.lookup[this.eatenById];
   }
 
-  @action getEatenBy(agent) {
+  getEatenBy(agent: Citizen | HQ) {
     this.eatenById = agent.id;
   }
 
-  @action move(position) {
+  move(position: Position) {
     this.position.x = position.x;
     this.position.y = position.y;
   }
@@ -29,7 +38,7 @@ export default class Food extends ObjectWithPosition {
     return [this.id, this.position.x, this.position.y, this.eatenById];
   }
 
-  static fromJSON(game, json) {
+  static fromJSON(game: Game, json: any) {
     return new Food(game, {
       id: json[0],
       position: { x: json[1], y: json[2] },

@@ -1,21 +1,20 @@
-import { observable, action, computed } from "mobx";
-import shuffle from "lodash/shuffle";
-import ObjectWithPosition, {
-  Position,
-  randomPosition
-} from "./ObjectWithPosition";
-import uuid from "uuid/v4";
-import { Action } from "./Game";
+const uuidv4 = require("uuid/v4");
+import ObjectWithPosition, { Position } from "./ObjectWithPosition";
+import Team from "./Team";
 
 export default class Fighter extends ObjectWithPosition {
-  class = "Fighter";
-  attackDamage = 5;
+  class: string = "Fighter";
+  attackDamage: number = 5;
+  hp: number = 20;
+  team: Team;
+  id: string;
 
-  @observable hp = 20;
-
-  constructor(team, props = {}) {
+  constructor(
+    team: Team,
+    props: { id?: string; team?: Team; x?: number; y?: number } = {}
+  ) {
     super(props);
-    this.id = props.id || uuid();
+    this.id = props.id || uuidv4();
     this.team = team;
   }
 
@@ -33,12 +32,12 @@ export default class Fighter extends ObjectWithPosition {
     return this.team.game;
   }
 
-  @action move(position) {
+  move(position: Position) {
     this.position.x = position.x;
     this.position.y = position.y;
   }
 
-  @action takeDamage(damage) {
+  takeDamage(damage: number) {
     this.hp -= damage;
     if (this.hp <= 0) this.die();
   }

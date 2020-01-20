@@ -1,35 +1,43 @@
-import { observable, action, computed } from "mobx";
-import ObjectWithPosition, {
-  Position,
-  randomPosition
-} from "./ObjectWithPosition";
-import shuffle from "lodash/shuffle";
-import uuid from "uuid/v4";
+const uuidv4 = require("uuid/v4");
+import ObjectWithPosition from "./ObjectWithPosition";
+import Team from "./Team";
+import shuffle from "./utils/shuffle";
 
 export default class HQ extends ObjectWithPosition {
-  class = "HQ";
+  class: string = "HQ";
+  hp: number = 100;
+  team: Team;
+  id: string;
+  width: number;
+  height: number;
 
-  @observable hp = 100;
-
-  constructor(team, props = {}) {
+  constructor(
+    team: Team,
+    props: {
+      id?: string;
+      width?: number;
+      height?: number;
+      position?: { x: number; y: number };
+    } = {}
+  ) {
     super(props);
     this.team = team;
-    this.id = props.id || uuid();
+    this.id = props.id || uuidv4();
     this.width = props.width || 2;
     this.height = props.height || 2;
   }
 
-  @computed get game() {
+  get game() {
     return this.team.game;
   }
 
-  @action takeDamage(damage) {
+  takeDamage(damage: number) {
     this.hp -= damage;
     if (this.hp <= 0) this.die();
   }
 
-  eatFood(food) {
-    return this.team.addFood(food);
+  eatFood() {
+    return this.team.addFood();
   }
 
   die() {
@@ -61,7 +69,7 @@ export default class HQ extends ObjectWithPosition {
     ];
   }
 
-  static fromJSON(team, json) {
+  static fromJSON(team: Team, json: any) {
     return new HQ(team, {
       id: json[0],
       width: json[2],

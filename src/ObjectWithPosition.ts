@@ -1,7 +1,6 @@
-import { observable, computed } from "mobx";
-import uuid from "uuid/v4";
+const uuidv4 = require("uuid/v4");
 
-export const randomPosition = (width, height) => {
+export const randomPosition = (width: number, height: number) => {
   return new Position(
     Math.floor(Math.random() * width),
     Math.floor(Math.random() * height)
@@ -9,10 +8,10 @@ export const randomPosition = (width, height) => {
 };
 
 export class Position {
-  @observable x;
-  @observable y;
+  x: number;
+  y: number;
 
-  constructor(x, y) {
+  constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
   }
@@ -37,27 +36,39 @@ export class Position {
 
 export default class ObjectWithPosition {
   class = "ObjectWithPosition";
+  position: Position;
+  id: string;
+  width: number;
+  height: number;
 
-  constructor(props = {}) {
+  constructor(
+    props: {
+      id?: string;
+      position?: { x: number; y: number };
+      width?: number;
+      height?: number;
+      x?: number;
+      y?: number;
+    } = {}
+  ) {
     this.position = new Position(
       (props.position || {}).x || props.x || 0,
       (props.position || {}).y || props.y || 0
     );
     this.width = props.width || 1;
     this.height = props.height || 1;
-    this.id = props.id || uuid();
+    this.id = props.id || uuidv4();
   }
 
-  // Computed values
-  @computed get key() {
+  get key() {
     return this.position.key;
   }
 
-  @computed get x() {
+  get x() {
     return this.position.x;
   }
 
-  @computed get y() {
+  get y() {
     return this.position.y;
   }
 
