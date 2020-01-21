@@ -1,14 +1,11 @@
-import ObjectWithPosition, {
-  Position,
-  randomPosition
-} from "./ObjectWithPosition";
+import { Position, randomPosition } from "./ObjectWithPosition";
 import shuffle from "./utils/shuffle";
 import Team from "./Team";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
 import Wall from "./Wall";
 import Food from "./Food";
-import Action, { ActionType } from "./Action";
+import Action from "./Action";
 import HQ from "./HQ";
 
 export type Agent = Citizen | Fighter | HQ;
@@ -149,12 +146,23 @@ export default class Game {
       walls: this.wallsList.map(wall => wall.toJSON()),
       foods: this.foodsList.map(food => food.toJSON()),
       teams: this.teams.map(team => team.toJSON()),
-      actionHistory: this.actionHistory.map((action: any) => action.toJSON()) // TODO
+      actionHistory: this.actionHistory.map((turn: Action[]) =>
+        turn.map((action: Action) => action.toJSON())
+      )
     };
   }
 
   static fromJSON(json: any) {
-    return new Game(json);
+    const game = new Game(json);
+    const actionHistory = json.actionHistory.map((turn: Object[]) =>
+      turn.map((actionJson: Array<any>) => Action.fromJSON(game, actionJson))
+    );
+    game.importActionHistory(actionHistory);
+    return game;
+  }
+
+  importActionHistory(history: Action[][]) {
+    this.actionHistory = history;
   }
 
   createTeams() {
@@ -179,11 +187,11 @@ export default class Game {
       const team = Team.fromJSON(this, teamJson);
       this.addTeam(team);
       teamJson.citizens.forEach(citizenJson => {
-        const newCitizen = new Citizen(team, citizenJson);
+        const newCitizen = Citizen.fromJSON(team, citizenJson);
         this.addCitizen(newCitizen);
       });
       teamJson.fighters.forEach(fighterJson => {
-        const newFighter = new Fighter(team, fighterJson);
+        const newFighter = Fighter.fromJSON(team, fighterJson);
         this.addFighter(newFighter);
       });
     });
@@ -258,7 +266,7 @@ export default class Game {
     const newFood = new Food(this, {
       position: randomPosition(this.width, this.height)
     });
-    if (this.isValidMove(newFood.position)) {
+    if (this.isValidPosition(newFood.position)) {
       this.addFood(newFood);
     } else {
       this.createRandomFood();
@@ -270,8 +278,7 @@ export default class Game {
     this.lookup[newFood.id] = newFood;
   }
 
-  isValidMove(rawPosition: { x: number; y: number }, teamId: string = null) {
-    const position = new Position(rawPosition.x, rawPosition.y);
+  isValidPosition(position: Position, teamId: string = null) {
     if (
       position.x >= this.width ||
       position.x < 0 ||
@@ -306,7 +313,7 @@ export default class Game {
     const moves: Action[] = [];
     const spawns: Action[] = [];
     // Create map for ensuring one action per agent
-    const agentActionMap = {};
+    const agentActionMap: { [id: string]: Action } = {};
     // Assign actions to queues
     shuffle(actions).forEach(action => {
       // Do nothing if action is invalid or agent already has an action this turn
@@ -327,34 +334,16 @@ export default class Game {
     await Promise.all(attacks.map(action => this.executeAttack(action)));
     await Promise.all(moves.map(action => this.executeMove(action)));
     await Promise.all(spawns.map(action => this.executeSpawn(action)));
-    return true;
+    return this;
   }
 
-  // Action(agent, type, args)
-  executeAction(action: Action) {
-    const actionFunctionMap = {
-      move: (agent: Citizen | Fighter, args: any) =>
-        this.executeMove(agent, args),
-      attack: (fighter: Fighter, args: any) =>
-        this.executeAttack(fighter, args),
-      spawnCitizen: (hq: HQ, _args: any) => this.spawnCitizen(hq),
-      spawnFighter: (hq: HQ, _args: any) => this.spawnFighter(hq)
-    };
-    // TODO
-    const agent = this.lookup[action.agent.id] as any;
-    if (!agent) return false;
-    return new Promise((resolve, _reject) => {
-      const actionFunction = actionFunctionMap[action.type];
-      actionFunction(agent, action.args);
-      this.actionHistory[this.turn].push(action);
-      resolve(true);
-    });
-  }
-
-  executeAttack(action: Action) {
-    if (action.type != "attack") return false;
-    const fighter = this.lookup[action.agent.id];
-    const position = new Position(args.position.x, args.position.y);
+  async executeAttack(action: Action) {
+    if (action.type != "attack" || !action.args.position) return false;
+    const fighter = this.lookup[action.agent.id] as Fighter;
+    const position = new Position(
+      action.args.position.x,
+      action.args.position.y
+    );
     const target =
       this.citizens[position.key] ||
       this.fighters[position.key] ||
@@ -364,24 +353,22 @@ export default class Game {
     this.actionHistory[this.turn].push(action);
   }
 
-  executeMove(action) {
+  async executeMove(action: Action) {
     if (action.type != "move") return false;
-    const agent = this.lookup[action.agent.id];
-    if (!agent) return false;
+    const agent = this.lookup[action.agent.id] as Citizen | Fighter;
+    if (!agent || agent.hp <= 0) return false;
     const newPosition = new Position(
       action.args.position.x,
       action.args.position.y
     );
-    if (!this.isValidMove(newPosition, agent.team.id) || agent.hp <= 0) {
-      return false;
-    }
+    if (!agent.isValidMove(newPosition)) return false;
     if (agent.class == "Citizen") {
-      this.handleCitizenMove(agent, newPosition);
+      this.handleCitizenMove(agent as Citizen, newPosition);
     }
     if (agent.class == "Fighter") {
-      this.handleFighterMove(agent, newPosition);
+      this.handleFighterMove(agent as Fighter, newPosition);
     }
-    return true;
+    this.actionHistory[this.turn].push(action);
   }
 
   handleCitizenMove(citizen: Citizen, position: Position) {
@@ -407,7 +394,7 @@ export default class Game {
     if (hq && citizen.food) {
       const food = citizen.food;
       citizen.dropOffFood();
-      hq.eatFood(food);
+      hq.eatFood();
       food.getEatenBy(hq);
       this.foods[food.key] = null; // Unregister food
     }
@@ -417,6 +404,14 @@ export default class Game {
     this.fighters[fighter.key] = null;
     fighter.move(position);
     this.fighters[fighter.key] = fighter;
+  }
+
+  async executeSpawn(action: Action) {
+    if (action.type == "spawnCitizen") {
+      this.spawnCitizen(action.agent as HQ);
+    } else if (action.type == "spawnFighter") {
+      this.spawnFighter(action.agent as HQ);
+    }
   }
 
   spawnCitizen(hq: HQ, props: { skipFood?: boolean } = {}) {

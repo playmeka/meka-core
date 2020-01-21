@@ -15,14 +15,10 @@ export default class Fighter extends ObjectWithPosition {
     this.team = team;
   }
 
-  toJSON() {
-    return {
-      id: this.id,
-      class: this.class,
-      hp: this.hp,
-      team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
-    };
+  get validMoves() {
+    return this.position.adjacents.filter(move =>
+      this.game.isValidPosition(move, this.team.id)
+    );
   }
 
   get game() {
@@ -40,5 +36,26 @@ export default class Fighter extends ObjectWithPosition {
 
   die() {
     this.game.killFighter(this);
+  }
+
+  isValidMove(position: Position) {
+    return this.validMoves.find(
+      move => move.x == position.x && move.y == position.y
+    );
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      class: this.class,
+      hp: this.hp,
+      team: { id: this.team.id },
+      position: { x: this.x, y: this.y }
+    };
+  }
+
+  static fromJSON(team: Team, json: any) {
+    const position = Position.fromJSON(json.position);
+    return new Fighter(team, { ...json, position });
   }
 }

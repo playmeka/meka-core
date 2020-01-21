@@ -1,5 +1,3 @@
-const uuidv4 = require("uuid/v4");
-
 export const randomPosition = (width: number, height: number) => {
   return new Position(
     Math.floor(Math.random() * width),
@@ -32,25 +30,22 @@ export class Position {
   toJSON() {
     return { x: this.x, y: this.y };
   }
+
+  static fromJSON(json: any) {
+    return new Position(json.x, json.y);
+  }
 }
 
 export default class ObjectWithPosition {
   class = "ObjectWithPosition";
   position: Position;
-  id: string;
   width: number;
   height: number;
 
-  constructor(props: {
-    id?: string;
-    width?: number;
-    height?: number;
-    position: Position;
-  }) {
+  constructor(props: { width?: number; height?: number; position: Position }) {
     this.position = props.position;
     this.width = props.width || 1;
     this.height = props.height || 1;
-    this.id = props.id || uuidv4();
   }
 
   get key() {

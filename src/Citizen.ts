@@ -16,7 +16,7 @@ export default class Citizen extends ObjectWithPosition {
   ) {
     super(props);
     this.id = props.id || uuidv4();
-    this.foodId = props.foodId || null;
+    this.foodId = props.foodId;
     this.team = team;
   }
 
@@ -28,15 +28,10 @@ export default class Citizen extends ObjectWithPosition {
     return this.team.game;
   }
 
-  toJSON() {
-    return {
-      id: this.id,
-      class: this.class,
-      hp: this.hp,
-      foodId: this.foodId,
-      team: { id: this.team.id },
-      position: new Position(this.x, this.y)
-    };
+  get validMoves() {
+    return this.position.adjacents.filter(move =>
+      this.game.isValidPosition(move, this.team.id)
+    );
   }
 
   takeDamage(damage: number) {
@@ -64,5 +59,27 @@ export default class Citizen extends ObjectWithPosition {
 
   move(position: Position) {
     this.position = position;
+  }
+
+  isValidMove(position: Position) {
+    return this.validMoves.find(
+      move => move.x == position.x && move.y == position.y
+    );
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      class: this.class,
+      hp: this.hp,
+      foodId: this.foodId,
+      team: { id: this.team.id },
+      position: this.position.toJSON()
+    };
+  }
+
+  static fromJSON(team: Team, json: any) {
+    const position = Position.fromJSON(json.position);
+    return new Citizen(team, { ...json, position });
   }
 }

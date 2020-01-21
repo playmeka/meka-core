@@ -1,7 +1,4 @@
-import ObjectWithPosition, {
-  Position,
-  randomPosition
-} from "./ObjectWithPosition";
+import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 
 export default class Wall extends ObjectWithPosition {
   class: string = "Wall";
