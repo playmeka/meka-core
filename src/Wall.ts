@@ -4,15 +4,15 @@ import ObjectWithPosition, {
 } from "./ObjectWithPosition";
 
 export default class Wall extends ObjectWithPosition {
-  class = "Wall";
+  class: string = "Wall";
 
   toJSON() {
     return [this.x, this.y];
   }
 
-  static fromJSON(json) {
+  static fromJSON(json: any) {
     return new Wall({
-      position: { x: json[0], y: json[1] }
+      position: new Position(json[0], json[1])
     });
   }
 }
