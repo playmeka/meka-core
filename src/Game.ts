@@ -303,8 +303,11 @@ export default class Game {
     return true;
   }
 
-  async executeTurn(actions: Action[] = []) {
+  async executeTurn(actions: Action[] | Action = []) {
     if (this.isOver) return false;
+
+    actions = Array.isArray(actions) ? actions : [actions];
+
     // Start new turn and history
     this.turn += 1;
     this.actionHistory.push([]);
