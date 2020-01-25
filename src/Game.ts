@@ -7,6 +7,7 @@ import Wall from "./Wall";
 import Food from "./Food";
 import Action from "./Action";
 import HQ from "./HQ";
+import PathFinder from "./PathFinder";
 
 export type Agent = Citizen | Fighter | HQ;
 
@@ -19,6 +20,7 @@ export default class Game {
   walls: { [key: string]: Wall } = {};
   actionHistory: Action[][] = [[]];
   lookup: { [id: string]: Agent | Food } = {};
+  pathFinder: PathFinder;
   homeId: string;
   awayId: string;
   width: number;
@@ -58,6 +60,7 @@ export default class Game {
     this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
+    this.pathFinder = new PathFinder(this);
     // Setup teams
     if (props.teams) {
       this.importTeams(props.teams);
@@ -115,6 +118,16 @@ export default class Game {
       return true;
     }
     return this.teams.some(team => team.hq.hp <= 0);
+  }
+
+  get positions() {
+    const positions = [];
+    for (let x = 0; x < this.width; x++) {
+      for (let y = 0; y < this.height; y++) {
+        positions.push(new Position(x, y));
+      }
+    }
+    return positions;
   }
 
   toJSON() {
@@ -216,9 +229,21 @@ export default class Game {
 
   registerAgent(agent: Agent, mapping: { [key: string]: Agent }) {
     this.lookup[agent.id] = agent;
+    this.registerAgentPosition(agent, mapping);
+  }
+
+  registerAgentPosition(agent: Agent, mapping: { [key: string]: Agent }) {
     agent.covering.forEach(position => {
       mapping[position.key] = agent;
     });
+    this.pathFinder.blockPosition(agent.position);
+  }
+
+  clearAgentPosition(agent: Agent, mapping: { [key: string]: Agent }) {
+    agent.covering.forEach(position => {
+      mapping[position.key] = null;
+    });
+    this.pathFinder.clearPosition(agent.position);
   }
 
   createWalls(wallCount: number) {
@@ -247,6 +272,7 @@ export default class Game {
 
   addWall(newWall: Wall) {
     this.walls[newWall.key] = newWall;
+    this.pathFinder.blockPosition(newWall.position);
   }
 
   importFoods(foods: Food[]) {
@@ -373,21 +399,22 @@ export default class Game {
 
   handleCitizenMove(citizen: Citizen, position: Position) {
     // Move citizen
-    this.citizens[citizen.key] = null;
+    this.clearAgentPosition(citizen, this.citizens);
     citizen.move(position);
-    this.citizens[citizen.key] = citizen;
+    this.registerAgentPosition(citizen, this.citizens);
     // Move citizen's food (if applicable)
     const citizenFood = citizen.food;
     if (citizenFood) {
-      this.foods[citizenFood.key] = null;
+      // this.foods[citizenFood.key] = null;
       citizenFood.move(position);
-      this.foods[citizenFood.key] = citizenFood;
+      // this.foods[citizenFood.key] = citizenFood;
     }
     // Pick up food
     const food = this.foods[citizen.key];
     if (food && !food.eatenBy && !citizen.food) {
       citizen.eatFood(food);
       food.getEatenBy(citizen);
+      // this.foods[food.key] = null;
     }
     // Drop off food
     const hq = this.hqs[citizen.key];
@@ -401,9 +428,9 @@ export default class Game {
   }
 
   handleFighterMove(fighter: Fighter, position: Position) {
-    this.fighters[fighter.key] = null;
+    this.clearAgentPosition(fighter, this.fighters);
     fighter.move(position);
-    this.fighters[fighter.key] = fighter;
+    this.registerAgentPosition(fighter, this.fighters);
   }
 
   async executeSpawn(action: Action) {

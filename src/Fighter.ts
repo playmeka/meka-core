@@ -25,6 +25,10 @@ export default class Fighter extends ObjectWithPosition {
     return this.team.game;
   }
 
+  getPathTo(position: Position) {
+    return this.game.pathFinder.getPath(this, position);
+  }
+
   move(position: Position) {
     this.position = position;
   }
