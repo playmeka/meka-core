@@ -3,6 +3,9 @@ import shuffle from "./utils/shuffle";
 import Team from "./Team";
 import Citizen from "./Citizen";
 import Fighter from "./Fighter";
+import CavalryFighter from "./CavalryFighter";
+import InfantryFighter from "./InfantryFighter";
+import RangedFighter from "./RangedFighter";
 import Wall from "./Wall";
 import Food from "./Food";
 import Action from "./Action";
@@ -348,6 +351,8 @@ export default class Game {
     const attacks: Action[] = [];
     const moves: Action[] = [];
     const spawns: Action[] = [];
+    const foodPickUps: Action[] = [];
+    const foodDropOffs: Action[] = [];
     // Create map for ensuring one action per agent
     const agentActionMap: { [id: string]: Action } = {};
     // Assign actions to queues
@@ -361,6 +366,12 @@ export default class Game {
       } else if (action.type == "move") {
         agentActionMap[action.agent.id] = action;
         moves.push(action);
+      } else if (action.type === "pickUpFood") {
+        agentActionMap[action.agent.id] = action;
+        foodPickUps.push(action);
+      } else if (action.type === "dropOffFood") {
+        agentActionMap[action.agent.id] = action;
+        foodDropOffs.push(action);
       } else {
         agentActionMap[action.agent.id] = action;
         spawns.push(action);
@@ -369,6 +380,16 @@ export default class Game {
     // Execute attacks in order
     await attacks.reduce(
       (promise, action) => promise.then(() => this.executeAttack(action)),
+      Promise.resolve()
+    );
+    // Execute food pick ups in order
+    await foodPickUps.reduce(
+      (promise, action) => promise.then(() => this.executeFoodPickUp(action)),
+      Promise.resolve()
+    );
+    // Execute food drop offs in order
+    await foodDropOffs.reduce(
+      (promise, action) => promise.then(() => this.executeFoodDropOff(action)),
       Promise.resolve()
     );
     // Execute moves in order
@@ -409,7 +430,12 @@ export default class Game {
     );
     if (!agent.isValidMove(newPosition)) return false;
     if (agent.class == "Citizen") {
-      this.handleCitizenMove(agent as Citizen, newPosition);
+      this.handleCitizenMove(
+        agent as Citizen,
+        newPosition,
+        action.args.autoPickUpFood || false,
+        action.args.autoDropOffFood || false
+      );
     }
     if (agent.class == "Fighter") {
       this.handleFighterMove(agent as Fighter, newPosition);
@@ -417,7 +443,53 @@ export default class Game {
     this.actionHistory.pushActions(this.turn, action);
   }
 
-  handleCitizenMove(citizen: Citizen, position: Position) {
+  async executeFoodDropOff(action: Action) {
+    if (action.type != "dropOffFood") return false;
+    const agent = this.lookup[action.agent.id] as Citizen;
+    if (!agent || agent.hp <= 0 || agent.class != "Citizen" || !agent.food)
+      return false;
+    const dropOffPosition = new Position(
+      action.args.position.x,
+      action.args.position.y
+    );
+    if (!agent.isValidMove(dropOffPosition)) return false;
+    const hq = this.hqs[dropOffPosition.key];
+    const food = agent.food;
+    agent.dropOffFood();
+    if (hq) {
+      hq.eatFood();
+      food.getEatenBy(hq);
+    } else {
+      food.eatenById = null;
+      this.foods[food.key] = food;
+    }
+    this.actionHistory.pushActions(this.turn, action);
+  }
+
+  async executeFoodPickUp(action: Action) {
+    if (action.type != "pickUpFood") return false;
+    const agent = this.lookup[action.agent.id] as Citizen;
+    if (!agent || agent.hp <= 0 || agent.class != "Citizen" || agent.food)
+      return false;
+    const pickUpPosition = new Position(
+      action.args.position.x,
+      action.args.position.y
+    );
+    const food = this.foods[pickUpPosition.key];
+    if (food) {
+      agent.eatFood(food);
+      food.getEatenBy(agent);
+      delete this.foods[food.key]; // Un-register food
+    }
+    this.actionHistory.pushActions(this.turn, action);
+  }
+
+  handleCitizenMove(
+    citizen: Citizen,
+    position: Position,
+    autoPickUpFood: boolean,
+    autoDropOffFood: boolean
+  ) {
     // Move citizen
     this.clearAgentPosition(citizen, this.citizens);
     citizen.move(position);
@@ -430,14 +502,14 @@ export default class Game {
     }
     // Pick up food
     const food = this.foods[citizen.key];
-    if (food && !citizen.food) {
+    if (food && !citizen.food && autoPickUpFood) {
       citizen.eatFood(food);
       food.getEatenBy(citizen);
       delete this.foods[food.key]; // Un-register food
     }
     // Drop off food
     const hq = this.hqs[citizen.key];
-    if (hq && citizen.food) {
+    if (hq && citizen.food && autoDropOffFood) {
       const food = citizen.food;
       citizen.dropOffFood();
       hq.eatFood();
@@ -455,7 +527,7 @@ export default class Game {
     if (action.type == "spawnCitizen") {
       this.spawnCitizen(action.agent as HQ);
     } else if (action.type == "spawnFighter") {
-      this.spawnFighter(action.agent as HQ);
+      this.spawnFighter(action.agent as HQ, action.fighterType);
     }
   }
 
@@ -478,7 +550,7 @@ export default class Game {
     this.addCitizen(newCitizen);
   }
 
-  spawnFighter(hq: HQ, props: { skipFood?: boolean } = {}) {
+  spawnFighter(hq: HQ, fighterType: "cavalry" | "infantry" | "ranged") {
     const { team } = hq;
     if (team.pop >= this.maxPop) {
       return false;
@@ -487,13 +559,13 @@ export default class Game {
     if (!spawnLocation) {
       return false;
     }
-    if (!props.skipFood && team.foodCount < this.fighterCost) {
-      return false;
-    }
-    if (!props.skipFood) {
-      team.spendFood(this.fighterCost);
-    }
-    const newFighter = new Fighter(team, { position: spawnLocation });
+    let newFighter;
+    if (fighterType === "cavalry")
+      newFighter = new CavalryFighter(team, { position: spawnLocation });
+    else if (fighterType === "infantry")
+      newFighter = new InfantryFighter(team, { position: spawnLocation });
+    else if (fighterType === "ranged")
+      newFighter = new RangedFighter(team, { position: spawnLocation });
     this.addFighter(newFighter);
   }
 

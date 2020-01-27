@@ -8,8 +8,6 @@ export default class HQ extends ObjectWithPosition {
   hp: number = 100;
   teamId: string;
   id: string;
-  width: number;
-  height: number;
   game: Game;
 
   constructor(

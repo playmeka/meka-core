@@ -2,10 +2,12 @@ const uuidv4 = require("uuid/v4");
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import Team from "./Team";
 
-export default class Fighter extends ObjectWithPosition {
+export default class BaseFighter extends ObjectWithPosition {
   class: string = "Fighter";
-  attackDamage: number = 5;
-  hp: number = 20;
+  baseAttackDamage: number;
+  hp: number;
+  range: number;
+  speed: number;
   team: Team;
   id: string;
 
@@ -46,20 +48,5 @@ export default class Fighter extends ObjectWithPosition {
     return this.validMoves.find(
       move => move.x == position.x && move.y == position.y
     );
-  }
-
-  toJSON() {
-    return {
-      id: this.id,
-      class: this.class,
-      hp: this.hp,
-      team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
-    };
-  }
-
-  static fromJSON(team: Team, json: any) {
-    const position = Position.fromJSON(json.position);
-    return new Fighter(team, { ...json, position });
   }
 }

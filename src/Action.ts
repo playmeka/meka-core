@@ -1,13 +1,24 @@
 import Game, { Agent } from "./Game";
 import { Position, PositionJSON } from "./ObjectWithPosition";
 
-export type ActionType = "move" | "attack" | "spawnCitizen" | "spawnFighter";
+export type ActionType =
+  | "move"
+  | "attack"
+  | "spawnCitizen"
+  | "spawnFighter"
+  | "dropOffFood"
+  | "pickUpFood";
 export type ActionJSON = [string, ActionType, { position?: PositionJSON }];
 
 export default class Action {
   agent: Agent;
   type: ActionType;
-  args?: { position?: Position };
+  args?: {
+    position?: Position;
+    autoPickUpFood?: boolean;
+    autoDropOffFood?: boolean;
+    fighterType: string;
+  };
 
   constructor(agent: Agent, actionType: ActionType, args = {}) {
     this.agent = agent;
