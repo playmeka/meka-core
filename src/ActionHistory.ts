@@ -11,15 +11,26 @@ export default class ActionHistory {
     this.actionsByTurn = props.actionsByTurn || {};
   }
 
-  get(turn: number | string) {
+  getActions(turn: number | string) {
     return this.actionsByTurn[turn];
   }
 
-  push(turn: number | string, action: Action) {
+  pushActions(turn: number | string, ...actions: Action[]) {
     if (!this.actionsByTurn[turn]) {
       this.actionsByTurn[turn] = [];
     }
-    return this.actionsByTurn[turn].push(action);
+    return this.actionsByTurn[turn].push(...actions);
+  }
+
+  toArray() {
+    // const turnArray: { turn: number; actions: Action[] }[] = [];
+    const keys = Object.keys(this.actionsByTurn).sort(
+      (a, b) => parseInt(a) - parseInt(b)
+    );
+    return keys.map(turn => ({
+      turn: parseInt(turn),
+      actions: this.getActions(turn)
+    }));
   }
 
   toJSON() {

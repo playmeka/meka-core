@@ -98,7 +98,7 @@ export default class Game {
   get foodsList() {
     return Object.values(this.lookup).filter(
       value => !!value && value.class === "Food"
-    );
+    ) as Food[];
   }
 
   get citizensList() {
@@ -337,7 +337,7 @@ export default class Game {
     this.turn += 1;
     // Apply actions
     await this.applyActions(shuffle(actions));
-    return this.actionHistory.get(this.turn);
+    return this.actionHistory.getActions(this.turn);
   }
 
   async applyActions(actions: Action[] = []) {
@@ -393,7 +393,7 @@ export default class Game {
       this.hqs[position.key];
     if (!target) return false; // miss!
     target.takeDamage(fighter.attackDamage);
-    this.actionHistory.push(this.turn, action);
+    this.actionHistory.pushActions(this.turn, action);
   }
 
   async executeMove(action: Action) {
@@ -411,7 +411,7 @@ export default class Game {
     if (agent.class == "Fighter") {
       this.handleFighterMove(agent as Fighter, newPosition);
     }
-    this.actionHistory.push(this.turn, action);
+    this.actionHistory.pushActions(this.turn, action);
   }
 
   handleCitizenMove(citizen: Citizen, position: Position) {
