@@ -203,7 +203,7 @@ export default class Game {
         this.addCitizen(newCitizen);
       });
       teamJson.fighters.forEach(fighterJson => {
-        const newFighter = Fighter.fromJSON(team, fighterJson);
+        const newFighter = Fighter.fromJSON(this, fighterJson);
         this.addFighter(newFighter);
       });
     });
@@ -493,7 +493,10 @@ export default class Game {
     if (!props.skipFood) {
       team.spendFood(this.fighterCost);
     }
-    const newFighter = new Fighter(team, { position: spawnLocation });
+    const newFighter = new Fighter(this, {
+      teamId: team.id,
+      position: spawnLocation
+    });
     this.addFighter(newFighter);
   }
 

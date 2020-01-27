@@ -63,7 +63,7 @@ export default class ObjectWithPosition {
   }
 
   get covering() {
-    const positions = [];
+    const positions: Position[] = [];
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         positions.push(new Position(this.x + x, this.y + y));
