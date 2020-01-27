@@ -1,16 +1,108 @@
 import { Position, randomPosition } from "./ObjectWithPosition";
 import shuffle from "./utils/shuffle";
-import Team from "./Team";
-import Citizen from "./Citizen";
-import Fighter from "./Fighter";
-import Wall from "./Wall";
-import Food from "./Food";
+import Team, { TeamJSON } from "./Team";
+import Citizen, { CitizenJSON } from "./Citizen";
+import Fighter, { FighterJSON } from "./Fighter";
+import Wall, { WallJSON } from "./Wall";
+import Food, { FoodJSON } from "./Food";
 import Action from "./Action";
 import HQ from "./HQ";
-import ActionHistory from "./ActionHistory";
+import ActionHistory, { ActionHistoryJSON } from "./ActionHistory";
 import PathFinder from "./PathFinder";
 
 export type Agent = Citizen | Fighter | HQ;
+
+export type GameJSON = {
+  width: number;
+  height: number;
+  maxTurns: number;
+  maxPop: number;
+  turn: number;
+  citizenCost: number;
+  fighterCost: number;
+  wallCount: number;
+  foodCount: number;
+  walls: WallJSON[];
+  foods: FoodJSON[];
+  teams: TeamJSON[];
+  citizens: CitizenJSON[];
+  fighters: FighterJSON[];
+  actionHistory: ActionHistoryJSON;
+};
+
+type GameProps = {
+  width: number;
+  height: number;
+  turn?: number;
+  maxTurns?: number;
+  maxPop?: number;
+  citizenCost?: number;
+  fighterCost?: number;
+};
+
+type GameGenerateProps = GameProps & {
+  wallCount?: number;
+  foodCount?: number;
+  homeId?: string;
+  awayId?: string;
+};
+
+const generateTeams = (
+  game: Game,
+  props: { homeId?: string; awayId?: string } = {}
+) => {
+  const homeTeam = new Team(game, {
+    id: props.homeId || "home",
+    color: "blue",
+    hq: { position: new Position(game.width - 4, 2) } // Top right
+  });
+  game.addTeam(homeTeam);
+  game.spawnCitizen(homeTeam.hq, { skipFood: true });
+  const awayTeam = new Team(game, {
+    id: props.awayId || "away",
+    color: "red",
+    hq: { position: new Position(2, game.height - 4) } // Bottom left
+  });
+  game.addTeam(awayTeam);
+  game.spawnCitizen(awayTeam.hq, { skipFood: true });
+};
+
+const generateWalls = (game: Game, wallCount: number) => {
+  let failures = 0;
+  const maxFailures = game.width * game.height; // Arbitrary
+  while (game.wallsList.length < wallCount) {
+    const newWall = new Wall({
+      position: randomPosition(game.width, game.height)
+    });
+    if (!game.walls[newWall.key] && !game.hqs[newWall.key]) {
+      game.addWall(newWall);
+    } else {
+      failures += 1;
+      if (failures > maxFailures)
+        throw new Error("Too many failed wall generations.");
+    }
+  }
+};
+
+const generateFoods = (game: Game, foodCount: number) => {
+  let failures = 0;
+  const maxFailures = game.width * game.height; // Arbitrary
+  while (game.foodsList.length < foodCount) {
+    const newFood = new Food(game, {
+      position: randomPosition(game.width, game.height)
+    });
+    if (
+      game.isValidPosition(newFood.position) &&
+      !game.foods[newFood.position.key]
+    ) {
+      game.addFood(newFood);
+    } else {
+      failures += 1;
+      if (failures > maxFailures)
+        throw new Error("Too many failed food generations.");
+    }
+  }
+};
 
 export default class Game {
   teams: Team[] = [];
@@ -22,8 +114,6 @@ export default class Game {
   actionHistory: ActionHistory;
   lookup: { [id: string]: Agent | Food } = {};
   pathFinder: PathFinder;
-  homeId: string;
-  awayId: string;
   width: number;
   height: number;
   turn: number;
@@ -31,64 +121,17 @@ export default class Game {
   maxPop: number;
   citizenCost: number;
   fighterCost: number;
-  wallCount: number;
-  foodCount: number;
 
-  constructor(
-    props: {
-      homeId?: string;
-      awayId?: string;
-      width?: number;
-      height?: number;
-      turn?: number;
-      maxTurns?: number;
-      maxPop?: number;
-      citizenCost?: number;
-      fighterCost?: number;
-      teams?: Team[];
-      walls?: Wall[];
-      foods?: Food[];
-      wallCount?: number;
-      foodCount?: number;
-    } = {}
-  ) {
-    this.homeId = props.homeId;
-    this.awayId = props.awayId;
+  constructor(props: GameProps) {
     this.width = props.width;
     this.height = props.height;
     this.turn = props.turn || 0;
-    this.maxTurns = props.maxTurns;
-    this.maxPop = props.maxPop || Math.floor(this.width * this.height * 0.1);
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
+    this.maxTurns = props.maxTurns;
+    this.maxPop = props.maxPop;
     this.pathFinder = new PathFinder(this);
     this.actionHistory = new ActionHistory(this);
-    // Setup teams
-    if (props.teams) {
-      this.importTeams(props.teams);
-    } else {
-      this.createTeams();
-    }
-    // Setup board
-    if (props.walls) {
-      this.importWalls(props.walls);
-    } else {
-      const wallCount =
-        props.wallCount == 0 || props.wallCount
-          ? props.wallCount
-          : props.wallCount || Math.floor(this.width * this.height * 0.2);
-      this.createWalls(wallCount);
-    }
-    // Setup food
-    if (props.foods) {
-      this.importFoods(props.foods);
-    } else {
-      const foodCount =
-        props.foodCount == 0 || props.foodCount
-          ? props.foodCount
-          : Math.floor(this.width * this.height * 0.2);
-      this.createFoods(foodCount);
-    }
   }
 
   get wallsList() {
@@ -134,6 +177,10 @@ export default class Game {
     return positions;
   }
 
+  getTeam(teamId: string) {
+    return this.teams.filter(team => team.id == teamId)[0];
+  }
+
   toJSON() {
     const {
       width,
@@ -142,10 +189,6 @@ export default class Game {
       maxPop,
       citizenCost,
       fighterCost,
-      wallCount,
-      foodCount,
-      homeId,
-      awayId,
       turn
     } = this;
     return {
@@ -156,19 +199,34 @@ export default class Game {
       turn,
       citizenCost,
       fighterCost,
-      wallCount,
-      foodCount,
-      homeId,
-      awayId,
       walls: this.wallsList.map(wall => wall.toJSON()),
       foods: this.foodsList.map(food => food.toJSON()),
       teams: this.teams.map(team => team.toJSON()),
+      citizens: this.citizensList.map(citizen => citizen.toJSON()),
+      fighters: this.fightersList.map(fighter => fighter.toJSON()),
       actionHistory: this.actionHistory.toJSON()
-    };
+    } as GameJSON;
   }
 
-  static fromJSON(json: any) {
+  static generate(props: GameGenerateProps) {
+    const game = new Game(props);
+    generateTeams(game, { homeId: props.homeId, awayId: props.awayId });
+    generateWalls(game, props.wallCount || game.width * game.height * 0.2);
+    generateFoods(game, props.foodCount || game.width * game.height * 0.2);
+    return game;
+  }
+
+  static fromJSON(json: GameJSON) {
     const game = new Game(json);
+    game.importTeams(json.teams.map(teamJson => Team.fromJSON(game, teamJson)));
+    game.importWalls(json.walls.map(wallJson => Wall.fromJSON(wallJson)));
+    game.importFoods(json.foods.map(foodJson => Food.fromJSON(game, foodJson)));
+    game.importCitizens(
+      json.citizens.map(citizenJson => Citizen.fromJSON(game, citizenJson))
+    );
+    game.importFighters(
+      json.fighters.map(fighterJson => Fighter.fromJSON(game, fighterJson))
+    );
     game.importActionHistory(ActionHistory.fromJSON(game, json.actionHistory));
     return game;
   }
@@ -177,45 +235,21 @@ export default class Game {
     this.actionHistory = history;
   }
 
-  createTeams() {
-    const homeTeam = new Team(this, {
-      id: this.homeId,
-      color: "blue",
-      hq: { position: new Position(this.width - 4, 2), teamId: this.homeId } // Top right
-    });
-    this.addTeam(homeTeam);
-    this.spawnCitizen(homeTeam.hq, { skipFood: true });
-    const awayTeam = new Team(this, {
-      id: this.awayId,
-      color: "red",
-      hq: { teamId: this.awayId, position: new Position(2, this.height - 4) } // Bottom left
-    });
-    this.addTeam(awayTeam);
-    this.spawnCitizen(awayTeam.hq, { skipFood: true });
+  importTeams(teams: Team[]) {
+    teams.forEach(team => this.addTeam(team));
   }
 
-  importTeams(teams: Team[]) {
-    teams.forEach(teamJson => {
-      const team = Team.fromJSON(this, teamJson);
-      this.addTeam(team);
-      teamJson.citizens.forEach(citizenJson => {
-        const newCitizen = Citizen.fromJSON(this, citizenJson);
-        this.addCitizen(newCitizen);
-      });
-      teamJson.fighters.forEach(fighterJson => {
-        const newFighter = Fighter.fromJSON(this, fighterJson);
-        this.addFighter(newFighter);
-      });
-    });
+  importCitizens(citizens: Citizen[]) {
+    citizens.forEach(citizen => this.addCitizen(citizen));
+  }
+
+  importFighters(fighters: Fighter[]) {
+    fighters.forEach(fighter => this.addFighter(fighter));
   }
 
   addTeam(team: Team) {
     this.teams.push(team);
     this.registerAgent(team.hq, this.hqs);
-  }
-
-  getTeam(teamId: string) {
-    return this.teams.filter(team => team.id == teamId)[0];
   }
 
   addCitizen(newCitizen: Citizen) {
@@ -245,26 +279,8 @@ export default class Game {
     this.pathFinder.clearPosition(agent.position);
   }
 
-  createWalls(wallCount: number) {
-    for (let i = 0; i < wallCount; i++) {
-      this.createRandomWall();
-    }
-  }
-
-  createRandomWall() {
-    const newWall = new Wall({
-      position: randomPosition(this.width, this.height)
-    });
-    if (this.walls[newWall.key] || this.hqs[newWall.key]) {
-      this.createRandomWall();
-    } else {
-      this.addWall(newWall);
-    }
-  }
-
   importWalls(walls: Wall[]) {
-    walls.forEach(wallJson => {
-      const wall = Wall.fromJSON(wallJson);
+    walls.forEach(wall => {
       this.addWall(wall);
     });
   }
@@ -275,30 +291,9 @@ export default class Game {
   }
 
   importFoods(foods: Food[]) {
-    foods.forEach(foodJson => {
-      const food = Food.fromJSON(this, foodJson);
+    foods.forEach(food => {
       this.addFood(food);
     });
-  }
-
-  createFoods(foodCount: number) {
-    for (let i = 0; i < foodCount; i++) {
-      this.createRandomFood();
-    }
-  }
-
-  createRandomFood() {
-    const newFood = new Food(this, {
-      position: randomPosition(this.width, this.height)
-    });
-    if (
-      this.isValidPosition(newFood.position) &&
-      !this.foods[newFood.position.key]
-    ) {
-      this.addFood(newFood);
-    } else {
-      this.createRandomFood();
-    }
   }
 
   addFood(newFood: Food) {
@@ -421,10 +416,7 @@ export default class Game {
     this.registerAgentPosition(citizen, this.citizens);
     // Move citizen's food (if applicable)
     const citizenFood = citizen.food;
-    if (citizenFood) {
-      console.log("Move citizen food", citizenFood);
-      citizenFood.move(position);
-    }
+    if (citizenFood) citizenFood.move(position);
     // Pick up food
     const food = this.foods[citizen.key];
     if (food && !citizen.food) {

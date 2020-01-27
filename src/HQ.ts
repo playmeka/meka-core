@@ -1,27 +1,37 @@
 const uuidv4 = require("uuid/v4");
-import ObjectWithPosition, { Position } from "./ObjectWithPosition";
+import ObjectWithPosition, {
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
 import Game from "./Game";
 import shuffle from "./utils/shuffle";
+
+export type HQJSON = {
+  id: string;
+  class: "HQ";
+  hp: number;
+  teamId: string;
+  width: number;
+  height: number;
+  position: PositionJSON;
+};
+
+type HQProps = {
+  teamId: string;
+  position: Position;
+  id?: string;
+  width?: number;
+  height?: number;
+};
 
 export default class HQ extends ObjectWithPosition {
   class: string = "HQ";
   hp: number = 100;
   teamId: string;
   id: string;
-  width: number;
-  height: number;
   game: Game;
 
-  constructor(
-    game: Game,
-    props: {
-      teamId: string;
-      id?: string;
-      width?: number;
-      height?: number;
-      position: Position;
-    }
-  ) {
+  constructor(game: Game, props: HQProps) {
     super(props);
     this.game = game;
     this.teamId = props.teamId;
@@ -58,27 +68,23 @@ export default class HQ extends ObjectWithPosition {
         return position;
       }
     }
-    return false;
+    return null;
   }
 
   toJSON() {
-    return [
-      this.id,
-      this.team.id,
-      this.width,
-      this.height,
-      this.position.x,
-      this.position.y
-    ];
+    const { id, teamId, width, height, hp, position } = this;
+    return {
+      id,
+      teamId,
+      width,
+      height,
+      hp,
+      position: position.toJSON()
+    } as HQJSON;
   }
 
-  static fromJSON(game: Game, json: any) {
-    return new HQ(game, {
-      id: json[0],
-      teamId: json[1],
-      width: json[2],
-      height: json[3],
-      position: new Position(json[4], json[5])
-    });
+  static fromJSON(game: Game, json: HQJSON) {
+    const position = Position.fromJSON(json.position);
+    return new HQ(game, { ...json, position });
   }
 }

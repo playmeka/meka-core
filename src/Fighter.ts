@@ -70,16 +70,17 @@ export default class Fighter extends ObjectWithPosition {
   }
 
   toJSON() {
+    const { id, hp, teamId, position } = this;
     return {
-      id: this.id,
+      id,
       class: this.class,
-      hp: this.hp,
-      team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
-    };
+      hp,
+      teamId,
+      position: position.toJSON()
+    } as FighterJSON;
   }
 
-  static fromJSON(game: Game, json: any) {
+  static fromJSON(game: Game, json: FighterJSON) {
     const position = Position.fromJSON(json.position);
     return new Fighter(game, { ...json, position });
   }

@@ -33,7 +33,7 @@ export class Position {
     return { x: this.x, y: this.y } as PositionJSON;
   }
 
-  static fromJSON(json: any) {
+  static fromJSON(json: PositionJSON) {
     return new Position(json.x, json.y);
   }
 }

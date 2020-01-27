@@ -1,7 +1,21 @@
 const uuidv4 = require("uuid/v4");
-import HQ from "./HQ";
+import HQ, { HQJSON } from "./HQ";
 import Game from "./Game";
 import { Position } from "./ObjectWithPosition";
+
+export type TeamJSON = {
+  id: string;
+  color: string;
+  foodCount: number;
+  hq: HQJSON;
+};
+
+type TeamProps = {
+  id?: string;
+  color?: string;
+  foodCount?: number;
+  hq: { position: Position };
+};
 
 export default class Team {
   game: Game;
@@ -10,20 +24,12 @@ export default class Team {
   foodCount: number;
   hq: HQ;
 
-  constructor(
-    game: Game,
-    props: {
-      id?: string;
-      color?: string;
-      foodCount?: number;
-      hq: { position: Position; teamId: string };
-    }
-  ) {
+  constructor(game: Game, props: TeamProps) {
     this.game = game;
     this.id = props.id || `${uuidv4()}`;
     this.color = props.color || "blue";
     this.foodCount = props.foodCount || 0;
-    this.hq = new HQ(game, props.hq);
+    this.hq = new HQ(game, { teamId: this.id, ...props.hq });
   }
 
   get pop() {
@@ -38,20 +44,18 @@ export default class Team {
     return this.game.fightersList.filter(fighter => fighter.team.id == this.id);
   }
 
-  static fromJSON(game: Game, json: any) {
-    const hq = HQ.fromJSON(game, json.hq);
-    return new Team(game, { ...json, hq });
-  }
-
   toJSON() {
     return {
       id: this.id,
       color: this.color,
       foodCount: this.foodCount,
-      hq: this.hq.toJSON(),
-      citizens: this.citizens.map(citizen => citizen.toJSON()),
-      fighters: this.fighters.map(fighter => fighter.toJSON())
-    };
+      hq: this.hq.toJSON()
+    } as TeamJSON;
+  }
+
+  static fromJSON(game: Game, json: TeamJSON) {
+    const hq = HQ.fromJSON(game, json.hq);
+    return new Team(game, { ...json, hq });
   }
 
   addFood() {

@@ -100,7 +100,7 @@ export default class Citizen extends ObjectWithPosition {
     } as CitizenJSON;
   }
 
-  static fromJSON(game: Game, json: any) {
+  static fromJSON(game: Game, json: CitizenJSON) {
     const position = Position.fromJSON(json.position);
     return new Citizen(game, { ...json, position });
   }

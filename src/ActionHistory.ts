@@ -1,8 +1,8 @@
 import Game from "./Game";
 import Action, { ActionJSON } from "./Action";
 
+export type ActionHistoryJSON = { [turn: string]: ActionJSON[] };
 type ActionsByTurnMap = { [turn: string]: Action[] };
-type ActionHistoryJSON = { [turn: string]: ActionJSON[] };
 
 export default class ActionHistory {
   actionsByTurn: ActionsByTurnMap;
