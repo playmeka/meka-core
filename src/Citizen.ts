@@ -34,6 +34,10 @@ export default class Citizen extends ObjectWithPosition {
     );
   }
 
+  getPathTo(position: Position) {
+    return this.game.pathFinder.getPath(this, position);
+  }
+
   takeDamage(damage: number) {
     this.hp -= damage;
     if (this.hp <= 0) {

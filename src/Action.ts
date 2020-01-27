@@ -1,7 +1,8 @@
 import Game, { Agent } from "./Game";
-import { Position } from "./ObjectWithPosition";
+import { Position, PositionJSON } from "./ObjectWithPosition";
 
 export type ActionType = "move" | "attack" | "spawnCitizen" | "spawnFighter";
+export type ActionJSON = [string, ActionType, { position?: PositionJSON }];
 
 export default class Action {
   agent: Agent;
@@ -18,7 +19,7 @@ export default class Action {
     return [this.agent.id, this.type, this.args];
   }
 
-  static fromJSON(game: Game, json: Array<any>) {
+  static fromJSON(game: Game, json: ActionJSON) {
     const agent = game.lookup[json[0]] as Agent;
     return new Action(agent, json[1], json[2]);
   }
