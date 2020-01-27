@@ -16,7 +16,7 @@ export default class Action {
   }
 
   toJSON() {
-    return [this.agent.id, this.type, this.args];
+    return [this.agent.id, this.type, this.args] as ActionJSON;
   }
 
   static fromJSON(game: Game, json: ActionJSON) {
