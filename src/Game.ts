@@ -7,6 +7,7 @@ import Wall from "./Wall";
 import Food from "./Food";
 import Action from "./Action";
 import HQ from "./HQ";
+import ActionHistory from "./ActionHistory";
 import PathFinder from "./PathFinder";
 
 export type Agent = Citizen | Fighter | HQ;
@@ -18,7 +19,7 @@ export default class Game {
   fighters: { [key: string]: Fighter } = {};
   foods: { [key: string]: Food } = {};
   walls: { [key: string]: Wall } = {};
-  actionHistory: Action[][] = [[]];
+  actionHistory: ActionHistory;
   lookup: { [id: string]: Agent | Food } = {};
   pathFinder: PathFinder;
   homeId: string;
@@ -61,6 +62,7 @@ export default class Game {
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
     this.pathFinder = new PathFinder(this);
+    this.actionHistory = new ActionHistory(this);
     // Setup teams
     if (props.teams) {
       this.importTeams(props.teams);
@@ -159,22 +161,17 @@ export default class Game {
       walls: this.wallsList.map(wall => wall.toJSON()),
       foods: this.foodsList.map(food => food.toJSON()),
       teams: this.teams.map(team => team.toJSON()),
-      actionHistory: this.actionHistory.map((turn: Action[]) =>
-        turn.map((action: Action) => action.toJSON())
-      )
+      actionHistory: this.actionHistory.toJSON()
     };
   }
 
   static fromJSON(json: any) {
     const game = new Game(json);
-    const actionHistory = json.actionHistory.map((turn: Object[]) =>
-      turn.map((actionJson: Array<any>) => Action.fromJSON(game, actionJson))
-    );
-    game.importActionHistory(actionHistory);
+    game.importActionHistory(ActionHistory.fromJSON(game, json.actionHistory));
     return game;
   }
 
-  importActionHistory(history: Action[][]) {
+  importActionHistory(history: ActionHistory) {
     this.actionHistory = history;
   }
 
@@ -235,8 +232,8 @@ export default class Game {
   registerAgentPosition(agent: Agent, mapping: { [key: string]: Agent }) {
     agent.covering.forEach(position => {
       mapping[position.key] = agent;
+      this.pathFinder.blockPosition(position);
     });
-    this.pathFinder.blockPosition(agent.position);
   }
 
   clearAgentPosition(agent: Agent, mapping: { [key: string]: Agent }) {
@@ -333,7 +330,12 @@ export default class Game {
     if (this.isOver) return false;
     // Start new turn and history
     this.turn += 1;
-    this.actionHistory.push([]);
+    // Apply actions
+    await this.applyActions(shuffle(actions));
+    return this.actionHistory.get(this.turn);
+  }
+
+  async applyActions(actions: Action[] = []) {
     // Create action queues
     const attacks: Action[] = [];
     const moves: Action[] = [];
@@ -341,7 +343,7 @@ export default class Game {
     // Create map for ensuring one action per agent
     const agentActionMap: { [id: string]: Action } = {};
     // Assign actions to queues
-    shuffle(actions).forEach(action => {
+    actions.forEach(action => {
       // Do nothing if action is invalid or agent already has an action this turn
       if (!action || !action.type || agentActionMap[action.agent.id])
         return null;
@@ -356,11 +358,21 @@ export default class Game {
         spawns.push(action);
       }
     });
-    // Execute attacks, moves, spawns in order
-    await Promise.all(attacks.map(action => this.executeAttack(action)));
-    await Promise.all(moves.map(action => this.executeMove(action)));
-    await Promise.all(spawns.map(action => this.executeSpawn(action)));
-    return this;
+    // Execute attacks in order
+    await attacks.reduce(
+      (promise, action) => promise.then(() => this.executeAttack(action)),
+      Promise.resolve()
+    );
+    // Execute moves in order
+    await moves.reduce(
+      (promise, action) => promise.then(() => this.executeMove(action)),
+      Promise.resolve()
+    );
+    // Execute spawns in order
+    await spawns.reduce(
+      (promise, action) => promise.then(() => this.executeSpawn(action)),
+      Promise.resolve()
+    );
   }
 
   async executeAttack(action: Action) {
@@ -376,7 +388,7 @@ export default class Game {
       this.hqs[position.key];
     if (!target) return false; // miss!
     target.takeDamage(fighter.attackDamage);
-    this.actionHistory[this.turn].push(action);
+    this.actionHistory.push(this.turn, action);
   }
 
   async executeMove(action: Action) {
@@ -394,7 +406,7 @@ export default class Game {
     if (agent.class == "Fighter") {
       this.handleFighterMove(agent as Fighter, newPosition);
     }
-    this.actionHistory[this.turn].push(action);
+    this.actionHistory.push(this.turn, action);
   }
 
   handleCitizenMove(citizen: Citizen, position: Position) {
