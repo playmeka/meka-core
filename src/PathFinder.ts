@@ -4,20 +4,15 @@ import Team from "./Team";
 import { Position } from "./ObjectWithPosition";
 
 const createGrid = (game: Game) => {
-  const matrix = [];
-  for (let y = 0; y < game.height; y++) {
-    matrix.push([]);
-    for (let x = 0; x < game.width; x++) {
-      const hasWall = game.walls[`${x},${y}`];
-      matrix[y].push(hasWall ? 1 : 0);
-    }
-  }
-  return new PathFinding.Grid(matrix);
+  const grid = new PathFinding.Grid(game.width, game.height);
+  game.wallsList.forEach(wall => {
+    grid.setWalkableAt(wall.x, wall.y, false);
+  });
+  return grid;
 };
 
 export default class PathFinder {
   grid: any;
-  finder: any;
 
   constructor(game: Game) {
     this.grid = createGrid(game);

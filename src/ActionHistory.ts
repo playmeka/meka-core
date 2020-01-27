@@ -1,7 +1,8 @@
 import Game from "./Game";
-import Action from "./Action";
+import Action, { ActionJSON } from "./Action";
 
 type ActionsByTurnMap = { [turn: string]: Action[] };
+
 export default class ActionHistory {
   actionsByTurn: ActionsByTurnMap;
   game: Game;
@@ -41,10 +42,10 @@ export default class ActionHistory {
     return json;
   }
 
-  static fromJSON(game: Game, json: { [turn: string]: Array<any> }) {
+  static fromJSON(game: Game, json: { [turn: string]: ActionJSON[] }) {
     const actionsByTurn: ActionsByTurnMap = {};
     Object.keys(json).forEach(turn => {
-      actionsByTurn[turn] = json[turn].map((actionJson: Array<any>) =>
+      actionsByTurn[turn] = json[turn].map(actionJson =>
         Action.fromJSON(game, actionJson)
       );
     });

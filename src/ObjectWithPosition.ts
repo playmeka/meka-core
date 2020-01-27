@@ -5,6 +5,8 @@ export const randomPosition = (width: number, height: number) => {
   );
 };
 
+export type PositionJSON = { x: number; y: number };
+
 export class Position {
   x: number;
   y: number;
@@ -28,7 +30,7 @@ export class Position {
   }
 
   toJSON() {
-    return { x: this.x, y: this.y };
+    return { x: this.x, y: this.y } as PositionJSON;
   }
 
   static fromJSON(json: any) {
