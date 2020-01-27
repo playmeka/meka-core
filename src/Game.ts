@@ -96,7 +96,9 @@ export default class Game {
   }
 
   get foodsList() {
-    return Object.values(this.foods).filter(food => !!food);
+    return Object.values(this.lookup).filter(
+      value => !!value && value.class === "Food"
+    );
   }
 
   get citizensList() {
@@ -238,7 +240,7 @@ export default class Game {
 
   clearAgentPosition(agent: Agent, mapping: { [key: string]: Agent }) {
     agent.covering.forEach(position => {
-      mapping[position.key] = null;
+      delete mapping[position.key];
     });
     this.pathFinder.clearPosition(agent.position);
   }
@@ -289,7 +291,10 @@ export default class Game {
     const newFood = new Food(this, {
       position: randomPosition(this.width, this.height)
     });
-    if (this.isValidPosition(newFood.position)) {
+    if (
+      this.isValidPosition(newFood.position) &&
+      !this.foods[newFood.position.key]
+    ) {
       this.addFood(newFood);
     } else {
       this.createRandomFood();
@@ -297,8 +302,8 @@ export default class Game {
   }
 
   addFood(newFood: Food) {
-    this.foods[newFood.key] = newFood;
     this.lookup[newFood.id] = newFood;
+    this.foods[newFood.key] = newFood;
   }
 
   isValidPosition(position: Position, teamId: string = null) {
@@ -417,16 +422,15 @@ export default class Game {
     // Move citizen's food (if applicable)
     const citizenFood = citizen.food;
     if (citizenFood) {
-      // this.foods[citizenFood.key] = null;
+      console.log("Move citizen food", citizenFood);
       citizenFood.move(position);
-      // this.foods[citizenFood.key] = citizenFood;
     }
     // Pick up food
     const food = this.foods[citizen.key];
-    if (food && !food.eatenBy && !citizen.food) {
+    if (food && !citizen.food) {
       citizen.eatFood(food);
       food.getEatenBy(citizen);
-      // this.foods[food.key] = null;
+      delete this.foods[food.key]; // Un-register food
     }
     // Drop off food
     const hq = this.hqs[citizen.key];
@@ -435,7 +439,6 @@ export default class Game {
       citizen.dropOffFood();
       hq.eatFood();
       food.getEatenBy(hq);
-      this.foods[food.key] = null; // Unregister food
     }
   }
 
@@ -492,12 +495,12 @@ export default class Game {
   }
 
   killFighter(fighter: Fighter) {
-    this.fighters[fighter.key] = null;
+    delete this.fighters[fighter.key];
   }
 
   killCitizen(citizen: Citizen) {
     const food = citizen.food;
-    this.citizens[citizen.key] = null;
+    delete this.citizens[citizen.key];
     if (food) {
       citizen.dropOffFood();
       food.eatenById = null;

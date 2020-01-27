@@ -6,7 +6,7 @@ import Citizen from "./Citizen";
 
 export default class Food extends ObjectWithPosition {
   class = "Food";
-  eatenById: string = null;
+  eatenById: string;
   game: Game;
   id: string;
 
