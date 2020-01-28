@@ -5,6 +5,8 @@ export const randomPosition = (width: number, height: number) => {
   );
 };
 
+export type PositionJSON = { x: number; y: number };
+
 export class Position {
   x: number;
   y: number;
@@ -28,10 +30,10 @@ export class Position {
   }
 
   toJSON() {
-    return { x: this.x, y: this.y };
+    return { x: this.x, y: this.y } as PositionJSON;
   }
 
-  static fromJSON(json: any) {
+  static fromJSON(json: PositionJSON) {
     return new Position(json.x, json.y);
   }
 }
@@ -61,7 +63,7 @@ export default class ObjectWithPosition {
   }
 
   get covering() {
-    const positions = [];
+    const positions: Position[] = [];
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         positions.push(new Position(this.x + x, this.y + y));

@@ -4,9 +4,11 @@ import HQ from "./HQ";
 import Game from "./Game";
 import Citizen from "./Citizen";
 
+export type FoodJSON = [string, number, number, string];
+
 export default class Food extends ObjectWithPosition {
   class = "Food";
-  eatenById: string = null;
+  eatenById: string;
   game: Game;
   id: string;
 
@@ -38,10 +40,15 @@ export default class Food extends ObjectWithPosition {
   }
 
   toJSON() {
-    return [this.id, this.position.x, this.position.y, this.eatenById];
+    return [
+      this.id,
+      this.position.x,
+      this.position.y,
+      this.eatenById
+    ] as FoodJSON;
   }
 
-  static fromJSON(game: Game, json: any) {
+  static fromJSON(game: Game, json: FoodJSON) {
     return new Food(game, {
       id: json[0],
       position: new Position(json[1], json[2]),

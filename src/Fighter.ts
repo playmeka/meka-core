@@ -1,18 +1,43 @@
 const uuidv4 = require("uuid/v4");
-import ObjectWithPosition, { Position } from "./ObjectWithPosition";
-import Team from "./Team";
+import ObjectWithPosition, {
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
+import Game from "./Game";
+
+export type FighterJSON = {
+  id: string;
+  class: "Fighter";
+  hp: number;
+  teamId: string;
+  position: PositionJSON;
+};
+
+type FighterProps = {
+  teamId: string;
+  position: Position;
+  id?: string;
+  hp?: number;
+};
 
 export default class Fighter extends ObjectWithPosition {
   class: string = "Fighter";
+  game: Game;
+  teamId: string;
   attackDamage: number = 5;
   hp: number = 20;
-  team: Team;
   id: string;
 
-  constructor(team: Team, props: { id?: string; position: Position }) {
+  constructor(game: Game, props: FighterProps) {
     super(props);
+    this.game = game;
+    this.teamId = props.teamId;
     this.id = props.id || uuidv4();
-    this.team = team;
+    this.hp = props.hp || 20;
+  }
+
+  get team() {
+    return this.game.getTeam(this.teamId);
   }
 
   get validMoves() {
@@ -21,8 +46,8 @@ export default class Fighter extends ObjectWithPosition {
     );
   }
 
-  get game() {
-    return this.team.game;
+  getPathTo(position: Position) {
+    return this.game.pathFinder.getPath(this, position);
   }
 
   move(position: Position) {
@@ -45,17 +70,18 @@ export default class Fighter extends ObjectWithPosition {
   }
 
   toJSON() {
+    const { id, hp, teamId, position } = this;
     return {
-      id: this.id,
+      id,
       class: this.class,
-      hp: this.hp,
-      team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
-    };
+      hp,
+      teamId,
+      position: position.toJSON()
+    } as FighterJSON;
   }
 
-  static fromJSON(team: Team, json: any) {
+  static fromJSON(game: Game, json: FighterJSON) {
     const position = Position.fromJSON(json.position);
-    return new Fighter(team, { ...json, position });
+    return new Fighter(game, { ...json, position });
   }
 }
