@@ -68,40 +68,39 @@ const generateTeams = (
 };
 
 const generateWalls = (game: Game, wallCount: number) => {
-  let failures = 0;
-  const maxFailures = game.width * game.height; // Arbitrary
-  while (game.wallsList.length < wallCount) {
-    const newWall = new Wall({
-      position: randomPosition(game.width, game.height)
-    });
-    if (!game.walls[newWall.key] && !game.hqs[newWall.key]) {
+  const wallPositions = game.positions.filter(position => {
+    return (
+      !game.walls[position.key] &&
+      !game.hqs[position.key] &&
+      !position.adjacents.some(adjacent => game.hqs[adjacent.key])
+    );
+  });
+  if (wallCount > wallPositions.length)
+    throw new Error(
+      `Given wallCount (${wallCount}) exceeds number of available positions (${wallPositions.length}).`
+    );
+  shuffle(wallPositions)
+    .slice(0, wallCount)
+    .forEach(wallPosition => {
+      const newWall = new Wall({ position: wallPosition });
       game.addWall(newWall);
-    } else {
-      failures += 1;
-      if (failures > maxFailures)
-        throw new Error("Too many failed wall generations.");
-    }
-  }
+    });
 };
 
 const generateFoods = (game: Game, foodCount: number) => {
-  let failures = 0;
-  const maxFailures = game.width * game.height; // Arbitrary
-  while (game.foodsList.length < foodCount) {
-    const newFood = new Food(game, {
-      position: randomPosition(game.width, game.height)
-    });
-    if (
-      game.isValidPosition(newFood.position) &&
-      !game.foods[newFood.position.key]
-    ) {
+  const foodPositions = game.positions.filter(position =>
+    game.isValidPosition(position)
+  );
+  if (foodCount > foodPositions.length)
+    throw new Error(
+      `Given foodCount (${foodCount}) exceeds number of available positions (${foodPositions.length}).`
+    );
+  shuffle(foodPositions)
+    .slice(0, foodCount)
+    .forEach(foodPosition => {
+      const newFood = new Food(game, { position: foodPosition });
       game.addFood(newFood);
-    } else {
-      failures += 1;
-      if (failures > maxFailures)
-        throw new Error("Too many failed food generations.");
-    }
-  }
+    });
 };
 
 export default class Game {

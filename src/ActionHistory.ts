@@ -25,13 +25,11 @@ export default class ActionHistory {
   }
 
   toArray() {
-    const keys = Object.keys(this.actionsByTurn).sort(
-      (a, b) => parseInt(a) - parseInt(b)
-    );
-    return keys.map(turn => ({
-      turn: parseInt(turn),
-      actions: this.getActions(turn)
-    }));
+    const array: { turn: number; actions: Action[] }[] = [];
+    for (let i = 0; i <= this.game.turn; i++) {
+      array.push({ turn: i, actions: this.getActions(i) });
+    }
+    return array;
   }
 
   toJSON() {
