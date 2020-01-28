@@ -1,4 +1,4 @@
-import { Position, randomPosition } from "./ObjectWithPosition";
+import { Position } from "./ObjectWithPosition";
 import shuffle from "./utils/shuffle";
 import Team, { TeamJSON } from "./Team";
 import Citizen, { CitizenJSON } from "./Citizen";
