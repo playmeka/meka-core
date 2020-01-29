@@ -160,9 +160,7 @@ export default class Game {
   }
 
   get isOver() {
-    if (this.maxTurns && this.turn > this.maxTurns) {
-      return true;
-    }
+    if (this.maxTurns && this.turn > this.maxTurns) return true;
     return this.teams.some(team => team.hq.hp <= 0);
   }
 
@@ -326,7 +324,7 @@ export default class Game {
   }
 
   async executeTurn(actions: Action[] = []) {
-    if (this.isOver) return false;
+    if (this.isOver) return null;
     // Start new turn and history
     this.turn += 1;
     // Apply actions
