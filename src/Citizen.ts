@@ -1,31 +1,49 @@
 const uuidv4 = require("uuid/v4");
-import ObjectWithPosition, { Position } from "./ObjectWithPosition";
-import Team from "./Team";
+import ObjectWithPosition, {
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
+import Game from "./Game";
 import Food from "./Food";
+
+export type CitizenJSON = {
+  id: string;
+  class: "Citizen";
+  hp: number;
+  foodId?: string;
+  teamId: string;
+  position: PositionJSON;
+};
+
+type CitizenProps = {
+  teamId: string;
+  position: Position;
+  id?: string;
+  foodId?: string;
+};
 
 export default class Citizen extends ObjectWithPosition {
   class: string = "Citizen";
-  foodId?: string = null;
+  game: Game;
   hp: number = 10;
   id: string;
-  team: Team;
+  teamId: string;
+  foodId?: string = null;
 
-  constructor(
-    team: Team,
-    props: { id?: string; foodId?: string; position: Position }
-  ) {
+  constructor(game: Game, props: CitizenProps) {
     super(props);
+    this.game = game;
+    this.teamId = props.teamId;
     this.id = props.id || uuidv4();
     this.foodId = props.foodId;
-    this.team = team;
   }
 
-  get food(): Food {
+  get team() {
+    return this.game.getTeam(this.teamId);
+  }
+
+  get food() {
     return this.game.lookup[this.foodId] as Food;
-  }
-
-  get game() {
-    return this.team.game;
   }
 
   get validMoves() {
@@ -77,13 +95,13 @@ export default class Citizen extends ObjectWithPosition {
       class: this.class,
       hp: this.hp,
       foodId: this.foodId,
-      team: { id: this.team.id },
+      teamId: this.teamId,
       position: this.position.toJSON()
-    };
+    } as CitizenJSON;
   }
 
-  static fromJSON(team: Team, json: any) {
+  static fromJSON(game: Game, json: CitizenJSON) {
     const position = Position.fromJSON(json.position);
-    return new Citizen(team, { ...json, position });
+    return new Citizen(game, { ...json, position });
   }
 }

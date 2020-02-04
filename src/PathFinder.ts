@@ -1,4 +1,4 @@
-const PathFinding = require("pathfinding");
+import * as PathFinding from "pathfinding";
 import Game, { Agent } from "./Game";
 import Team from "./Team";
 import { Position } from "./ObjectWithPosition";
@@ -12,7 +12,7 @@ const createGrid = (game: Game) => {
 };
 
 export default class PathFinder {
-  grid: any;
+  grid: PathFinding.Grid;
 
   constructor(game: Game) {
     this.grid = createGrid(game);
@@ -44,7 +44,7 @@ export default class PathFinder {
         to.y,
         this.gridForTeam(agent.team)
       )
-      .map((array: Array<number>) => new Position(array[0], array[1]));
-    return path.length ? path : false;
+      .map(array => new Position(array[0], array[1]));
+    return path.length ? path : null;
   }
 }

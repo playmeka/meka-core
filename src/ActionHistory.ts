@@ -1,6 +1,7 @@
 import Game from "./Game";
 import Action, { ActionJSON } from "./Action";
 
+export type ActionHistoryJSON = { [turn: string]: ActionJSON[] };
 type ActionsByTurnMap = { [turn: string]: Action[] };
 
 export default class ActionHistory {
@@ -24,7 +25,6 @@ export default class ActionHistory {
   }
 
   toArray() {
-    // const turnArray: { turn: number; actions: Action[] }[] = [];
     const keys = Object.keys(this.actionsByTurn).sort(
       (a, b) => parseInt(a) - parseInt(b)
     );
@@ -35,7 +35,7 @@ export default class ActionHistory {
   }
 
   toJSON() {
-    const json: { [turn: string]: Array<any> } = {};
+    const json: ActionHistoryJSON = {};
     Object.keys(this.actionsByTurn).forEach(turn => {
       json[turn] = this.actionsByTurn[turn].map(action => action.toJSON());
     });

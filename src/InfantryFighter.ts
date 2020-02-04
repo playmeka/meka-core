@@ -1,31 +1,73 @@
 const uuidv4 = require("uuid/v4");
-import ObjectWithPosition, { Position } from "./ObjectWithPosition";
-import Team from "./Team";
+import ObjectWithPosition, {
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
+import Game, { Agent } from "./Game";
+
+export type InfantryFighterJSON = {
+  id: string;
+  class: "InfantryFighter";
+  hp: number;
+  teamId: string;
+  position: PositionJSON;
+  range: number;
+  speed: number;
+  cost: number;
+};
+
+type InfantryFighterProps = {
+  teamId: string;
+  position: Position;
+  id?: string;
+};
 
 export default class InfantryFighter extends ObjectWithPosition {
   class: string = "InfantryFighter";
-  attackDamage: number = 5;
-  hp: number = 20;
-  team: Team;
+  game: Game;
+  teamId: string;
+  baseAttackDamage: number;
+  hp: number;
+  speed: number;
+  range: number;
   id: string;
+  cost: number;
 
-  constructor(team: Team, props: { id?: string; position: Position }) {
+  constructor(game: Game, props: InfantryFighterProps) {
     super(props);
+    this.game = game;
+    this.teamId = props.teamId;
     this.id = props.id || uuidv4();
-    this.team = team;
+    this.hp = 32;
+    this.baseAttackDamage = 10;
+    this.cost = 4;
+    this.range = 1;
+    this.speed = 1;
+  }
+
+  get team() {
+    return this.game.getTeam(this.teamId);
   }
 
   get validMoves() {
-    return this.position.adjacents.filter(move =>
-      this.game.isValidPosition(move, this.team.id)
-    );
+    return this.position
+      .adjacentsWithinDistance(this.speed)
+      .filter(move => this.game.isValidPosition(move, this.team.id));
   }
 
-  get game() {
-    return this.team.game;
+  get validAttacks() {
+    return this.position
+      .adjacentsWithinDistance(this.range)
+      .filter(move => this.game.isValidAttackPosition(move, this.team.id));
   }
 
-  getPathTo(position: Position) {
+  attackDamage(enemyAgent: Agent) {
+    return enemyAgent.class === "CavalryFighter"
+      ? this.baseAttackDamage + 5
+      : this.baseAttackDamage;
+  }
+
+  getPathTo(position: Position): Position[] {
     return this.game.pathFinder.getPath(this, position);
   }
 
@@ -48,18 +90,28 @@ export default class InfantryFighter extends ObjectWithPosition {
     );
   }
 
-  toJSON() {
-    return {
-      id: this.id,
-      class: this.class,
-      hp: this.hp,
-      team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
-    };
+  isValidAttack(position: Position) {
+    return this.validAttacks.find(
+      move => move.x == position.x && move.y == position.y
+    );
   }
 
-  static fromJSON(team: Team, json: any) {
+  toJSON() {
+    const { id, hp, teamId, position, cost, speed, range } = this;
+    return {
+      id,
+      class: this.class,
+      hp,
+      teamId,
+      position: position.toJSON(),
+      cost,
+      speed,
+      range
+    } as InfantryFighterJSON;
+  }
+
+  static fromJSON(game: Game, json: InfantryFighterJSON) {
     const position = Position.fromJSON(json.position);
-    return new Fighter(team, { ...json, position });
+    return new InfantryFighter(game, { ...json, position });
   }
 }

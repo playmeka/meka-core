@@ -29,11 +29,28 @@ export class Position {
     ];
   }
 
+  adjacentsWithinDistance(distance: number) {
+    // TODO: Clean this up
+    if (distance <= 0) return [];
+    let positions = this.adjacents;
+    while (distance - 1 > 0) {
+      let newPositions: any = [];
+      positions.forEach(position => newPositions.push(position.adjacents));
+      newPositions = newPositions.reduce(
+        (acc: any, val: any) => acc.concat(val),
+        []
+      );
+      newPositions.forEach((position: any) => positions.push(position));
+      distance -= 1;
+    }
+    return positions;
+  }
+
   toJSON() {
     return { x: this.x, y: this.y } as PositionJSON;
   }
 
-  static fromJSON(json: any) {
+  static fromJSON(json: PositionJSON) {
     return new Position(json.x, json.y);
   }
 }
@@ -63,7 +80,7 @@ export default class ObjectWithPosition {
   }
 
   get covering() {
-    const positions = [];
+    const positions: Position[] = [];
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {
         positions.push(new Position(this.x + x, this.y + y));

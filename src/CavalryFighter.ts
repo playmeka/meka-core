@@ -1,44 +1,117 @@
 const uuidv4 = require("uuid/v4");
-import BaseFighter from "./BaseFighter";
-import { Position } from "./ObjectWithPosition";
-import Team from "./Team";
+import ObjectWithPosition, {
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
+import Game, { Agent } from "./Game";
 
-export default class CavalryFighter extends BaseFighter {
+export type CavalryFighterJSON = {
+  id: string;
+  class: "CavalryFighter";
+  hp: number;
+  teamId: string;
+  position: PositionJSON;
+  range: number;
+  speed: number;
+  cost: number;
+};
+
+type CavalryFighterProps = {
+  teamId: string;
+  position: Position;
+  id?: string;
+};
+
+export default class CavalryFighter extends ObjectWithPosition {
   class: string = "CavalryFighter";
+  game: Game;
+  teamId: string;
+  baseAttackDamage: number;
+  hp: number;
+  speed: number;
+  range: number;
+  id: string;
+  cost: number;
 
-  constructor(team: Team, props: { id?: string; position: Position }) {
-    super(team, props);
+  constructor(game: Game, props: CavalryFighterProps) {
+    super(props);
     this.id = props.id || uuidv4();
-    this.team = team;
-    this.baseAttackDamage = 5;
-    this.hp = 20;
-    this.speed = 2;
+    this.game = game;
+    this.teamId = props.teamId;
+    this.hp = 30;
+    this.baseAttackDamage = 6;
+    this.cost = 3;
     this.range = 1;
+    this.speed = 2;
+  }
+
+  get team() {
+    return this.game.getTeam(this.teamId);
   }
 
   get validMoves() {
-    return this.position.adjacents.filter(move =>
-      this.game.isValidPosition(move, this.team.id)
+    return this.position
+      .adjacentsWithinDistance(this.speed)
+      .filter(move => this.game.isValidPosition(move, this.team.id));
+  }
+
+  get validAttacks() {
+    return this.position
+      .adjacentsWithinDistance(this.range)
+      .filter(move => this.game.isValidAttackPosition(move, this.team.id));
+  }
+
+  attackDamage(enemyAgent: Agent) {
+    return enemyAgent.class === "RangedFighter"
+      ? this.baseAttackDamage + 6
+      : this.baseAttackDamage;
+  }
+
+  getPathTo(position: Position): Position[] {
+    return this.game.pathFinder.getPath(this, position);
+  }
+
+  move(position: Position) {
+    this.position = position;
+  }
+
+  takeDamage(damage: number) {
+    this.hp -= damage;
+    if (this.hp <= 0) this.die();
+  }
+
+  die() {
+    this.game.killFighter(this);
+  }
+
+  isValidMove(position: Position) {
+    return this.validMoves.find(
+      move => move.x == position.x && move.y == position.y
     );
   }
 
-  attackDamage(enemyAgent: any) {
-    console.log(enemyAgent);
-    return this.baseAttackDamage;
+  isValidAttack(position: Position) {
+    return this.validAttacks.find(
+      move => move.x == position.x && move.y == position.y
+    );
   }
 
   toJSON() {
+    const { id, hp, teamId, position, cost, speed, range } = this;
     return {
-      id: this.id,
+      id,
       class: this.class,
-      hp: this.hp,
-      team: { id: this.team.id },
-      position: { x: this.x, y: this.y }
-    };
+      hp,
+      teamId,
+      position: position.toJSON(),
+      cost,
+      speed,
+      range
+    } as CavalryFighterJSON;
   }
 
-  static fromJSON(team: Team, json: any) {
+  static fromJSON(game: Game, json: CavalryFighterJSON) {
     const position = Position.fromJSON(json.position);
-    return new CavalryFighter(team, { ...json, position });
+    return new CavalryFighter(game, { ...json, position });
   }
 }

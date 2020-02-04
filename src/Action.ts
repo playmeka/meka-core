@@ -1,5 +1,6 @@
 import Game, { Agent } from "./Game";
 import { Position, PositionJSON } from "./ObjectWithPosition";
+import { FighterType } from "./Game";
 
 export type ActionType =
   | "move"
@@ -17,7 +18,7 @@ export default class Action {
     position?: Position;
     autoPickUpFood?: boolean;
     autoDropOffFood?: boolean;
-    fighterType: string;
+    fighterType?: FighterType;
   };
 
   constructor(agent: Agent, actionType: ActionType, args = {}) {
@@ -27,7 +28,7 @@ export default class Action {
   }
 
   toJSON() {
-    return [this.agent.id, this.type, this.args];
+    return [this.agent.id, this.type, this.args] as ActionJSON;
   }
 
   static fromJSON(game: Game, json: ActionJSON) {

@@ -1,25 +1,41 @@
 const uuidv4 = require("uuid/v4");
-import ObjectWithPosition, { Position } from "./ObjectWithPosition";
-import Game from "./Game";
+import ObjectWithPosition, {
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
+import Game, { Agent } from "./Game";
 import shuffle from "./utils/shuffle";
+
+export type HQJSON = {
+  id: string;
+  class: "HQ";
+  hp: number;
+  teamId: string;
+  width: number;
+  height: number;
+  position: PositionJSON;
+  baseAttackDamage: number;
+  range: number;
+};
+
+type HQProps = {
+  teamId: string;
+  position: Position;
+  id?: string;
+  width?: number;
+  height?: number;
+};
 
 export default class HQ extends ObjectWithPosition {
   class: string = "HQ";
-  hp: number = 100;
+  hp: number = 500;
+  baseAttackDamage: number = 6;
+  range: number = 3;
   teamId: string;
   id: string;
   game: Game;
 
-  constructor(
-    game: Game,
-    props: {
-      teamId: string;
-      id?: string;
-      width?: number;
-      height?: number;
-      position: Position;
-    }
-  ) {
+  constructor(game: Game, props: HQProps) {
     super(props);
     this.game = game;
     this.teamId = props.teamId;
@@ -45,6 +61,10 @@ export default class HQ extends ObjectWithPosition {
     // TODO
   }
 
+  attackDamage(_enemyAgent: Agent) {
+    return this.baseAttackDamage;
+  }
+
   get nextSpawnPosition() {
     const options = shuffle(this.covering);
     for (let i = 0; i < options.length; i++) {
@@ -56,27 +76,50 @@ export default class HQ extends ObjectWithPosition {
         return position;
       }
     }
-    return false;
+    return null;
+  }
+
+  get validAttacks() {
+    let possiblePositions = this.covering.map(position =>
+      position
+        .adjacentsWithinDistance(this.range)
+        .filter(move => this.game.isValidAttackPosition(move, this.team.id))
+    );
+
+    return possiblePositions.reduce((acc, val) => acc.concat(val), []);
+  }
+
+  isValidAttack(position: Position) {
+    return this.validAttacks.find(
+      move => move.x == position.x && move.y == position.y
+    );
   }
 
   toJSON() {
-    return [
-      this.id,
-      this.team.id,
-      this.width,
-      this.height,
-      this.position.x,
-      this.position.y
-    ];
+    const {
+      id,
+      teamId,
+      width,
+      height,
+      hp,
+      position,
+      range,
+      baseAttackDamage
+    } = this;
+    return {
+      id,
+      teamId,
+      width,
+      height,
+      hp,
+      range,
+      baseAttackDamage,
+      position: position.toJSON()
+    } as HQJSON;
   }
 
-  static fromJSON(game: Game, json: any) {
-    return new HQ(game, {
-      id: json[0],
-      teamId: json[1],
-      width: json[2],
-      height: json[3],
-      position: new Position(json[4], json[5])
-    });
+  static fromJSON(game: Game, json: HQJSON) {
+    const position = Position.fromJSON(json.position);
+    return new HQ(game, { ...json, position });
   }
 }
