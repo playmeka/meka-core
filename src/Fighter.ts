@@ -14,7 +14,7 @@ export type FighterJSON = {
   position: PositionJSON;
 };
 
-type FighterProps = {
+export type FighterProps = {
   teamId: string;
   position: Position;
   id?: string;

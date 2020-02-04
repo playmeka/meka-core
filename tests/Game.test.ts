@@ -1,4 +1,4 @@
-import Game from "../src/Game";
+import Game, { GameJSON } from "../src/Game";
 import Citizen from "../src/Citizen";
 import Fighter from "../src/Fighter";
 import HQ from "../src/HQ";
@@ -34,10 +34,15 @@ test("Sending invalid spawn command results in failure Action", async () => {
 });
 
 describe("Sending valid move command", () => {
-  let game: Game, citizen: Citizen, command: Command, actions: Action[];
+  let game: Game,
+    json: GameJSON,
+    citizen: Citizen,
+    command: Command,
+    actions: Action[];
 
   beforeEach(async () => {
     game = Game.generate(defaultGameProps);
+    json = game.toJSON();
     citizen = game.teams[0].citizens[0];
     command = new Command(citizen, "move", { position: citizen.validMoves[0] });
     actions = await game.executeTurn([command]);
@@ -59,6 +64,14 @@ describe("Sending valid move command", () => {
   test("adds action to history", () => {
     const turnHistory = game.history.getActions(game.turn);
     expect(turnHistory.length).toBe(1);
+  });
+
+  test("can be imported into new game", () => {
+    const newGame = Game.fromJSON(json);
+    newGame.importTurn(game.turn, actions);
+    const newCitizen = game.teams[0].citizens[0];
+    expect(newGame.turn).toBe(game.turn);
+    expect(newCitizen.position).toBe(citizen.position);
   });
 });
 

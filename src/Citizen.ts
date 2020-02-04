@@ -16,7 +16,7 @@ export type CitizenJSON = {
   position: PositionJSON;
 };
 
-type CitizenProps = {
+export type CitizenProps = {
   teamId: string;
   position: Position;
   id?: string;

@@ -1,8 +1,8 @@
 import { Position } from "./ObjectWithPosition";
 import shuffle from "./utils/shuffle";
 import Team, { TeamJSON } from "./Team";
-import Citizen, { CitizenJSON } from "./Citizen";
-import Fighter, { FighterJSON } from "./Fighter";
+import Citizen, { CitizenJSON, CitizenProps } from "./Citizen";
+import Fighter, { FighterJSON, FighterProps } from "./Fighter";
 import Wall, { WallJSON } from "./Wall";
 import Food, { FoodJSON } from "./Food";
 import Command from "./Command";
@@ -310,6 +310,8 @@ export default class Game {
     this.foods[newFood.key] = newFood;
   }
 
+  // Command execution
+  // executeAttack, executeMove, executeSpawn all return actions
   async executeTurn(commands: Command[] = []) {
     if (this.isOver) return null;
     // Start new turn and history
@@ -375,7 +377,7 @@ export default class Game {
         this.hqs[position.key];
       if (!target)
         throw new Error("No target at position: " + position.toJSON()); // miss!
-      target.takeDamage(fighter.attackDamage);
+      this.handleAttack(fighter, target);
       const successAction = new Action({
         command,
         status: "success",
@@ -411,8 +413,7 @@ export default class Game {
         );
       if (agent.class == "Citizen") {
         this.handleCitizenMove(agent as Citizen, newPosition);
-      }
-      if (agent.class == "Fighter") {
+      } else if (agent.class == "Fighter") {
         this.handleFighterMove(agent as Fighter, newPosition);
       }
       // Create success action, add to history, and return
@@ -433,6 +434,89 @@ export default class Game {
       this.history.pushActions(this.turn, failureAction);
       return failureAction;
     }
+  }
+
+  async executeSpawn(command: Command) {
+    try {
+      const position =
+        command.args.position || (command.agent as HQ).nextSpawnPosition;
+      if (!position) throw new Error("No position available for spawn");
+      // TODO: check position in HQ
+      if (command.type == "spawnCitizen") {
+        const newCitizen = this.spawnCitizen(command.agent as HQ, { position });
+        const successAction = new Action({
+          command,
+          status: "success",
+          response: newCitizen.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
+      } else if (command.type == "spawnFighter") {
+        const newFighter = this.spawnFighter(command.agent as HQ, { position });
+        const successAction = new Action({
+          command,
+          status: "success",
+          response: newFighter.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
+      }
+    } catch (err) {
+      const failureAction = new Action({
+        command,
+        status: "failure",
+        error: err.message
+      });
+      this.history.pushActions(this.turn, failureAction);
+      return failureAction;
+    }
+  }
+
+  // Turn import used to catch instance up to speed and skips validation
+  importTurn(turn: number, actions: Action[] = []) {
+    if (turn != this.turn + 1)
+      throw new Error(
+        `Cannot import turn ${turn} when current turn is ${this.turn}`
+      );
+    if (this.history.getActions(turn).length)
+      throw new Error(`History already contains actions for turn ${turn}`);
+    // Start new turn
+    this.turn = turn;
+    // Iterate through actions
+    actions.forEach(action => {
+      const { command, status, response } = action;
+      if (status != "success") return;
+      if (command.type === "attack") {
+        const fighter = this.lookup[command.agent.id] as Fighter;
+        const target = this.lookup[response.id] as Agent;
+        this.handleAttack(fighter, target);
+      } else if (command.type === "move") {
+        const agent = this.lookup[command.agent.id] as Citizen | Fighter;
+        const position = Position.fromJSON(response.position);
+        if (agent.class === "Citizen") {
+          this.handleCitizenMove(agent as Citizen, position);
+        } else if (agent.class === "Fighter") {
+          this.handleFighterMove(agent as Fighter, position);
+        }
+      } else if (
+        command.type === "spawnCitizen" ||
+        command.type === "spawnFighter"
+      ) {
+        const hq = command.agent as HQ;
+        const position = Position.fromJSON(response.position);
+        if (command.type === "spawnCitizen") {
+          this.spawnCitizen(hq, { ...response, position });
+        } else if (command.type === "spawnFighter") {
+        }
+      }
+    });
+    // Add turn to history
+    return this.history.pushActions(turn, ...actions);
+  }
+
+  // Mutations
+  handleAttack(fighter: Fighter, target: Agent) {
+    target.takeDamage(fighter.attackDamage);
   }
 
   handleCitizenMove(citizen: Citizen, position: Position) {
@@ -468,43 +552,7 @@ export default class Game {
     this.registerAgentPosition(fighter, this.fighters);
   }
 
-  async executeSpawn(command: Command) {
-    try {
-      const position =
-        command.args.position || (command.agent as HQ).nextSpawnPosition;
-      if (!position) throw new Error("No position available for spawn");
-      // TODO: check position in HQ
-      if (command.type == "spawnCitizen") {
-        const newCitizen = this.spawnCitizen(command.agent as HQ, position);
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: newCitizen.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
-      } else if (command.type == "spawnFighter") {
-        const newFighter = this.spawnFighter(command.agent as HQ, position);
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: newFighter.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
-      }
-    } catch (err) {
-      const failureAction = new Action({
-        command,
-        status: "failure",
-        error: err.message
-      });
-      this.history.pushActions(this.turn, failureAction);
-      return failureAction;
-    }
-  }
-
-  spawnCitizen(hq: HQ, position: Position) {
+  spawnCitizen(hq: HQ, props: Partial<CitizenProps>) {
     const { team } = hq;
     if (team.pop >= this.maxPop) {
       throw new Error("Population cap reached");
@@ -514,14 +562,14 @@ export default class Game {
     }
     team.spendFood(this.citizenCost);
     const newCitizen = new Citizen(this, {
-      teamId: team.id,
-      position
-    });
+      ...props,
+      teamId: team.id
+    } as CitizenProps);
     this.addCitizen(newCitizen);
     return newCitizen;
   }
 
-  spawnFighter(hq: HQ, position: Position) {
+  spawnFighter(hq: HQ, props: Partial<FighterProps>) {
     const { team } = hq;
     if (team.pop >= this.maxPop) {
       throw new Error("Population cap reached");
@@ -531,9 +579,9 @@ export default class Game {
     }
     team.spendFood(this.fighterCost);
     const newFighter = new Fighter(this, {
-      teamId: team.id,
-      position
-    });
+      ...props,
+      teamId: team.id
+    } as FighterProps);
     this.addFighter(newFighter);
     return newFighter;
   }
