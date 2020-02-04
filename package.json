@@ -1,6 +1,6 @@
 {
   "name": "@meka-js/core",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "main": "dist/index.js",
   "author": "Hill Street Labs",
   "license": "MIT",
