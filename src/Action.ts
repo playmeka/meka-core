@@ -1,26 +1,51 @@
-import Game, { Agent } from "./Game";
-import { Position, PositionJSON } from "./ObjectWithPosition";
+import { v4 as uuidv4 } from "uuid";
+import Game from "./Game";
+import Command, { CommandJSON } from "./Command";
 
-export type ActionType = "move" | "attack" | "spawnCitizen" | "spawnFighter";
-export type ActionJSON = [string, ActionType, { position?: PositionJSON }];
+export type ActionStatus = "success" | "failure"; // TODO: use numbers like HTTP?
+export type ActionJSON = {
+  id: string;
+  command: CommandJSON;
+  status: ActionStatus;
+  error?: string;
+  mutation?: any;
+};
+export type ActionProps = {
+  command: Command;
+  status: ActionStatus;
+  id?: string;
+  error?: string;
+  mutation?: any; // TODO
+};
 
 export default class Action {
-  agent: Agent;
-  type: ActionType;
-  args?: { position?: Position };
+  id: string;
+  command: Command;
+  status: ActionStatus;
+  error?: string;
+  mutation?: any; // TODO
 
-  constructor(agent: Agent, actionType: ActionType, args = {}) {
-    this.agent = agent;
-    this.type = actionType;
-    this.args = args;
+  constructor(props: ActionProps) {
+    this.id = props.id || uuidv4();
+    this.command = props.command;
+    this.status = props.status;
+    this.error = props.error;
+    this.mutation = props.mutation;
   }
 
   toJSON() {
-    return [this.agent.id, this.type, this.args] as ActionJSON;
+    const { id, command, status, error, mutation } = this;
+    return {
+      id,
+      status,
+      error,
+      mutation,
+      command: command.toJSON()
+    } as ActionJSON;
   }
 
   static fromJSON(game: Game, json: ActionJSON) {
-    const agent = game.lookup[json[0]] as Agent;
-    return new Action(agent, json[1], json[2]);
+    const command = Command.fromJSON(game, json.command);
+    return new Action({ ...json, command });
   }
 }

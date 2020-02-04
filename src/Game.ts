@@ -5,9 +5,10 @@ import Citizen, { CitizenJSON } from "./Citizen";
 import Fighter, { FighterJSON } from "./Fighter";
 import Wall, { WallJSON } from "./Wall";
 import Food, { FoodJSON } from "./Food";
-import Action from "./Action";
+import Command from "./Command";
+import Action, { ActionProps } from "./Action";
 import HQ from "./HQ";
-import ActionHistory, { ActionHistoryJSON } from "./ActionHistory";
+import History, { HistoryJSON } from "./History";
 import PathFinder from "./PathFinder";
 
 export type Agent = Citizen | Fighter | HQ;
@@ -27,7 +28,7 @@ export type GameJSON = {
   teams: TeamJSON[];
   citizens: CitizenJSON[];
   fighters: FighterJSON[];
-  actionHistory: ActionHistoryJSON;
+  history: HistoryJSON;
 };
 
 type GameProps = {
@@ -47,6 +48,16 @@ type GameGenerateProps = GameProps & {
   awayId?: string;
 };
 
+const generateCitizen = (game: Game, team: Team) => {
+  const spawnLocation = team.hq.nextSpawnPosition;
+  if (!spawnLocation) return;
+  const newCitizen = new Citizen(game, {
+    teamId: team.id,
+    position: spawnLocation
+  });
+  game.addCitizen(newCitizen);
+};
+
 const generateTeams = (
   game: Game,
   props: { homeId?: string; awayId?: string } = {}
@@ -57,14 +68,14 @@ const generateTeams = (
     hq: { position: new Position(game.width - 4, 2) } // Top right
   });
   game.addTeam(homeTeam);
-  game.spawnCitizen(homeTeam.hq, { skipFood: true });
+  generateCitizen(game, homeTeam);
   const awayTeam = new Team(game, {
     id: props.awayId || "away",
     color: "red",
     hq: { position: new Position(2, game.height - 4) } // Bottom left
   });
   game.addTeam(awayTeam);
-  game.spawnCitizen(awayTeam.hq, { skipFood: true });
+  generateCitizen(game, awayTeam);
 };
 
 const generateWalls = (game: Game, wallCount: number) => {
@@ -110,7 +121,7 @@ export default class Game {
   fighters: { [key: string]: Fighter } = {};
   foods: { [key: string]: Food } = {};
   walls: { [key: string]: Wall } = {};
-  actionHistory: ActionHistory;
+  history: History;
   lookup: { [id: string]: Agent | Food } = {};
   pathFinder: PathFinder;
   width: number;
@@ -130,7 +141,7 @@ export default class Game {
     this.maxTurns = props.maxTurns;
     this.maxPop = props.maxPop;
     this.pathFinder = new PathFinder(this);
-    this.actionHistory = new ActionHistory(this);
+    this.history = new History(this);
   }
 
   get wallsList() {
@@ -152,7 +163,7 @@ export default class Game {
   }
 
   get hqsList() {
-    return Object.values(this.hqs).filter(hq => !!hq);
+    return this.teams.map(team => team.hq);
   }
 
   get foodLeft() {
@@ -201,7 +212,7 @@ export default class Game {
       teams: this.teams.map(team => team.toJSON()),
       citizens: this.citizensList.map(citizen => citizen.toJSON()),
       fighters: this.fightersList.map(fighter => fighter.toJSON()),
-      actionHistory: this.actionHistory.toJSON()
+      history: this.history.toJSON()
     } as GameJSON;
   }
 
@@ -224,12 +235,12 @@ export default class Game {
     game.importFighters(
       json.fighters.map(fighterJson => Fighter.fromJSON(game, fighterJson))
     );
-    game.importActionHistory(ActionHistory.fromJSON(game, json.actionHistory));
+    game.importHistory(History.fromJSON(game, json.history));
     return game;
   }
 
-  importActionHistory(history: ActionHistory) {
-    this.actionHistory = history;
+  importHistory(history: History) {
+    this.history = history;
   }
 
   importTeams(teams: Team[]) {
@@ -272,8 +283,8 @@ export default class Game {
   clearAgentPosition(agent: Agent, mapping: { [key: string]: Agent }) {
     agent.covering.forEach(position => {
       delete mapping[position.key];
+      this.pathFinder.clearPosition(position);
     });
-    this.pathFinder.clearPosition(agent.position);
   }
 
   importWalls(walls: Wall[]) {
@@ -323,61 +334,60 @@ export default class Game {
     return true;
   }
 
-  async executeTurn(actions: Action[] = []) {
+  async executeTurn(commands: Command[] = []) {
     if (this.isOver) return null;
     // Start new turn and history
     this.turn += 1;
-    // Apply actions
-    await this.applyActions(shuffle(actions));
-    return this.actionHistory.getActions(this.turn);
-  }
-
-  async applyActions(actions: Action[] = []) {
     // Create action queues
-    const attacks: Action[] = [];
-    const moves: Action[] = [];
-    const spawns: Action[] = [];
+    const attacks: Command[] = [];
+    const moves: Command[] = [];
+    const spawns: Command[] = [];
     // Create map for ensuring one action per agent
-    const agentActionMap: { [id: string]: Action } = {};
+    const agentCommandMap: { [id: string]: Command } = {};
     // Assign actions to queues
-    actions.forEach(action => {
-      // Do nothing if action is invalid or agent already has an action this turn
-      if (!action || !action.type || agentActionMap[action.agent.id])
+    commands.forEach(command => {
+      // Do nothing if command is invalid or agent already has an command this turn
+      if (!command || !command.type || agentCommandMap[command.agent.id])
         return null;
-      if (action.type == "attack") {
-        agentActionMap[action.agent.id] = action;
-        attacks.push(action);
-      } else if (action.type == "move") {
-        agentActionMap[action.agent.id] = action;
-        moves.push(action);
-      } else {
-        agentActionMap[action.agent.id] = action;
-        spawns.push(action);
+      if (command.type == "attack") {
+        agentCommandMap[command.agent.id] = command;
+        attacks.push(command);
+      } else if (command.type == "move") {
+        agentCommandMap[command.agent.id] = command;
+        moves.push(command);
+      } else if (
+        command.type == "spawnCitizen" ||
+        command.type == "spawnFighter"
+      ) {
+        agentCommandMap[command.agent.id] = command;
+        spawns.push(command);
       }
     });
     // Execute attacks in order
     await attacks.reduce(
-      (promise, action) => promise.then(() => this.executeAttack(action)),
+      (promise, command) => promise.then(() => this.executeAttack(command)),
       Promise.resolve()
     );
     // Execute moves in order
     await moves.reduce(
-      (promise, action) => promise.then(() => this.executeMove(action)),
+      (promise, command) => promise.then(() => this.executeMove(command)),
       Promise.resolve()
     );
     // Execute spawns in order
     await spawns.reduce(
-      (promise, action) => promise.then(() => this.executeSpawn(action)),
+      (promise, command) => promise.then(() => this.executeSpawn(command)),
       Promise.resolve()
     );
+    // Return turn from history
+    return this.history.getActions(this.turn);
   }
 
-  async executeAttack(action: Action) {
-    if (action.type != "attack" || !action.args.position) return false;
-    const fighter = this.lookup[action.agent.id] as Fighter;
+  async executeAttack(command: Command) {
+    if (command.type != "attack" || !command.args.position) return false;
+    const fighter = this.lookup[command.agent.id] as Fighter;
     const position = new Position(
-      action.args.position.x,
-      action.args.position.y
+      command.args.position.x,
+      command.args.position.y
     );
     const target =
       this.citizens[position.key] ||
@@ -385,35 +395,62 @@ export default class Game {
       this.hqs[position.key];
     if (!target) return false; // miss!
     target.takeDamage(fighter.attackDamage);
-    this.actionHistory.pushActions(this.turn, action);
+    // this.history.pushActions(this.turn, command);
   }
 
-  async executeMove(action: Action) {
-    if (action.type != "move") return false;
-    const agent = this.lookup[action.agent.id] as Citizen | Fighter;
-    if (!agent || agent.hp <= 0) return false;
-    const newPosition = new Position(
-      action.args.position.x,
-      action.args.position.y
-    );
-    if (!agent.isValidMove(newPosition)) return false;
-    if (agent.class == "Citizen") {
-      this.handleCitizenMove(agent as Citizen, newPosition);
+  async executeMove(command: Command) {
+    if (command.type != "move") return;
+    try {
+      const agent = this.lookup[command.agent.id] as Citizen | Fighter;
+      if (!agent)
+        throw new Error("Unable to find unit with ID: " + command.agent.id);
+      if (agent.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
+      const newPosition = new Position(
+        command.args.position.x,
+        command.args.position.y
+      );
+      if (!agent.isValidMove(newPosition))
+        throw new Error(
+          "Invalid position: " + JSON.stringify(newPosition.toJSON())
+        );
+      const oldValue = agent.toJSON();
+      if (agent.class == "Citizen") {
+        this.handleCitizenMove(agent as Citizen, newPosition);
+      }
+      if (agent.class == "Fighter") {
+        this.handleFighterMove(agent as Fighter, newPosition);
+      }
+      const successAction = new Action({
+        command,
+        status: "success",
+        mutation: { oldValue, newValue: agent.toJSON() }
+      });
+      this.history.pushActions(this.turn, successAction);
+      // TODO: create action
+    } catch (err) {
+      const failureAction = new Action({
+        command,
+        status: "failure",
+        error: err.message
+      });
+      this.history.pushActions(this.turn, failureAction);
     }
-    if (agent.class == "Fighter") {
-      this.handleFighterMove(agent as Fighter, newPosition);
-    }
-    this.actionHistory.pushActions(this.turn, action);
   }
 
   handleCitizenMove(citizen: Citizen, position: Position) {
+    const mutation: { [id: string]: { oldValue?: any; newValue?: any } } = {};
+    mutation[citizen.id] = { oldValue: citizen.toJSON() };
     // Move citizen
     this.clearAgentPosition(citizen, this.citizens);
     citizen.move(position);
     this.registerAgentPosition(citizen, this.citizens);
     // Move citizen's food (if applicable)
     const citizenFood = citizen.food;
-    if (citizenFood) citizenFood.move(position);
+    if (citizenFood) {
+      mutation[citizenFood.id] = { oldValue: citizenFood.toJSON() };
+      citizenFood.move(position);
+      mutation[citizenFood.id].newValue = citizenFood.toJSON();
+    }
     // Pick up food
     const food = this.foods[citizen.key];
     if (food && !citizen.food) {
@@ -429,6 +466,8 @@ export default class Game {
       hq.eatFood();
       food.getEatenBy(hq);
     }
+    mutation[citizen.id].newValue = citizen.toJSON();
+    return mutation;
   }
 
   handleFighterMove(fighter: Fighter, position: Position) {
@@ -437,56 +476,67 @@ export default class Game {
     this.registerAgentPosition(fighter, this.fighters);
   }
 
-  async executeSpawn(action: Action) {
-    if (action.type == "spawnCitizen") {
-      this.spawnCitizen(action.agent as HQ);
-    } else if (action.type == "spawnFighter") {
-      this.spawnFighter(action.agent as HQ);
+  async executeSpawn(command: Command) {
+    const position =
+      command.args.position || (command.agent as HQ).nextSpawnPosition;
+    console.log("Execute spawn", position);
+    const actionProps: Partial<ActionProps> = { command, mutation: {} };
+    try {
+      if (command.type == "spawnCitizen") {
+        const newCitizen = this.spawnCitizen(command.agent as HQ, position);
+        actionProps.mutation[newCitizen.id] = [undefined, newCitizen.toJSON()];
+      } else if (command.type == "spawnFighter") {
+        const newFighter = this.spawnFighter(command.agent as HQ, position);
+        actionProps.mutation[newFighter.id] = [undefined, newFighter.toJSON()];
+      }
+      actionProps.status = "success";
+    } catch (err) {
+      actionProps.status = "failure";
+      actionProps.error = err.message;
     }
+    this.history.pushActions(this.turn, new Action(actionProps as ActionProps));
   }
 
-  spawnCitizen(hq: HQ, props: { skipFood?: boolean } = {}) {
+  spawnCitizen(hq: HQ, position: Position) {
     const { team } = hq;
     if (team.pop >= this.maxPop) {
-      return false;
+      throw new Error("Population cap reached");
     }
-    const spawnLocation = hq.nextSpawnPosition;
-    if (!spawnLocation) {
-      return false;
+    if (!position) {
+      throw new Error("No position provided for spawn");
     }
-    if (!props.skipFood && team.foodCount < this.citizenCost) {
-      return false; // Insufficient food
+    // TODO: check that position is in HQ
+    if (team.foodCount < this.citizenCost) {
+      throw new Error("Not enough food to pay for spawn");
     }
-    if (!props.skipFood) {
-      team.spendFood(this.citizenCost);
-    }
+    team.spendFood(this.citizenCost);
     const newCitizen = new Citizen(this, {
       teamId: team.id,
-      position: spawnLocation
+      position
     });
     this.addCitizen(newCitizen);
+    return newCitizen;
   }
 
-  spawnFighter(hq: HQ, props: { skipFood?: boolean } = {}) {
+  spawnFighter(hq: HQ, position: Position) {
     const { team } = hq;
     if (team.pop >= this.maxPop) {
-      return false;
+      throw new Error("Population cap reached");
     }
-    const spawnLocation = hq.nextSpawnPosition;
-    if (!spawnLocation) {
-      return false;
+    if (!position) {
+      throw new Error("No position provided for spawn");
     }
-    if (!props.skipFood && team.foodCount < this.fighterCost) {
-      return false;
+    // TODO: check that position is in HQ
+    if (team.foodCount < this.fighterCost) {
+      throw new Error("Not enough food to pay for spawn");
     }
-    if (!props.skipFood) {
-      team.spendFood(this.fighterCost);
-    }
+    team.spendFood(this.fighterCost);
     const newFighter = new Fighter(this, {
       teamId: team.id,
-      position: spawnLocation
+      position
     });
     this.addFighter(newFighter);
+    return newFighter;
   }
 
   killFighter(fighter: Fighter) {

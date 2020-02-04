@@ -1,5 +1,6 @@
-export { default as Action, ActionJSON, ActionType } from "./Action";
-export { default as ActionHistory, ActionHistoryJSON } from "./ActionHistory";
+export { default as Action, ActionJSON } from "./Action";
+export { default as Command, CommandJSON, CommandType } from "./Command";
+export { default as History, HistoryJSON } from "./History";
 export { default as Citizen, CitizenJSON } from "./Citizen";
 export { default as Fighter, FighterJSON } from "./Fighter";
 export { default as Food, FoodJSON } from "./Food";
