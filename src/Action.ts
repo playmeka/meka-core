@@ -1,21 +1,25 @@
 import { v4 as uuidv4 } from "uuid";
 import Game from "./Game";
+import { CitizenJSON } from "./Citizen";
+import { FighterJSON } from "./Fighter";
+import { HQJSON } from "./HQ";
 import Command, { CommandJSON } from "./Command";
 
 export type ActionStatus = "success" | "failure"; // TODO: use numbers like HTTP?
+export type ActionResponse = CitizenJSON | FighterJSON | HQJSON;
 export type ActionJSON = {
   id: string;
   command: CommandJSON;
   status: ActionStatus;
   error?: string;
-  mutation?: any;
+  response?: any;
 };
 export type ActionProps = {
   command: Command;
   status: ActionStatus;
   id?: string;
   error?: string;
-  mutation?: any; // TODO
+  response?: ActionResponse;
 };
 
 export default class Action {
@@ -23,23 +27,23 @@ export default class Action {
   command: Command;
   status: ActionStatus;
   error?: string;
-  mutation?: any; // TODO
+  response?: ActionResponse;
 
   constructor(props: ActionProps) {
     this.id = props.id || uuidv4();
     this.command = props.command;
     this.status = props.status;
     this.error = props.error;
-    this.mutation = props.mutation;
+    this.response = props.response;
   }
 
   toJSON() {
-    const { id, command, status, error, mutation } = this;
+    const { id, command, status, error, response } = this;
     return {
       id,
       status,
       error,
-      mutation,
+      response,
       command: command.toJSON()
     } as ActionJSON;
   }

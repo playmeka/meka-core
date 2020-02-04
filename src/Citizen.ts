@@ -5,6 +5,7 @@ import ObjectWithPosition, {
 } from "./ObjectWithPosition";
 import Game from "./Game";
 import Food from "./Food";
+import isValidPosition from "./utils/isValidPosition";
 
 export type CitizenJSON = {
   id: string;
@@ -48,7 +49,7 @@ export default class Citizen extends ObjectWithPosition {
 
   get validMoves() {
     return this.position.adjacents.filter(move =>
-      this.game.isValidPosition(move, this.team.id)
+      isValidPosition(this.game, move, this.team.id)
     );
   }
 

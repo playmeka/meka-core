@@ -1,5 +1,7 @@
 import Game from "../src/Game";
 import Citizen from "../src/Citizen";
+import Fighter from "../src/Fighter";
+import HQ from "../src/HQ";
 import Command from "../src/Command";
 import Action from "../src/Action";
 import { Position } from "../src/ObjectWithPosition";
@@ -48,11 +50,10 @@ describe("Sending valid move command", () => {
     expect(action.status).toBe("success");
     expect(action.error).toBeFalsy();
   });
-  test("returns mutation with data changes", () => {
+  test("returns response with data changes", () => {
     const action = actions[0];
-    const { newValue: newCitizen, oldValue: oldCitizen } = action.mutation;
-    expect(newCitizen.id).toBe(oldCitizen.id);
-    expect(newCitizen.position).not.toBe(oldCitizen.position);
+    expect(action.response.id).toBeTruthy();
+    // TODO: check class is CitizenJSON
   });
 
   test("adds action to history", () => {
@@ -81,11 +82,49 @@ describe("Sending invalid move command", () => {
     const action = actions[0];
     expect(action.status).toBe("failure");
     expect(action.error).toBeTruthy();
-    expect(action.mutation).toBeFalsy();
+    expect(action.response).toBeFalsy();
   });
 
   test("adds action to history", () => {
     const turnHistory = game.history.getActions(game.turn);
     expect(turnHistory.length).toBe(1);
+  });
+});
+
+describe("Sending valid attack command", () => {
+  let game: Game, fighter: Fighter, target: HQ, command: Command;
+
+  beforeEach(() => {
+    game = Game.generate({
+      ...defaultGameProps,
+      homeId: "home",
+      awayId: "away"
+    });
+    const citizen = game.getTeam("away").citizens[0];
+    game.killCitizen(citizen); // Kill to avoid collisions with attack on HQ
+    target = game.getTeam("away").hq;
+    const attackPosition = target.position.adjacents[0];
+    fighter = new Fighter(game, { teamId: "home", position: attackPosition });
+    game.addFighter(fighter);
+    command = new Command(fighter, "attack", { position: target.position });
+  });
+
+  test("returns actions", async () => {
+    const actions = await game.executeTurn([command]);
+    expect(actions.length).toBe(1);
+  });
+
+  test("returns success action with target (HQ) as response", async () => {
+    const actions = await game.executeTurn([command]);
+    const action = actions[0];
+    expect(action.status).toBe("success");
+    expect(action.error).toBeFalsy();
+    expect(action.response).toEqual(target.toJSON());
+  });
+
+  test("target takes damage", async () => {
+    const hp = target.hp;
+    await game.executeTurn([command]);
+    expect(target.hp).toBeLessThan(hp);
   });
 });
