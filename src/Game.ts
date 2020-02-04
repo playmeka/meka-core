@@ -441,7 +441,7 @@ export default class Game {
       const position =
         command.args.position || (command.agent as HQ).nextSpawnPosition;
       if (!position) throw new Error("No position available for spawn");
-      // TODO: check position in HQ
+      // TODO: check position is actually inside the HQ
       if (command.type == "spawnCitizen") {
         const newCitizen = this.spawnCitizen(command.agent as HQ, { position });
         const successAction = new Action({
@@ -474,7 +474,7 @@ export default class Game {
 
   // Turn import used to catch instance up to speed and skips validation
   importTurn(turn: number, actions: Action[] = []) {
-    if (turn != this.turn + 1)
+    if (turn !== this.turn + 1)
       throw new Error(
         `Cannot import turn ${turn} when current turn is ${this.turn}`
       );
@@ -511,7 +511,7 @@ export default class Game {
       }
     });
     // Add turn to history
-    return this.history.pushActions(turn, ...actions);
+    this.history.pushActions(turn, ...actions);
   }
 
   // Mutations

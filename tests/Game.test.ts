@@ -1,14 +1,16 @@
+import shuffle from "../src/utils/shuffle";
+import isValidPosition from "../src/utils/isValidPosition";
 import Game, { GameJSON } from "../src/Game";
 import Citizen from "../src/Citizen";
 import Fighter from "../src/Fighter";
 import HQ from "../src/HQ";
 import Command from "../src/Command";
 import Action from "../src/Action";
-import { Position } from "../src/ObjectWithPosition";
 
 const defaultGameProps = {
   width: 10,
-  height: 10
+  height: 10,
+  turn: 0
 };
 
 test("Game constructor returns Game", () => {
@@ -25,6 +27,7 @@ test("Game.generate returns Game", () => {
 
 test("Sending invalid spawn command results in failure Action", async () => {
   const game = Game.generate(defaultGameProps);
+  // Note: this command is invalid because the team does not have enough food for a spawn
   const command = new Command(game.teams[0].hq, "spawnCitizen");
   const actions = await game.executeTurn([command]);
   expect(actions.length).toBe(1);
@@ -47,18 +50,25 @@ describe("Sending valid move command", () => {
     command = new Command(citizen, "move", { position: citizen.validMoves[0] });
     actions = await game.executeTurn([command]);
   });
+
   test("returns actions", () => {
     expect(actions.length).toBe(1);
   });
+
   test("returns success action", () => {
     const action = actions[0];
     expect(action.status).toBe("success");
     expect(action.error).toBeFalsy();
   });
+
   test("returns response with data changes", () => {
     const action = actions[0];
     expect(action.response.id).toBeTruthy();
     // TODO: check class is CitizenJSON
+  });
+
+  test("increments game turn", () => {
+    expect(game.turn).toBe(1);
   });
 
   test("adds action to history", () => {
@@ -66,12 +76,22 @@ describe("Sending valid move command", () => {
     expect(turnHistory.length).toBe(1);
   });
 
-  test("can be imported into new game", () => {
+  test("can be imported into game copy", () => {
     const newGame = Game.fromJSON(json);
+    expect(newGame.turn).toBe(game.turn - 1);
     newGame.importTurn(game.turn, actions);
     const newCitizen = game.teams[0].citizens[0];
     expect(newGame.turn).toBe(game.turn);
     expect(newCitizen.position).toBe(citizen.position);
+  });
+
+  test("cannot be imported into generated game", () => {
+    const generatedGame = Game.generate(defaultGameProps);
+    try {
+      generatedGame.importTurn(game.turn, actions);
+    } catch (err) {
+      expect(err).toBeTruthy();
+    }
   });
 });
 
@@ -81,8 +101,17 @@ describe("Sending invalid move command", () => {
   beforeEach(async () => {
     game = Game.generate(defaultGameProps);
     citizen = game.teams[0].citizens[0];
+    // Note: position is a valid position, just not adjacent to citizen
+    const position = shuffle(
+      game.positions.filter(pos => {
+        return (
+          isValidPosition(game, pos, citizen.teamId) &&
+          !citizen.validMoves.includes(pos)
+        );
+      })
+    )[0];
     command = new Command(citizen, "move", {
-      position: new Position(0, 0)
+      position
     });
     actions = await game.executeTurn([command]);
   });
