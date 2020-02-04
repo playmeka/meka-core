@@ -1,9 +1,10 @@
-const uuidv4 = require("uuid/v4");
+import { v4 as uuidv4 } from "uuid";
 import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
 import Game from "./Game";
+import isValidPosition from "./utils/isValidPosition";
 
 export type FighterJSON = {
   id: string;
@@ -13,7 +14,7 @@ export type FighterJSON = {
   position: PositionJSON;
 };
 
-type FighterProps = {
+export type FighterProps = {
   teamId: string;
   position: Position;
   id?: string;
@@ -42,7 +43,7 @@ export default class Fighter extends ObjectWithPosition {
 
   get validMoves() {
     return this.position.adjacents.filter(move =>
-      this.game.isValidPosition(move, this.team.id)
+      isValidPosition(this.game, move, this.team.id)
     );
   }
 

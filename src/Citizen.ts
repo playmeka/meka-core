@@ -1,10 +1,11 @@
-const uuidv4 = require("uuid/v4");
+import { v4 as uuidv4 } from "uuid";
 import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
 import Game from "./Game";
 import Food from "./Food";
+import isValidPosition from "./utils/isValidPosition";
 
 export type CitizenJSON = {
   id: string;
@@ -15,7 +16,7 @@ export type CitizenJSON = {
   position: PositionJSON;
 };
 
-type CitizenProps = {
+export type CitizenProps = {
   teamId: string;
   position: Position;
   id?: string;
@@ -48,7 +49,7 @@ export default class Citizen extends ObjectWithPosition {
 
   get validMoves() {
     return this.position.adjacents.filter(move =>
-      this.game.isValidPosition(move, this.team.id)
+      isValidPosition(this.game, move, this.team.id)
     );
   }
 

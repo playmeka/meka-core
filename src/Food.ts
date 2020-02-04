@@ -1,4 +1,4 @@
-const uuidv4 = require("uuid/v4");
+import { v4 as uuidv4 } from "uuid";
 import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import HQ from "./HQ";
 import Game from "./Game";
