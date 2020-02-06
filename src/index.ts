@@ -1,11 +1,27 @@
-export { default as Game } from "./Game";
-export { default as Action } from "./Action";
-export { default as Team } from "./Team";
-export { default as HQ } from "./HQ";
-export { default as ObjectWithPosition, Position } from "./ObjectWithPosition";
-export { default as Citizen } from "./Citizen";
-export { default as CavalryFighter } from "./CavalryFighter";
-export { default as InfantryFighter } from "./InfantryFighter";
-export { default as RangedFighter } from "./RangedFighter";
-export { default as Food } from "./Food";
-export { default as Wall } from "./Wall";
+export { default as Action, ActionJSON } from "./Action";
+export { default as Command, CommandJSON, CommandType } from "./Command";
+export { default as History, HistoryJSON } from "./History";
+export { default as Citizen, CitizenJSON } from "./Citizen";
+export {
+  default as CavalryFighter,
+  CavalryFighterJSON
+} from "./CavalryFighter";
+export {
+  default as InfantryFighter,
+  InfantryFighterJSON
+} from "./InfantryFighter";
+export { default as RangedFighter, RangedFighterJSON } from "./RangedFighter";
+export { default as Food, FoodJSON } from "./Food";
+export { default as Game, GameJSON } from "./Game";
+export { default as HQ, HQJSON } from "./HQ";
+export {
+  default as ObjectWithPosition,
+  Position,
+  PositionJSON
+} from "./ObjectWithPosition";
+export { default as Team, TeamJSON } from "./Team";
+export { default as Wall, WallJSON } from "./Wall";
+export { default as isValidPosition } from "./utils/isValidPosition";
+export {
+  default as isValidAttackPosition
+} from "./utils/isValidAttackPosition";

@@ -1,9 +1,11 @@
-const uuidv4 = require("uuid/v4");
+import { v4 as uuidv4 } from "uuid";
 import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
 import Game, { Agent } from "./Game";
+import isValidPosition from "./utils/isValidPosition";
+import isValidAttackPosition from "./utils/isValidAttackPosition";
 
 export type InfantryFighterJSON = {
   id: string;
@@ -16,10 +18,11 @@ export type InfantryFighterJSON = {
   cost: number;
 };
 
-type InfantryFighterProps = {
+export type InfantryFighterProps = {
   teamId: string;
   position: Position;
   id?: string;
+  hp?: number;
 };
 
 export default class InfantryFighter extends ObjectWithPosition {
@@ -38,7 +41,7 @@ export default class InfantryFighter extends ObjectWithPosition {
     this.game = game;
     this.teamId = props.teamId;
     this.id = props.id || uuidv4();
-    this.hp = 32;
+    this.hp = props.hp || 32;
     this.baseAttackDamage = 10;
     this.cost = 4;
     this.range = 1;
@@ -52,13 +55,13 @@ export default class InfantryFighter extends ObjectWithPosition {
   get validMoves() {
     return this.position
       .adjacentsWithinDistance(this.speed)
-      .filter(move => this.game.isValidPosition(move, this.team.id));
+      .filter(move => isValidPosition(this.game, move, this.team.id));
   }
 
   get validAttacks() {
     return this.position
       .adjacentsWithinDistance(this.range)
-      .filter(move => this.game.isValidAttackPosition(move, this.team.id));
+      .filter(move => isValidAttackPosition(this.game, move, this.team.id));
   }
 
   attackDamage(enemyAgent: Agent) {

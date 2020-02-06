@@ -1,10 +1,11 @@
-const uuidv4 = require("uuid/v4");
+import { v4 as uuidv4 } from "uuid";
 import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
 import Game, { Agent } from "./Game";
 import shuffle from "./utils/shuffle";
+import isValidAttackPosition from "./utils/isValidAttackPosition";
 
 export type HQJSON = {
   id: string;
@@ -83,7 +84,7 @@ export default class HQ extends ObjectWithPosition {
     let possiblePositions = this.covering.map(position =>
       position
         .adjacentsWithinDistance(this.range)
-        .filter(move => this.game.isValidAttackPosition(move, this.team.id))
+        .filter(move => isValidAttackPosition(this.game, move, this.team.id))
     );
 
     return possiblePositions.reduce((acc, val) => acc.concat(val), []);

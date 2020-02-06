@@ -23,7 +23,7 @@ export default class PathFinder {
   }
 
   clearPosition(position: Position) {
-    this.grid.setWalkableAt(position.y, position.y, true);
+    this.grid.setWalkableAt(position.x, position.y, true);
   }
 
   gridForTeam(team: Team) {

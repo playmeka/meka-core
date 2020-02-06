@@ -1,10 +1,10 @@
 import Game from "./Game";
 import Action, { ActionJSON } from "./Action";
 
-export type ActionHistoryJSON = { [turn: string]: ActionJSON[] };
+export type HistoryJSON = { [turn: string]: ActionJSON[] };
 type ActionsByTurnMap = { [turn: string]: Action[] };
 
-export default class ActionHistory {
+export default class History {
   actionsByTurn: ActionsByTurnMap;
   game: Game;
 
@@ -14,7 +14,7 @@ export default class ActionHistory {
   }
 
   getActions(turn: number | string) {
-    return this.actionsByTurn[turn];
+    return this.actionsByTurn[turn] || [];
   }
 
   pushActions(turn: number | string, ...actions: Action[]) {
@@ -25,17 +25,15 @@ export default class ActionHistory {
   }
 
   toArray() {
-    const keys = Object.keys(this.actionsByTurn).sort(
-      (a, b) => parseInt(a) - parseInt(b)
-    );
-    return keys.map(turn => ({
-      turn: parseInt(turn),
-      actions: this.getActions(turn)
-    }));
+    const array: { turn: number; actions: Action[] }[] = [];
+    for (let i = 0; i <= this.game.turn; i++) {
+      array.push({ turn: i, actions: this.getActions(i) });
+    }
+    return array;
   }
 
   toJSON() {
-    const json: ActionHistoryJSON = {};
+    const json: HistoryJSON = {};
     Object.keys(this.actionsByTurn).forEach(turn => {
       json[turn] = this.actionsByTurn[turn].map(action => action.toJSON());
     });
@@ -49,6 +47,6 @@ export default class ActionHistory {
         Action.fromJSON(game, actionJson)
       );
     });
-    return new ActionHistory(game, { actionsByTurn });
+    return new History(game, { actionsByTurn });
   }
 }
