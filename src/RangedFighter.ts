@@ -65,7 +65,7 @@ export default class RangedFighter extends ObjectWithPosition {
   }
 
   attackDamage(enemyAgent: Agent) {
-    return enemyAgent.class === "RangedFighter"
+    return enemyAgent.class === "InfantryFighter"
       ? this.baseAttackDamage + 4
       : this.baseAttackDamage;
   }

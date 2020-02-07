@@ -3,7 +3,7 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "lib": ["es2017"],
-    "target": "es5",
+    "target": "ES2019",
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": true,
@@ -16,5 +16,5 @@
     "declaration": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "typings/**/*.ts"]
+  "include": ["src/**/*.ts", "typings/**/*.ts", "tests/**/*.ts"]
 }

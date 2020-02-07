@@ -1,16 +1,20 @@
 import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
-import Game, { GameJSON } from "../src/Game";
+import Game, { GameJSON, Fighters } from "../src/Game";
 import Citizen from "../src/Citizen";
-import Fighter from "../src/Fighter";
+import InfantryFighter from "../src/InfantryFighter";
+import RangedFighter from "../src/RangedFighter";
 import HQ from "../src/HQ";
 import Command from "../src/Command";
 import Action from "../src/Action";
+import fighterAttackDamageTests from "./utils/fighterAttackDamageTests";
 
 const defaultGameProps = {
   width: 10,
   height: 10,
-  turn: 0
+  turn: 0,
+  homeId: "home",
+  awayId: "away"
 };
 
 test("Game constructor returns Game", () => {
@@ -134,19 +138,18 @@ describe("Sending invalid move command", () => {
 });
 
 describe("Sending valid attack command", () => {
-  let game: Game, fighter: Fighter, target: HQ, command: Command;
+  let game: Game, fighter: InfantryFighter, target: HQ, command: Command;
 
   beforeEach(() => {
-    game = Game.generate({
-      ...defaultGameProps,
-      homeId: "home",
-      awayId: "away"
-    });
+    game = Game.generate(defaultGameProps);
     const citizen = game.getTeam("away").citizens[0];
     game.killCitizen(citizen); // Kill to avoid collisions with attack on HQ
     target = game.getTeam("away").hq;
     const attackPosition = target.position.adjacents[0];
-    fighter = new Fighter(game, { teamId: "home", position: attackPosition });
+    fighter = new InfantryFighter(game, {
+      teamId: "home",
+      position: attackPosition
+    });
     game.addFighter(fighter);
     command = new Command(fighter, "attack", { position: target.position });
   });
@@ -170,3 +173,109 @@ describe("Sending valid attack command", () => {
     expect(target.hp).toBeLessThan(hp);
   });
 });
+
+describe("Fighter attack damage behavior", () => {
+  fighterAttackDamageTests("infantry", "cavalry");
+  fighterAttackDamageTests("cavalry", "ranged");
+  fighterAttackDamageTests("ranged", "infantry");
+});
+
+describe("Fighter range behavior", () => {
+  let game: Game,
+    fighter: Fighters,
+    target: Fighters | Citizen,
+    command: Command;
+
+  beforeEach(() => {
+    game = Game.generate({ ...defaultGameProps, wallCount: 0 });
+  });
+
+  describe(`fighter is of type ranged`, () => {
+    beforeEach(() => {
+      target = game.getTeam("away").citizens[0];
+    });
+
+    describe("target is within range", () => {
+      beforeEach(() => {
+        const fighterPosition = target.position
+          .adjacentsWithinDistance(3)
+          .filter(move => isValidPosition(game, move))[0];
+        fighter = new RangedFighter(game, {
+          teamId: "home",
+          position: fighterPosition
+        });
+        game.addFighter(fighter);
+        command = new Command(fighter, "attack", { position: target.position });
+      });
+
+      test("returns actions", async () => {
+        const actions = await game.executeTurn([command]);
+        expect(actions.length).toBe(1);
+      });
+
+      test("returns success action with target as response", async () => {
+        const actions = await game.executeTurn([command]);
+        const action = actions[0];
+        expect(action.status).toBe("success");
+        expect(action.error).toBeFalsy();
+        expect(action.response).toEqual(target.toJSON());
+      });
+
+      test("target receives damage", async () => {
+        const hp = target.hp;
+        await game.executeTurn([command]);
+        expect(target.hp).toBeLessThan(hp);
+      });
+    });
+
+    describe("target is outside the range", () => {
+      beforeEach(() => {
+        const validPositions = target.position
+          .adjacentsWithinDistance(3)
+          .filter(move => isValidPosition(game, move));
+
+        const broaderPositions = target.position
+          .adjacentsWithinDistance(5)
+          .filter(move => isValidPosition(game, move));
+
+        var fighterPosition = broaderPositions.filter(function(obj) {
+          return !validPositions.some(function(obj2) {
+            return obj.x == obj2.x && obj.y == obj2.y;
+          });
+        })[0];
+
+        fighter = new RangedFighter(game, {
+          teamId: "home",
+          position: fighterPosition
+        });
+        game.addFighter(fighter);
+        command = new Command(fighter, "attack", { position: target.position });
+      });
+
+      test("returns actions", async () => {
+        const actions = await game.executeTurn([command]);
+        expect(actions.length).toBe(1);
+      });
+
+      test("returns failure action", async () => {
+        const actions = await game.executeTurn([command]);
+        const action = actions[0];
+        expect(action.status).toBe("failure");
+        expect(action.error).toBeTruthy();
+        expect(action.response).toBeFalsy();
+      });
+
+      test("target does not take damage", async () => {
+        const hp = target.hp;
+        await game.executeTurn([command]);
+        expect(target.hp).toEqual(hp);
+      });
+    });
+  });
+});
+
+// TODO
+// describe("Food drop-off behavior with move");
+// describe("Food drop-off behavior with dropOffFood");
+// describe("Food pick-up behavior with move");
+// describe("Food pick-up behavior with pickUpFood");
