@@ -80,18 +80,20 @@ export default class HQ extends ObjectWithPosition {
     return null;
   }
 
-  get validAttacks() {
+  validAttacks(target: Agent) {
     let possiblePositions = this.covering.map(position =>
       position
         .adjacentsWithinDistance(this.range)
-        .filter(move => isValidAttackPosition(this.game, move, this.team.id))
+        .filter(move =>
+          isValidAttackPosition(this.game, move, target, this.team.id)
+        )
     );
 
     return possiblePositions.reduce((acc, val) => acc.concat(val), []);
   }
 
-  isValidAttack(position: Position) {
-    return this.validAttacks.find(
+  isValidAttack(target: Agent, position: Position) {
+    return this.validAttacks(target).find(
       move => move.x == position.x && move.y == position.y
     );
   }

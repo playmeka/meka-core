@@ -30,17 +30,13 @@ export class Position {
   }
 
   adjacentsWithinDistance(distance: number) {
-    // TODO: Clean this up
     if (distance <= 0) return [];
     let positions = this.adjacents;
+    // TODO: This could be done more efficiently
     while (distance - 1 > 0) {
       let newPositions: any = [];
-      positions.forEach(position => newPositions.push(position.adjacents));
-      newPositions = newPositions.reduce(
-        (acc: any, val: any) => acc.concat(val),
-        []
-      );
-      newPositions.forEach((position: any) => positions.push(position));
+      positions.forEach(position => newPositions.push(...position.adjacents));
+      positions.push(...newPositions);
       distance -= 1;
     }
     return positions;

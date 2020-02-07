@@ -41,7 +41,6 @@ export default function commonFighterBehaviorTests(
         position: fighterPosition
       });
       game.addFighter(fighter);
-      command = new Command(fighter, "attack", { position: target.position });
     });
 
     describe(`target is of type ${hardCounterType}`, () => {
@@ -56,6 +55,10 @@ export default function commonFighterBehaviorTests(
         game.killCitizen(target as Citizen);
         game.addFighter(targetFighter);
         target = targetFighter;
+        command = new Command(fighter, "attack", {
+          position: target.position,
+          target
+        });
       });
 
       test("returns actions", async () => {
@@ -85,6 +88,13 @@ export default function commonFighterBehaviorTests(
     });
 
     describe("target is of type citizen", () => {
+      beforeEach(() => {
+        command = new Command(fighter, "attack", {
+          position: target.position,
+          target
+        });
+      });
+
       test("returns actions", async () => {
         const actions = await game.executeTurn([command]);
         expect(actions.length).toBe(1);

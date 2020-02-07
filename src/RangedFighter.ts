@@ -58,10 +58,12 @@ export default class RangedFighter extends ObjectWithPosition {
       .filter(move => isValidPosition(this.game, move, this.team.id));
   }
 
-  get validAttacks() {
+  validAttacks(target: Agent) {
     return this.position
       .adjacentsWithinDistance(this.range)
-      .filter(move => isValidAttackPosition(this.game, move, this.team.id));
+      .filter(move =>
+        isValidAttackPosition(this.game, move, target, this.team.id)
+      );
   }
 
   attackDamage(enemyAgent: Agent) {
@@ -93,8 +95,8 @@ export default class RangedFighter extends ObjectWithPosition {
     );
   }
 
-  isValidAttack(position: Position) {
-    return this.validAttacks.find(
+  isValidAttack(target: Agent, position: Position) {
+    return this.validAttacks(target).find(
       move => move.x == position.x && move.y == position.y
     );
   }

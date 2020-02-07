@@ -151,7 +151,10 @@ describe("Sending valid attack command", () => {
       position: attackPosition
     });
     game.addFighter(fighter);
-    command = new Command(fighter, "attack", { position: target.position });
+    command = new Command(fighter, "attack", {
+      position: target.position,
+      target
+    });
   });
 
   test("returns actions", async () => {
@@ -205,7 +208,10 @@ describe("Fighter range behavior", () => {
           position: fighterPosition
         });
         game.addFighter(fighter);
-        command = new Command(fighter, "attack", { position: target.position });
+        command = new Command(fighter, "attack", {
+          position: target.position,
+          target
+        });
       });
 
       test("returns actions", async () => {
@@ -249,7 +255,10 @@ describe("Fighter range behavior", () => {
           position: fighterPosition
         });
         game.addFighter(fighter);
-        command = new Command(fighter, "attack", { position: target.position });
+        command = new Command(fighter, "attack", {
+          position: target.position,
+          target
+        });
       });
 
       test("returns actions", async () => {

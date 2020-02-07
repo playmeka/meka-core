@@ -432,7 +432,7 @@ export default class Game {
       const successAction = new Action({
         command,
         status: "success",
-        response: agent.toJSON() // TODO
+        response: agent.toJSON()
       });
       this.history.pushActions(this.turn, successAction);
       return successAction;
@@ -476,7 +476,7 @@ export default class Game {
       const successAction = new Action({
         command,
         status: "success",
-        response: agent.toJSON() // TODO
+        response: agent.toJSON()
       });
       this.history.pushActions(this.turn, successAction);
       return successAction;
@@ -500,14 +500,11 @@ export default class Game {
         command.args.position.x,
         command.args.position.y
       );
-      const target =
-        this.citizens[attackPosition.key] ||
-        this.fighters[attackPosition.key] ||
-        this.hqs[attackPosition.key];
+      const target = this.lookup[command.args.target.id] as Agent;
       if (!target)
-        throw new Error("No target at position: " + attackPosition.toJSON()); // miss!
+        throw new Error("No target with ID: " + command.args.target.id);
 
-      if (!fighter.isValidAttack(attackPosition))
+      if (!fighter.isValidAttack(target, attackPosition))
         throw new Error(
           "Target is not within range: " + attackPosition.toJSON()
         ); // miss!
@@ -580,7 +577,16 @@ export default class Game {
       const position =
         command.args.position || (command.agent as HQ).nextSpawnPosition;
       if (!position) throw new Error("No position available for spawn");
-      // TODO: check position is actually inside the HQ
+      if (
+        command.agent.covering.filter(
+          hqPosition =>
+            hqPosition.x === position.x && hqPosition.y == position.y
+        ).length === 0
+      )
+        throw new Error(
+          "Invalid position: " + JSON.stringify(position.toJSON())
+        );
+
       if (command.type == "spawnCitizen") {
         const newCitizen = this.spawnCitizen(command.agent as HQ, { position });
         const successAction = new Action({

@@ -16,6 +16,7 @@ export type CommandJSON = [
     autoPickUpFood?: boolean;
     autoDropOffFood?: boolean;
     fighterType?: FighterType;
+    target?: Agent;
   }
 ];
 
@@ -27,6 +28,7 @@ export default class Command {
     autoPickUpFood?: boolean;
     autoDropOffFood?: boolean;
     fighterType?: FighterType;
+    target?: Agent;
   };
 
   constructor(agent: Agent, commandType: CommandType, args = {}) {

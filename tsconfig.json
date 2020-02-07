@@ -3,7 +3,7 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "lib": ["es2017"],
-    "target": "ES2019",
+    "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": true,

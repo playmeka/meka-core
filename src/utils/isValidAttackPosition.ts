@@ -1,7 +1,12 @@
-import Game from "../Game";
+import Game, { Agent } from "../Game";
 import { Position } from "../ObjectWithPosition";
 
-export default (game: Game, position: Position, teamId: string = null) => {
+export default (
+  game: Game,
+  position: Position,
+  target: Agent,
+  teamId: string = null
+) => {
   if (!teamId) return false;
   if (
     position.x >= game.width ||
@@ -11,20 +16,23 @@ export default (game: Game, position: Position, teamId: string = null) => {
   ) {
     return false;
   }
+
+  if (target.teamId === teamId) {
+    return false;
+  }
+
   if (game.walls[position.key]) {
     return false;
   }
-  const citizen = game.citizens[position.key];
-  if (citizen && citizen.teamId != teamId) {
+
+  if (target.class === "Citizen" && game.citizens[position.key]) {
+    return true;
+  } else if (target.class === "HQ" && game.hqs[position.key]) {
+    return true;
+  } else if (target.class.includes("Fighter") && game.fighters[position.key]) {
+    // TODO: Less jank
     return true;
   }
-  const fighter = game.fighters[position.key];
-  if (fighter && fighter.teamId != teamId) {
-    return true;
-  }
-  const hq = game.hqs[position.key];
-  if (hq && hq.team.id != teamId) {
-    return true;
-  }
+
   return false;
 };
