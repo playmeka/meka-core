@@ -20,7 +20,7 @@ export default (game: Game, position: Position, teamId: string = null) => {
     return false;
   }
   const hq = game.hqs[position.key];
-  if (hq && hq.team.id != teamId) {
+  if (hq && hq.team.id !== teamId) {
     return false;
   }
   return true;

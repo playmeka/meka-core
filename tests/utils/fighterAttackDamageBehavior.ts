@@ -4,16 +4,9 @@ import InfantryFighter from "../../src/InfantryFighter";
 import CavalryFighter from "../../src/CavalryFighter";
 import RangedFighter from "../../src/RangedFighter";
 import Command from "../../src/Command";
+import defaultGameProps from "./defaultGameProps";
 
-const defaultGameProps = {
-  width: 10,
-  height: 10,
-  turn: 0,
-  homeId: "home",
-  awayId: "away"
-};
-
-export default function commonFighterBehaviorTests(
+export default function fighterAttackDamageBehavior(
   fighterType: FighterType,
   hardCounterType: FighterType
 ) {

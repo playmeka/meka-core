@@ -477,7 +477,9 @@ export default class Game {
             pickUpPosition.x == position.x && pickUpPosition.y == position.y
         )
       )
-        return false;
+        throw new Error(
+          "Invalid position: " + JSON.stringify(pickUpPosition.toJSON())
+        );
       if (food) {
         agent.eatFood(food);
         food.getEatenBy(agent);

@@ -2,42 +2,41 @@ import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
 import Game, { GameJSON, Fighters } from "../src/Game";
 import Citizen from "../src/Citizen";
+import Food from "../src/Food";
 import InfantryFighter from "../src/InfantryFighter";
 import RangedFighter from "../src/RangedFighter";
 import HQ from "../src/HQ";
 import Command from "../src/Command";
 import Action from "../src/Action";
-import fighterAttackDamageTests from "./utils/fighterAttackDamageTests";
+import fighterAttackDamageBehavior from "./utils/fighterAttackDamageBehavior";
+import citizenFoodPickUpBehavior from "./utils/citizenFoodPickUpBehavior";
+import defaultGameProps from "./utils/defaultGameProps";
 
-const defaultGameProps = {
-  width: 10,
-  height: 10,
-  turn: 0,
-  homeId: "home",
-  awayId: "away"
-};
+describe("Game creation", () => {
+  test("Game constructor returns Game", () => {
+    const game = new Game(defaultGameProps);
+    expect(game).toBeTruthy();
+    expect(game.width).toBe(defaultGameProps.width);
+    expect(game.height).toBe(defaultGameProps.height);
+    expect(game.turn).toBe(0);
+  });
 
-test("Game constructor returns Game", () => {
-  const game = new Game(defaultGameProps);
-  expect(game).toBeTruthy();
-  expect(game.width).toBe(defaultGameProps.width);
-  expect(game.height).toBe(defaultGameProps.height);
-  expect(game.turn).toBe(0);
+  test("Game.generate returns Game", () => {
+    expect(Game.generate(defaultGameProps)).toBeTruthy();
+  });
 });
 
-test("Game.generate returns Game", () => {
-  expect(Game.generate(defaultGameProps)).toBeTruthy();
-});
-
-test("Sending invalid spawn command results in failure Action", async () => {
-  const game = Game.generate(defaultGameProps);
-  // Note: this command is invalid because the team does not have enough food for a spawn
-  const command = new Command(game.teams[0].hq, "spawnCitizen");
-  const actions = await game.executeTurn([command]);
-  expect(actions.length).toBe(1);
-  const action = actions[0];
-  expect(action.status).toBe("failure");
-  expect(action.error).toBeTruthy();
+describe("Sending invalid spawn command", () => {
+  test("returns failure action", async () => {
+    const game = Game.generate(defaultGameProps);
+    // Note: this command is invalid because the team does not have enough food for a spawn
+    const command = new Command(game.teams[0].hq, "spawnCitizen");
+    const actions = await game.executeTurn([command]);
+    expect(actions.length).toBe(1);
+    const action = actions[0];
+    expect(action.status).toBe("failure");
+    expect(action.error).toBeTruthy();
+  });
 });
 
 describe("Sending valid move command", () => {
@@ -178,9 +177,9 @@ describe("Sending valid attack command", () => {
 });
 
 describe("Fighter attack damage behavior", () => {
-  fighterAttackDamageTests("infantry", "cavalry");
-  fighterAttackDamageTests("cavalry", "ranged");
-  fighterAttackDamageTests("ranged", "infantry");
+  fighterAttackDamageBehavior("infantry", "cavalry");
+  fighterAttackDamageBehavior("cavalry", "ranged");
+  fighterAttackDamageBehavior("ranged", "infantry");
 });
 
 describe("Fighter range behavior", () => {
@@ -234,7 +233,7 @@ describe("Fighter range behavior", () => {
       });
     });
 
-    describe("target is outside the range", () => {
+    describe("target is outside its range", () => {
       beforeEach(() => {
         const validPositions = target.position
           .adjacentsWithinDistance(3)
@@ -283,8 +282,63 @@ describe("Fighter range behavior", () => {
   });
 });
 
-// TODO
+describe("Food pick-up behavior", () => {
+  describe("move command with autoPickUpFood false", () => {
+    let game: Game,
+      citizen: Citizen,
+      food: Food,
+      command: Command,
+      actions: Action[];
+
+    describe("valid move", () => {
+      beforeEach(async () => {
+        game = Game.generate({
+          ...defaultGameProps,
+          foodCount: 1,
+          wallCount: 0
+        });
+        food = shuffle(game.foodsList)[0];
+        const citizenPosition = food.position.adjacents.filter(pos => {
+          return isValidPosition(game, pos);
+        })[0];
+        citizen = new Citizen(game, {
+          teamId: "home",
+          position: citizenPosition
+        });
+        game.addCitizen(citizen);
+        command = new Command(citizen, "move", {
+          position: food.position,
+          autoPickUpFood: false
+        });
+        actions = await game.executeTurn([command]);
+      });
+
+      test("returns actions", () => {
+        expect(actions.length).toBe(1);
+      });
+
+      test("returns success action", () => {
+        const action = actions[0];
+        expect(action.status).toBe("success");
+        expect(action.error).toBeFalsy();
+      });
+
+      test("returns response with data changes", () => {
+        const action = actions[0];
+        expect(action.response.id).toBeTruthy();
+      });
+
+      test("does not pick-up food", () => {
+        const action = actions[0];
+        const newCitizen = game.lookup[action.response.id] as Citizen;
+        expect(newCitizen.foodId).toBeFalsy();
+      });
+    });
+  });
+
+  citizenFoodPickUpBehavior("move", { autoPickUpFood: true });
+  citizenFoodPickUpBehavior("pickUpFood");
+});
+
 // describe("Food drop-off behavior with move");
-// describe("Food drop-off behavior with dropOffFood");
-// describe("Food pick-up behavior with move");
-// describe("Food pick-up behavior with pickUpFood");
+// describe("Food drop-off behavior with pickUpFood");
