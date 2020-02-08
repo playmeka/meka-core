@@ -108,9 +108,7 @@ const generateWalls = (game: Game, wallCount: number) => {
   });
   if (wallCount > wallPositions.length)
     throw new Error(
-      `Given wallCount (${wallCount}) exceeds number of available positions (${
-        wallPositions.length
-      }).`
+      `Given wallCount (${wallCount}) exceeds number of available positions (${wallPositions.length}).`
     );
   shuffle(wallPositions)
     .slice(0, wallCount)
@@ -126,9 +124,7 @@ const generateFoods = (game: Game, foodCount: number) => {
   );
   if (foodCount > foodPositions.length)
     throw new Error(
-      `Given foodCount (${foodCount}) exceeds number of available positions (${
-        foodPositions.length
-      }).`
+      `Given foodCount (${foodCount}) exceeds number of available positions (${foodPositions.length}).`
     );
   shuffle(foodPositions)
     .slice(0, foodCount)
@@ -195,6 +191,20 @@ export default class Game {
   get isOver() {
     if (this.maxTurns && this.turn > this.maxTurns) return true;
     return this.teams.some(team => team.hq.hp <= 0);
+  }
+
+  get winnerId() {
+    if (
+      !this.isOver ||
+      this.teams.every(team => team.hq.hp <= 0) ||
+      this.teams.every(team => team.hq.hp > 0)
+    ) {
+      return null;
+    } else if (this.teams[0].hq.hp <= 0) {
+      return this.teams[1].id;
+    } else {
+      return this.teams[0].id;
+    }
   }
 
   get positions() {
