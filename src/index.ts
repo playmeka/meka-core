@@ -4,7 +4,12 @@ export { default as History, HistoryJSON } from "./History";
 export { default as Citizen, CitizenJSON } from "./Citizen";
 export { default as Fighter, FighterJSON } from "./Fighter";
 export { default as Food, FoodJSON } from "./Food";
-export { default as Game, GameJSON } from "./Game";
+export {
+  default as Game,
+  GameJSON,
+  GameProps,
+  GameGenerateProps
+} from "./Game";
 export { default as HQ, HQJSON } from "./HQ";
 export {
   default as ObjectWithPosition,
