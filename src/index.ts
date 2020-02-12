@@ -12,7 +12,12 @@ export {
 } from "./InfantryFighter";
 export { default as RangedFighter, RangedFighterJSON } from "./RangedFighter";
 export { default as Food, FoodJSON } from "./Food";
-export { default as Game, GameJSON } from "./Game";
+export {
+  default as Game,
+  GameJSON,
+  GameProps,
+  GameGenerateProps
+} from "./Game";
 export { default as HQ, HQJSON } from "./HQ";
 export {
   default as ObjectWithPosition,
