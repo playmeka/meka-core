@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import { Position } from "./ObjectWithPosition";
 import shuffle from "./utils/shuffle";
 import Team, { TeamJSON } from "./Team";
@@ -32,9 +33,10 @@ export type GameJSON = {
   history: HistoryJSON;
 };
 
-type GameProps = {
+export type GameProps = {
   width: number;
   height: number;
+  id?: string;
   turn?: number;
   maxTurns?: number;
   maxPop?: number;
@@ -42,7 +44,7 @@ type GameProps = {
   fighterCost?: number;
 };
 
-type GameGenerateProps = GameProps & {
+export type GameGenerateProps = GameProps & {
   wallCount?: number;
   foodCount?: number;
   homeId?: string;
@@ -125,6 +127,7 @@ export default class Game {
   history: History;
   lookup: { [id: string]: Agent | Food } = {};
   pathFinder: PathFinder;
+  id: string;
   width: number;
   height: number;
   turn: number;
@@ -136,6 +139,7 @@ export default class Game {
   constructor(props: GameProps) {
     this.width = props.width;
     this.height = props.height;
+    this.id = props.id || uuidv4();
     this.turn = props.turn || 0;
     this.citizenCost = props.citizenCost || 2;
     this.fighterCost = props.fighterCost || 4;
