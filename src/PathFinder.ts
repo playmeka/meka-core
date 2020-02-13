@@ -1,5 +1,5 @@
 import * as PathFinding from "pathfinding";
-import Game, { Agent } from "./Game";
+import Game, { Unit } from "./Game";
 import Team from "./Team";
 import { Position } from "./ObjectWithPosition";
 
@@ -34,15 +34,15 @@ export default class PathFinder {
     return grid;
   }
 
-  getPath(agent: Agent, to: Position) {
+  getPath(unit: Unit, to: Position) {
     const finder = new PathFinding.AStarFinder();
     const path = finder
       .findPath(
-        agent.position.x,
-        agent.position.y,
+        unit.position.x,
+        unit.position.y,
         to.x,
         to.y,
-        this.gridForTeam(agent.team)
+        this.gridForTeam(unit.team)
       )
       .map(array => new Position(array[0], array[1]));
     return path.length ? path : null;

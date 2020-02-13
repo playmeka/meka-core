@@ -10,12 +10,6 @@ export default function fighterAttackDamageBehavior(
   fighterType: FighterType,
   hardCounterType: FighterType
 ) {
-  const fighterTypeToConstructor = {
-    infantry: InfantryFighter,
-    cavalry: CavalryFighter,
-    ranged: RangedFighter
-  };
-
   let game: Game,
     fighter: Fighters,
     target: Fighters | Citizen,
@@ -29,7 +23,10 @@ export default function fighterAttackDamageBehavior(
     beforeEach(() => {
       target = game.getTeam("away").citizens[0];
       const fighterPosition = target.position.adjacents[0];
-      fighter = new fighterTypeToConstructor[fighterType](game, {
+      const fighterClass = { CavalryFighter, RangedFighter, InfantryFighter }[
+        fighterType
+      ];
+      fighter = new fighterClass(game, {
         teamId: "home",
         position: fighterPosition
       });
@@ -38,19 +35,20 @@ export default function fighterAttackDamageBehavior(
 
     describe(`target is of type ${hardCounterType}`, () => {
       beforeEach(() => {
-        const targetFighter = new fighterTypeToConstructor[hardCounterType](
-          game,
-          {
-            teamId: "away",
-            position: target.position
-          }
-        );
+        const fighterClass = { CavalryFighter, RangedFighter, InfantryFighter }[
+          hardCounterType
+        ];
+
+        const targetFighter = new fighterClass(game, {
+          teamId: "away",
+          position: target.position
+        });
         game.killCitizen(target as Citizen);
         game.addFighter(targetFighter);
         target = targetFighter;
         command = new Command(fighter, "attack", {
           position: target.position,
-          target
+          targetId: target.id
         });
       });
 
@@ -74,7 +72,7 @@ export default function fighterAttackDamageBehavior(
       });
 
       test("target damage is to be more than the base damage", async () => {
-        expect(fighter.attackDamage(target)).toBeGreaterThan(
+        expect(fighter.getAttackDamageFor(target)).toBeGreaterThan(
           fighter.baseAttackDamage
         );
       });
@@ -84,7 +82,7 @@ export default function fighterAttackDamageBehavior(
       beforeEach(() => {
         command = new Command(fighter, "attack", {
           position: target.position,
-          target
+          targetId: target.id
         });
       });
 
@@ -108,7 +106,9 @@ export default function fighterAttackDamageBehavior(
       });
 
       test("target damage is to be same as base damage", async () => {
-        expect(fighter.attackDamage(target)).toEqual(fighter.baseAttackDamage);
+        expect(fighter.getAttackDamageFor(target)).toEqual(
+          fighter.baseAttackDamage
+        );
       });
     });
   });

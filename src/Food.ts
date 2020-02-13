@@ -30,8 +30,8 @@ export default class Food extends ObjectWithPosition {
     return this.game.lookup[this.eatenById];
   }
 
-  getEatenBy(agent: Citizen | HQ) {
-    this.eatenById = agent.id;
+  getEatenBy(unit: Citizen | HQ) {
+    this.eatenById = unit.id;
   }
 
   move(position: Position) {

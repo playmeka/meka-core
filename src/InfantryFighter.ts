@@ -3,9 +3,9 @@ import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
-import Game, { Agent } from "./Game";
+import Game, { Unit } from "./Game";
 import isValidPosition from "./utils/isValidPosition";
-import isValidAttackPosition from "./utils/isValidAttackPosition";
+import isTargetAtPosition from "./utils/isTargetAtPosition";
 
 export type InfantryFighterJSON = {
   id: string;
@@ -55,19 +55,17 @@ export default class InfantryFighter extends ObjectWithPosition {
   get validMoves() {
     return this.position
       .adjacentsWithinDistance(this.speed)
-      .filter(move => isValidPosition(this.game, move, this.team.id));
+      .filter(move => isValidPosition(this.game, move, this.teamId));
   }
 
-  validAttacks(target: Agent) {
+  validAttackPositionsWithTargets(target: Unit) {
     return this.position
       .adjacentsWithinDistance(this.range)
-      .filter(move =>
-        isValidAttackPosition(this.game, move, target, this.team.id)
-      );
+      .filter(move => isTargetAtPosition(this.game, move, target, this.teamId));
   }
 
-  attackDamage(enemyAgent: Agent) {
-    return enemyAgent.class === "CavalryFighter"
+  getAttackDamageFor(enemyUnit: Unit) {
+    return enemyUnit.class === "CavalryFighter"
       ? this.baseAttackDamage + 5
       : this.baseAttackDamage;
   }
@@ -95,8 +93,8 @@ export default class InfantryFighter extends ObjectWithPosition {
     );
   }
 
-  isValidAttack(target: Agent, position: Position) {
-    return this.validAttacks(target).find(
+  isValidAttack(target: Unit, position: Position) {
+    return this.validAttackPositionsWithTargets(target).find(
       move => move.x == position.x && move.y == position.y
     );
   }

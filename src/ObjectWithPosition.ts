@@ -34,7 +34,7 @@ export class Position {
     let positions = this.adjacents;
     // TODO: This could be done more efficiently
     while (distance - 1 > 0) {
-      let newPositions: any = [];
+      const newPositions: Position[] = [];
       positions.forEach(position => newPositions.push(...position.adjacents));
       positions.push(...newPositions);
       distance -= 1;

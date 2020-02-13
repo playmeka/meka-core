@@ -152,7 +152,7 @@ describe("Sending valid attack command", () => {
     game.addFighter(fighter);
     command = new Command(fighter, "attack", {
       position: target.position,
-      target
+      targetId: target.id
     });
   });
 
@@ -177,9 +177,9 @@ describe("Sending valid attack command", () => {
 });
 
 describe("Fighter attack damage behavior", () => {
-  fighterAttackDamageBehavior("infantry", "cavalry");
-  fighterAttackDamageBehavior("cavalry", "ranged");
-  fighterAttackDamageBehavior("ranged", "infantry");
+  fighterAttackDamageBehavior("InfantryFighter", "CavalryFighter");
+  fighterAttackDamageBehavior("CavalryFighter", "RangedFighter");
+  fighterAttackDamageBehavior("RangedFighter", "InfantryFighter");
 });
 
 describe("Fighter range behavior", () => {
@@ -209,7 +209,7 @@ describe("Fighter range behavior", () => {
         game.addFighter(fighter);
         command = new Command(fighter, "attack", {
           position: target.position,
-          target
+          targetId: target.id
         });
       });
 
@@ -256,7 +256,7 @@ describe("Fighter range behavior", () => {
         game.addFighter(fighter);
         command = new Command(fighter, "attack", {
           position: target.position,
-          target
+          targetId: target.id
         });
       });
 

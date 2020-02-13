@@ -3,9 +3,9 @@ import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
-import Game, { Agent } from "./Game";
+import Game, { Unit } from "./Game";
 import shuffle from "./utils/shuffle";
-import isValidAttackPosition from "./utils/isValidAttackPosition";
+import isTargetAtPosition from "./utils/isTargetAtPosition";
 
 export type HQJSON = {
   id: string;
@@ -62,7 +62,7 @@ export default class HQ extends ObjectWithPosition {
     // TODO
   }
 
-  attackDamage(_enemyAgent: Agent) {
+  getAttackDamageFor(_enemyUnit: Unit) {
     return this.baseAttackDamage;
   }
 
@@ -80,20 +80,20 @@ export default class HQ extends ObjectWithPosition {
     return null;
   }
 
-  validAttacks(target: Agent) {
+  validAttackPositionsWithTargets(target: Unit) {
     let possiblePositions = this.covering.map(position =>
       position
         .adjacentsWithinDistance(this.range)
         .filter(move =>
-          isValidAttackPosition(this.game, move, target, this.team.id)
+          isTargetAtPosition(this.game, move, target, this.team.id)
         )
     );
 
     return possiblePositions.reduce((acc, val) => acc.concat(val), []);
   }
 
-  isValidAttack(target: Agent, position: Position) {
-    return this.validAttacks(target).find(
+  isValidAttack(target: Unit, position: Position) {
+    return this.validAttackPositionsWithTargets(target).find(
       move => move.x == position.x && move.y == position.y
     );
   }
