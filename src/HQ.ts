@@ -3,8 +3,9 @@ import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
-import Game from "./Game";
+import Game, { Unit } from "./Game";
 import shuffle from "./utils/shuffle";
+import isTargetAtPosition from "./utils/isTargetAtPosition";
 
 export type HQJSON = {
   id: string;
@@ -14,6 +15,8 @@ export type HQJSON = {
   width: number;
   height: number;
   position: PositionJSON;
+  baseAttackDamage: number;
+  range: number;
 };
 
 type HQProps = {
@@ -26,7 +29,9 @@ type HQProps = {
 
 export default class HQ extends ObjectWithPosition {
   class: string = "HQ";
-  hp: number = 100;
+  hp: number = 500;
+  baseAttackDamage: number = 6;
+  range: number = 3;
   teamId: string;
   id: string;
   game: Game;
@@ -57,6 +62,10 @@ export default class HQ extends ObjectWithPosition {
     // TODO
   }
 
+  getAttackDamageFor(_enemyUnit: Unit) {
+    return this.baseAttackDamage;
+  }
+
   get nextSpawnPosition() {
     const options = shuffle(this.covering);
     for (let i = 0; i < options.length; i++) {
@@ -71,14 +80,43 @@ export default class HQ extends ObjectWithPosition {
     return null;
   }
 
+  validAttackPositionsWithTargets(target: Unit) {
+    let possiblePositions = this.covering.map(position =>
+      position
+        .adjacentsWithinDistance(this.range)
+        .filter(move =>
+          isTargetAtPosition(this.game, move, target, this.team.id)
+        )
+    );
+
+    return possiblePositions.reduce((acc, val) => acc.concat(val), []);
+  }
+
+  isValidAttack(target: Unit, position: Position) {
+    return this.validAttackPositionsWithTargets(target).find(
+      move => move.x == position.x && move.y == position.y
+    );
+  }
+
   toJSON() {
-    const { id, teamId, width, height, hp, position } = this;
+    const {
+      id,
+      teamId,
+      width,
+      height,
+      hp,
+      position,
+      range,
+      baseAttackDamage
+    } = this;
     return {
       id,
       teamId,
       width,
       height,
       hp,
+      range,
+      baseAttackDamage,
       position: position.toJSON()
     } as HQJSON;
   }

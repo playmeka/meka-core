@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import Game from "./Game";
+import Game, { FighterJSON } from "./Game";
 import { CitizenJSON } from "./Citizen";
-import { FighterJSON } from "./Fighter";
 import { HQJSON } from "./HQ";
 import Command, { CommandJSON } from "./Command";
 

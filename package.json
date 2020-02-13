@@ -1,10 +1,10 @@
 {
   "name": "@meka-js/core",
   "version": "0.0.14",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "author": "Hill Street Labs",
   "license": "MIT",
-  "types": "dist/index.d.ts",
+  "types": "dist/src/index.d.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

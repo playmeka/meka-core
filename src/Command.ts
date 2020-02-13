@@ -1,30 +1,52 @@
-import Game, { Agent } from "./Game";
+import Game, { Unit, FighterType } from "./Game";
 import { Position, PositionJSON } from "./ObjectWithPosition";
 
-export type CommandType = "move" | "attack" | "spawnCitizen" | "spawnFighter";
-export type CommandJSON = [string, CommandType, { position?: PositionJSON }];
+export type CommandType =
+  | "move"
+  | "attack"
+  | "spawnCitizen"
+  | "spawnFighter"
+  | "pickUpFood"
+  | "dropOffFood";
+export type CommandJSON = [
+  string,
+  CommandType,
+  {
+    position?: PositionJSON;
+    autoPickUpFood?: boolean;
+    autoDropOffFood?: boolean;
+    fighterType?: FighterType;
+    targetId?: string;
+  }
+];
 
 export default class Command {
-  agent: Agent;
+  unit: Unit;
   type: CommandType;
-  args?: { position?: Position };
+  args?: {
+    position?: Position;
+    autoPickUpFood?: boolean;
+    autoDropOffFood?: boolean;
+    fighterType?: FighterType;
+    targetId?: string;
+  };
 
-  constructor(agent: Agent, commandType: CommandType, args = {}) {
-    this.agent = agent;
+  constructor(Unit: Unit, commandType: CommandType, args = {}) {
+    this.unit = Unit;
     this.type = commandType;
     this.args = args;
   }
 
   toJSON() {
-    return [this.agent.id, this.type, this.args] as CommandJSON;
+    return [this.unit.id, this.type, this.args] as CommandJSON;
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const agent = game.lookup[json[0]] as Agent;
+    const unit = game.lookup[json[0]] as Unit;
     const args = json[2] || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
-    return new Command(agent, json[1], args);
+    return new Command(unit, json[1], args);
   }
 }

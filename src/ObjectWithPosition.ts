@@ -29,6 +29,25 @@ export class Position {
     ];
   }
 
+  isAdjacentTo(position: Position) {
+    return this.adjacents.find(
+      adjacent => adjacent.x == position.x && adjacent.y == position.y
+    );
+  }
+
+  adjacentsWithinDistance(distance: number) {
+    if (distance <= 0) return [];
+    let positions = this.adjacents;
+    // TODO: This could be done more efficiently
+    while (distance - 1 > 0) {
+      const newPositions: Position[] = [];
+      positions.forEach(position => newPositions.push(...position.adjacents));
+      positions.push(...newPositions);
+      distance -= 1;
+    }
+    return positions;
+  }
+
   toJSON() {
     return { x: this.x, y: this.y } as PositionJSON;
   }
