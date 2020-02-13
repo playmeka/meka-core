@@ -28,8 +28,8 @@ export type FighterType =
   | "InfantryFighter"
   | "RangedFighter"
   | "CavalryFighter";
-export type Fighters = CavalryFighter | InfantryFighter | RangedFighter;
-export type Unit = Citizen | Fighters | HQ;
+export type Fighter = CavalryFighter | InfantryFighter | RangedFighter;
+export type Unit = Citizen | Fighter | HQ;
 export type FighterJSON =
   | CavalryFighterJSON
   | InfantryFighterJSON
@@ -45,7 +45,6 @@ export type GameJSON = {
   maxTurns: number;
   maxPop: number;
   turn: number;
-  citizenCost: number;
   wallCount: number;
   foodCount: number;
   walls: WallJSON[];
@@ -63,7 +62,6 @@ export type GameProps = {
   turn?: number;
   maxTurns?: number;
   maxPop?: number;
-  citizenCost?: number;
 };
 
 export type GameGenerateProps = GameProps & {
@@ -143,7 +141,7 @@ export default class Game {
   teams: Team[] = [];
   hqs: { [key: string]: HQ } = {};
   citizens: { [key: string]: Citizen } = {};
-  fighters: { [key: string]: Fighters } = {};
+  fighters: { [key: string]: Fighter } = {};
   foods: { [key: string]: Food } = {};
   walls: { [key: string]: Wall } = {};
   history: History;
@@ -155,14 +153,12 @@ export default class Game {
   turn: number;
   maxTurns: number;
   maxPop: number;
-  citizenCost: number;
 
   constructor(props: GameProps) {
     this.width = props.width;
     this.height = props.height;
     this.id = props.id || uuidv4();
     this.turn = props.turn || 0;
-    this.citizenCost = props.citizenCost || 2;
     this.maxTurns = props.maxTurns;
     this.maxPop = props.maxPop;
     this.pathFinder = new PathFinder(this);
@@ -229,14 +225,13 @@ export default class Game {
   }
 
   toJSON() {
-    const { width, height, maxTurns, maxPop, citizenCost, turn } = this;
+    const { width, height, maxTurns, maxPop, turn } = this;
     return {
       width,
       height,
       maxTurns,
       maxPop,
       turn,
-      citizenCost,
       walls: this.wallsList.map(wall => wall.toJSON()),
       foods: this.foodsList.map(food => food.toJSON()),
       teams: this.teams.map(team => team.toJSON()),
@@ -288,7 +283,7 @@ export default class Game {
     citizens.forEach(citizen => this.addCitizen(citizen));
   }
 
-  importFighters(fighters: Fighters[]) {
+  importFighters(fighters: Fighter[]) {
     fighters.forEach(fighter => this.addFighter(fighter));
   }
 
@@ -301,7 +296,7 @@ export default class Game {
     this.registerUnit(newCitizen, this.citizens);
   }
 
-  addFighter(newFighter: Fighters) {
+  addFighter(newFighter: Fighter) {
     this.registerUnit(newFighter, this.fighters);
   }
 
@@ -418,22 +413,28 @@ export default class Game {
   async executeFoodDropOff(command: Command) {
     if (command.type !== "dropOffFood") return;
     try {
-      const unit = this.lookup[command.unit.id] as Citizen;
+      const unit = command.unit as Citizen;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
       if (unit.class !== "Citizen") throw new Error("Unit is not a citizen");
       if (!unit.food) throw new Error("Unit does not have food to drop off");
-      const dropOffPosition = new Position(
-        command.args.position.x,
-        command.args.position.y
-      );
-      if (!unit.isValidMove(dropOffPosition) || this.foods[dropOffPosition.key])
-        throw new Error(
-          "Invalid position: " + JSON.stringify(dropOffPosition.toJSON())
-        );
-      const hq = this.hqs[dropOffPosition.key];
+      const dropOffPosition = command.args.position;
       const food = unit.food;
+
+      if (!unit.position.isAdjacentTo(dropOffPosition))
+        throw new Error(
+          "Invalid drop-off position: " +
+            JSON.stringify(dropOffPosition.toJSON())
+        );
+
+      if (!food.isValidDropOff(dropOffPosition))
+        throw new Error(
+          "Invalid drop-off position: " +
+            JSON.stringify(dropOffPosition.toJSON())
+        );
+
+      const hq = this.hqs[dropOffPosition.key];
       unit.dropOffFood();
       if (hq) {
         hq.eatFood();
@@ -463,26 +464,25 @@ export default class Game {
   async executeFoodPickUp(command: Command) {
     if (command.type !== "pickUpFood") return;
     try {
-      const unit = this.lookup[command.unit.id] as Citizen;
+      const unit = command.unit as Citizen;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
       if (unit.class !== "Citizen") throw new Error("Unit is not a citizen");
       if (unit.food) throw new Error("Unit already has food");
 
-      const pickUpPosition = new Position(
-        command.args.position.x,
-        command.args.position.y
-      );
+      const pickUpPosition = command.args.position;
       const food = this.foods[pickUpPosition.key];
-      if (
-        !unit.position.adjacents.find(
-          position =>
-            pickUpPosition.x == position.x && pickUpPosition.y == position.y
-        )
-      )
+
+      if (!food)
         throw new Error(
-          "Invalid position: " + JSON.stringify(pickUpPosition.toJSON())
+          "Unable to find food at position: " +
+            JSON.stringify(pickUpPosition.toJSON())
+        );
+
+      if (!unit.position.isAdjacentTo(pickUpPosition))
+        throw new Error(
+          "Invalid pick-up position: " + JSON.stringify(pickUpPosition.toJSON())
         );
       if (food) {
         unit.eatFood(food);
@@ -509,13 +509,9 @@ export default class Game {
   async executeAttack(command: Command) {
     if (command.type !== "attack") return;
     try {
-      if (!command.args.position)
-        throw new Error("No position passed to attack");
-      const fighter = this.lookup[command.unit.id] as Fighters | HQ;
-      const attackPosition = new Position(
-        command.args.position.x,
-        command.args.position.y
-      );
+      const attackPosition = command.args.position;
+      if (!attackPosition) throw new Error("No position passed to attack");
+      const fighter = command.unit as Fighter | HQ;
       const target = this.lookup[command.args.targetId] as Unit;
       if (!target)
         throw new Error("No target with ID: " + command.args.targetId);
@@ -546,14 +542,11 @@ export default class Game {
   async executeMove(command: Command) {
     if (command.type !== "move") return;
     try {
-      const unit = this.lookup[command.unit.id] as Citizen | Fighters;
+      const unit = command.unit as Citizen | Fighter;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
-      const newPosition = new Position(
-        command.args.position.x,
-        command.args.position.y
-      );
+      const newPosition = command.args.position;
       if (!unit.isValidMove(newPosition))
         throw new Error(
           "Invalid position: " + JSON.stringify(newPosition.toJSON())
@@ -564,7 +557,7 @@ export default class Game {
           autoDropOffFood: command.args.autoDropOffFood
         });
       } else {
-        this.handleFighterMove(unit as Fighters, newPosition);
+        this.handleFighterMove(unit as Fighter, newPosition);
       }
       // Create success action, add to history, and return
       const successAction = new Action({
@@ -652,11 +645,11 @@ export default class Game {
       const { command, status, response } = action;
       if (status !== "success") return;
       if (command.type === "attack") {
-        const fighter = this.lookup[command.unit.id] as Fighters;
+        const fighter = this.lookup[command.unit.id] as Fighter;
         const target = this.lookup[response.id] as Unit;
         this.handleAttack(fighter, target);
       } else if (command.type === "move") {
-        const unit = this.lookup[command.unit.id] as Citizen | Fighters;
+        const unit = this.lookup[command.unit.id] as Citizen | Fighter;
         const position = Position.fromJSON(response.position);
         if (unit.class === "Citizen") {
           this.handleCitizenMove(unit as Citizen, position, {
@@ -664,7 +657,7 @@ export default class Game {
             autoDropOffFood: command.args.autoDropOffFood
           });
         } else if (unit.class === "Fighter") {
-          this.handleFighterMove(unit as Fighters, position);
+          this.handleFighterMove(unit as Fighter, position);
         }
       } else if (
         command.type === "spawnCitizen" ||
@@ -687,7 +680,7 @@ export default class Game {
   }
 
   // Mutations
-  handleAttack(fighter: Fighters | HQ, target: Unit) {
+  handleAttack(fighter: Fighter | HQ, target: Unit) {
     target.takeDamage(fighter.getAttackDamageFor(target));
   }
 
@@ -725,7 +718,7 @@ export default class Game {
     }
   }
 
-  handleFighterMove(fighter: Fighters, position: Position) {
+  handleFighterMove(fighter: Fighter, position: Position) {
     this.clearUnitPosition(fighter, this.fighters);
     fighter.move(position);
     this.registerUnitPosition(fighter, this.fighters);
@@ -736,14 +729,15 @@ export default class Game {
     if (team.pop >= this.maxPop) {
       throw new Error("Population cap reached");
     }
-    if (team.foodCount < this.citizenCost) {
-      throw new Error("Not enough food to pay for spawn");
-    }
-    team.spendFood(this.citizenCost);
     const newCitizen = new Citizen(this, {
       ...props,
       teamId: team.id
     } as CitizenProps);
+
+    if (team.foodCount < newCitizen.cost) {
+      throw new Error("Not enough food to pay for spawn");
+    }
+    team.spendFood(newCitizen.cost);
     this.addCitizen(newCitizen);
     return newCitizen;
   }
@@ -770,7 +764,7 @@ export default class Game {
     return newFighter;
   }
 
-  killFighter(fighter: Fighters) {
+  killFighter(fighter: Fighter) {
     delete this.fighters[fighter.key];
   }
 

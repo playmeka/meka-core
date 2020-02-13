@@ -29,6 +29,12 @@ export class Position {
     ];
   }
 
+  isAdjacentTo(position: Position) {
+    return this.adjacents.find(
+      adjacent => adjacent.x == position.x && adjacent.y == position.y
+    );
+  }
+
   adjacentsWithinDistance(distance: number) {
     if (distance <= 0) return [];
     let positions = this.adjacents;

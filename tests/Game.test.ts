@@ -1,6 +1,6 @@
 import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
-import Game, { GameJSON, Fighters } from "../src/Game";
+import Game, { GameJSON, Fighter } from "../src/Game";
 import Citizen from "../src/Citizen";
 import Food from "../src/Food";
 import InfantryFighter from "../src/InfantryFighter";
@@ -183,10 +183,7 @@ describe("Fighter attack damage behavior", () => {
 });
 
 describe("Fighter range behavior", () => {
-  let game: Game,
-    fighter: Fighters,
-    target: Fighters | Citizen,
-    command: Command;
+  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });

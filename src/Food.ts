@@ -3,6 +3,7 @@ import ObjectWithPosition, { Position } from "./ObjectWithPosition";
 import HQ from "./HQ";
 import Game from "./Game";
 import Citizen from "./Citizen";
+import isValidFoodPosition from "./utils/isValidFoodPosition";
 
 export type FoodJSON = [string, number, number, string];
 
@@ -30,12 +31,24 @@ export default class Food extends ObjectWithPosition {
     return this.game.lookup[this.eatenById];
   }
 
+  get validDropOffs() {
+    return this.position.adjacents.filter(pos =>
+      isValidFoodPosition(this.game, pos)
+    );
+  }
+
   getEatenBy(unit: Citizen | HQ) {
     this.eatenById = unit.id;
   }
 
   move(position: Position) {
     this.position = position;
+  }
+
+  isValidDropOff(position: Position) {
+    return this.validDropOffs.find(
+      pos => pos.x == position.x && pos.y == position.y
+    );
   }
 
   toJSON() {

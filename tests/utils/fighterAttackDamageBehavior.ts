@@ -1,4 +1,4 @@
-import Game, { Fighters, FighterType } from "../../src/Game";
+import Game, { Fighter, FighterType } from "../../src/Game";
 import Citizen from "../../src/Citizen";
 import InfantryFighter from "../../src/InfantryFighter";
 import CavalryFighter from "../../src/CavalryFighter";
@@ -10,10 +10,7 @@ export default function fighterAttackDamageBehavior(
   fighterType: FighterType,
   hardCounterType: FighterType
 ) {
-  let game: Game,
-    fighter: Fighters,
-    target: Fighters | Citizen,
-    command: Command;
+  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });
