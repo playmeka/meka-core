@@ -471,18 +471,17 @@ export default class Game {
       if (unit.class !== "Citizen") throw new Error("Unit is not a citizen");
       if (unit.food) throw new Error("Unit already has food");
 
-      const pickUpPosition = command.args.position;
-      const food = this.foods[pickUpPosition.key];
+      const { position } = command.args;
+      const food = this.foods[position.key];
 
       if (!food)
         throw new Error(
-          "Unable to find food at position: " +
-            JSON.stringify(pickUpPosition.toJSON())
+          "Unable to find food: " + JSON.stringify(position.toJSON())
         );
 
-      if (!unit.position.isAdjacentTo(pickUpPosition))
+      if (!unit.position.isAdjacentTo(food.position))
         throw new Error(
-          "Invalid pick-up position: " + JSON.stringify(pickUpPosition.toJSON())
+          "Invalid pick-up position: " + JSON.stringify(food.position.toJSON())
         );
       if (food) {
         unit.eatFood(food);

@@ -42,18 +42,18 @@ export default class Citizen extends ObjectWithPosition {
     this.cost = 2;
   }
 
-  get team() {
-    return this.game.getTeam(this.teamId);
-  }
-
   get food() {
     return this.game.lookup[this.foodId] as Food;
   }
 
   get validMoves() {
     return this.position.adjacents.filter(move =>
-      isValidPosition(this.game, move, this.team.id)
+      isValidPosition(this.game, move, this.teamId)
     );
+  }
+
+  get team() {
+    return this.game.getTeam(this.teamId);
   }
 
   getPathTo(position: Position) {
