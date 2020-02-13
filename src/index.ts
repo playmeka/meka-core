@@ -16,7 +16,8 @@ export {
   default as Game,
   GameJSON,
   GameProps,
-  GameGenerateProps
+  GameGenerateProps,
+  Fighter
 } from "./Game";
 export { default as HQ, HQJSON } from "./HQ";
 export {
