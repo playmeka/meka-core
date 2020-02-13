@@ -13,12 +13,6 @@ export default (game: Game, position: Position) => {
   if (game.walls[position.key]) {
     return false;
   }
-  if (game.citizens[position.key]) {
-    return false;
-  }
-  if (game.fighters[position.key]) {
-    return false;
-  }
   if (game.foods[position.key]) {
     return false;
   }

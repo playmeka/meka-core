@@ -474,15 +474,21 @@ export default class Game {
       const { position } = command.args;
       const food = this.foods[position.key];
 
-      if (!food)
+      if (!food || food.eatenBy)
         throw new Error(
           "Unable to find food: " + JSON.stringify(position.toJSON())
+        );
+
+      if (food.eatenBy)
+        throw new Error(
+          "Food is already eaten by unit with ID: " + food.eatenById
         );
 
       if (!unit.position.isAdjacentTo(food.position))
         throw new Error(
           "Invalid pick-up position: " + JSON.stringify(food.position.toJSON())
         );
+
       if (food) {
         unit.eatFood(food);
         food.getEatenBy(unit);
@@ -686,10 +692,7 @@ export default class Game {
   handleCitizenMove(
     citizen: Citizen,
     position: Position,
-    options: { autoPickUpFood?: boolean; autoDropOffFood?: boolean } = {
-      autoPickUpFood: false,
-      autoDropOffFood: false
-    }
+    options: { autoPickUpFood?: boolean; autoDropOffFood?: boolean }
   ) {
     // Move citizen
     this.clearUnitPosition(citizen, this.citizens);
@@ -702,14 +705,14 @@ export default class Game {
     }
     // Pick up food
     const food = this.foods[citizen.key];
-    if (food && !citizen.food && options.autoPickUpFood) {
+    if (food && !citizen.food && options.autoPickUpFood === true) {
       citizen.eatFood(food);
       food.getEatenBy(citizen);
       delete this.foods[food.key]; // Un-register food
     }
     // Drop off food
     const hq = this.hqs[citizen.key];
-    if (hq && citizen.food && options.autoDropOffFood) {
+    if (hq && citizen.food && options.autoDropOffFood === true) {
       const food = citizen.food;
       citizen.dropOffFood();
       hq.eatFood();
