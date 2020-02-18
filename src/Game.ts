@@ -146,6 +146,7 @@ export default class Game {
   walls: { [key: string]: Wall } = {};
   history: History;
   lookup: { [id: string]: Unit | Food } = {};
+  unitToCommandMap: { [id: string]: Command } = {};
   pathFinder: PathFinder;
   id: string;
   width: number;
@@ -353,27 +354,37 @@ export default class Game {
     const spawns: Command[] = [];
     const foodPickUps: Command[] = [];
     const foodDropOffs: Command[] = [];
-    // Create map for ensuring one action per unit
-    const unitCommandMap: { [id: string]: Command } = {};
+
+    // Combine commands passed by the user with the stored commands
+    const allCommands: Command[] = commands.concat(
+      ...Object.values(this.unitToCommandMap)
+    );
+
+    // Get one command per unit ID
+    const uniqueCommandsByUnitId = Array.from(
+      new Set(allCommands.map(command => command.unit.id))
+    ).map(id => {
+      return allCommands.find(command => command.unit.id === id);
+    });
+
     // Assign actions to queues
-    commands.forEach(command => {
-      // Do nothing if command is invalid or unit already has an command this turn
-      if (!command || !command.type || unitCommandMap[command.unit.id])
-        return null;
+    uniqueCommandsByUnitId.forEach(command => {
+      // Do nothing if command is invalid
+      if (!command || !command.type) return null;
       if (command.type == "attack") {
-        unitCommandMap[command.unit.id] = command;
+        this.unitToCommandMap[command.unit.id] = command;
         attacks.push(command);
       } else if (command.type == "move") {
-        unitCommandMap[command.unit.id] = command;
+        this.unitToCommandMap[command.unit.id] = command;
         moves.push(command);
       } else if (command.type === "pickUpFood") {
-        unitCommandMap[command.unit.id] = command;
+        this.unitToCommandMap[command.unit.id] = command;
         foodPickUps.push(command);
       } else if (command.type === "dropOffFood") {
-        unitCommandMap[command.unit.id] = command;
+        this.unitToCommandMap[command.unit.id] = command;
         foodDropOffs.push(command);
       } else if (command.type == "spawn") {
-        unitCommandMap[command.unit.id] = command;
+        this.unitToCommandMap[command.unit.id] = command;
         spawns.push(command);
       }
     });
