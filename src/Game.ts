@@ -427,38 +427,58 @@ export default class Game {
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
       if (unit.class !== "Citizen") throw new Error("Unit is not a citizen");
       if (!unit.food) throw new Error("Unit does not have food to drop off");
-      const dropOffPosition = command.args.position;
+      const { position } = command.args;
       const food = unit.food;
 
-      if (!unit.position.isAdjacentTo(dropOffPosition))
-        throw new Error(
-          "Invalid drop-off position: " +
-            JSON.stringify(dropOffPosition.toJSON())
-        );
+      if (unit.position.isAdjacentTo(position)) {
+        if (!food.isValidDropOff(position))
+          throw new Error(
+            "Invalid drop-off position: " + JSON.stringify(position.toJSON())
+          );
 
-      if (!food.isValidDropOff(dropOffPosition))
-        throw new Error(
-          "Invalid drop-off position: " +
-            JSON.stringify(dropOffPosition.toJSON())
-        );
-
-      const hq = this.hqs[dropOffPosition.key];
-      unit.dropOffFood();
-      if (hq) {
-        hq.eatFood();
-        food.getEatenBy(hq);
+        const hq = this.hqs[position.key];
+        unit.dropOffFood();
+        if (hq) {
+          hq.eatFood();
+          food.getEatenBy(hq);
+        } else {
+          food.eatenById = null;
+          food.move(position);
+          this.foods[position.key] = food;
+        }
+        const successAction = new Action({
+          command,
+          status: "success",
+          response: unit.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
       } else {
-        food.eatenById = null;
-        food.move(dropOffPosition);
-        this.foods[dropOffPosition.key] = food;
+        const path = this.pathFinder.getPath(unit, position);
+        if (path === null)
+          throw new Error(
+            "Valid path does not exist to position: " +
+              JSON.stringify(position.toJSON())
+          );
+        const newPosition = path[0];
+
+        if (!unit.isValidMove(newPosition))
+          throw new Error(
+            "Invalid position: " + JSON.stringify(newPosition.toJSON())
+          );
+        this.handleCitizenMove(unit as Citizen, newPosition, {
+          autoPickUpFood: false,
+          autoDropOffFood: false
+        });
+        // Create success action, add to history, and return
+        const successAction = new Action({
+          command: new Command(unit, "move", { position }),
+          status: "success",
+          response: unit.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
       }
-      const successAction = new Action({
-        command,
-        status: "success",
-        response: unit.toJSON()
-      });
-      this.history.pushActions(this.turn, successAction);
-      return successAction;
     } catch (err) {
       const failureAction = new Action({
         command,
@@ -471,8 +491,8 @@ export default class Game {
 
   async executeFoodPickUp(command: Command) {
     if (command.type !== "pickUpFood") return;
+    const unit = command.unit as Citizen;
     try {
-      const unit = command.unit as Citizen;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
@@ -491,24 +511,48 @@ export default class Game {
         throw new Error(
           "Food is already eaten by unit with ID: " + food.eatenById
         );
+      // throw new Error(
+      //   "Invalid pick-up position: " + JSON.stringify(food.position.toJSON())
+      // );
 
-      if (!unit.position.isAdjacentTo(food.position))
-        throw new Error(
-          "Invalid pick-up position: " + JSON.stringify(food.position.toJSON())
-        );
-
-      if (food) {
+      if (unit.position.isAdjacentTo(food.position)) {
         unit.eatFood(food);
         food.getEatenBy(unit);
         delete this.foods[food.key]; // Un-register food
+        const successAction = new Action({
+          command,
+          status: "success",
+          response: unit.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        delete this.unitToCommandMap[unit.id];
+        return successAction;
+      } else {
+        const path = this.pathFinder.getPath(unit, position);
+        if (path === null)
+          throw new Error(
+            "Valid path does not exist to position: " +
+              JSON.stringify(position.toJSON())
+          );
+        const newPosition = path[0];
+
+        if (!unit.isValidMove(newPosition))
+          throw new Error(
+            "Invalid position: " + JSON.stringify(newPosition.toJSON())
+          );
+        this.handleCitizenMove(unit as Citizen, newPosition, {
+          autoPickUpFood: false,
+          autoDropOffFood: false
+        });
+        // Create success action, add to history, and return
+        const successAction = new Action({
+          command: new Command(unit, "move", { position }),
+          status: "success",
+          response: unit.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
       }
-      const successAction = new Action({
-        command,
-        status: "success",
-        response: unit.toJSON()
-      });
-      this.history.pushActions(this.turn, successAction);
-      return successAction;
     } catch (err) {
       const failureAction = new Action({
         command,
@@ -516,6 +560,7 @@ export default class Game {
         error: err.message
       });
       this.history.pushActions(this.turn, failureAction);
+      delete this.unitToCommandMap[unit.id];
     }
   }
 
@@ -529,18 +574,43 @@ export default class Game {
       if (!target)
         throw new Error("No target with ID: " + command.args.targetId);
 
-      if (!fighter.isValidAttack(target, attackPosition))
+      if (fighter.isValidAttack(target, attackPosition)) {
+        this.handleAttack(fighter, target);
+        const successAction = new Action({
+          command,
+          status: "success",
+          response: target.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
+      } else if (fighter.class === "HQ") {
         throw new Error(
           "Target is not within range: " + attackPosition.toJSON()
         ); // miss!
-      this.handleAttack(fighter, target);
-      const successAction = new Action({
-        command,
-        status: "success",
-        response: target.toJSON()
-      });
-      this.history.pushActions(this.turn, successAction);
-      return successAction;
+      } else {
+        const { position } = command.args;
+        const path = this.pathFinder.getPath(fighter, position);
+        if (path === null)
+          throw new Error(
+            "Valid path does not exist to position: " +
+              JSON.stringify(position.toJSON())
+          );
+        const newPosition = path[0];
+
+        if (!(fighter as Fighter).isValidMove(newPosition))
+          throw new Error(
+            "Invalid position: " + JSON.stringify(newPosition.toJSON())
+          );
+        this.handleFighterMove(fighter as Fighter, newPosition);
+        // Create success action, add to history, and return
+        const successAction = new Action({
+          command: new Command(fighter, "move", { position: newPosition }),
+          status: "success",
+          response: fighter.toJSON()
+        });
+        this.history.pushActions(this.turn, successAction);
+        return successAction;
+      }
     } catch (err) {
       const failureAction = new Action({
         command,
@@ -554,12 +624,20 @@ export default class Game {
 
   async executeMove(command: Command) {
     if (command.type !== "move") return;
+    const unit = command.unit as Citizen | Fighter;
     try {
-      const unit = command.unit as Citizen | Fighter;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
-      const newPosition = command.args.position;
+      const { position } = command.args;
+      const path = this.pathFinder.getPath(unit, position);
+      if (path === null)
+        throw new Error(
+          "Valid path does not exist to position: " +
+            JSON.stringify(position.toJSON())
+        );
+      const newPosition = path[0];
+
       if (!unit.isValidMove(newPosition))
         throw new Error(
           "Invalid position: " + JSON.stringify(newPosition.toJSON())
@@ -579,6 +657,7 @@ export default class Game {
         response: unit.toJSON()
       });
       this.history.pushActions(this.turn, successAction);
+      delete this.unitToCommandMap[unit.id];
       return successAction;
     } catch (err) {
       // Create failure action, add to history, and return
@@ -588,18 +667,19 @@ export default class Game {
         error: err.message
       });
       this.history.pushActions(this.turn, failureAction);
+      delete this.unitToCommandMap[unit.id];
       return failureAction;
     }
   }
 
   async executeSpawn(command: Command) {
     if (command.type !== "spawn") return;
+    const { unit } = command;
     try {
-      const position =
-        command.args.position || (command.unit as HQ).nextSpawnPosition;
+      const position = command.args.position || (unit as HQ).nextSpawnPosition;
       if (!position) throw new Error("No position available for spawn");
       if (
-        !command.unit.covering.find(
+        !unit.covering.find(
           hqPosition =>
             hqPosition.x === position.x && hqPosition.y == position.y
         )
@@ -609,17 +689,18 @@ export default class Game {
         );
 
       if (command.args.unitType == "Citizen") {
-        const newCitizen = this.spawnCitizen(command.unit as HQ, { position });
+        const newCitizen = this.spawnCitizen(unit as HQ, { position });
         const successAction = new Action({
           command,
           status: "success",
           response: newCitizen.toJSON()
         });
         this.history.pushActions(this.turn, successAction);
+        delete this.unitToCommandMap[unit.id];
         return successAction;
       } else {
         const newFighter = this.spawnFighter(
-          command.unit as HQ,
+          unit as HQ,
           command.args.unitType,
           {
             position
@@ -631,6 +712,7 @@ export default class Game {
           response: newFighter.toJSON()
         });
         this.history.pushActions(this.turn, successAction);
+        delete this.unitToCommandMap[unit.id];
         return successAction;
       }
     } catch (err) {
@@ -640,6 +722,7 @@ export default class Game {
         error: err.message
       });
       this.history.pushActions(this.turn, failureAction);
+      delete this.unitToCommandMap[unit.id];
       return failureAction;
     }
   }
