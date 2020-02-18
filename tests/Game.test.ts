@@ -28,7 +28,9 @@ describe("Sending invalid spawn command", () => {
   test("returns failure action", async () => {
     const game = Game.generate(defaultGameProps);
     // Note: this command is invalid because the team does not have enough food for a spawn
-    const command = new Command(game.teams[0].hq, "spawnCitizen");
+    const command = new Command(game.teams[0].hq, "spawn", {
+      unitType: "Citizen"
+    });
     const actions = await game.executeTurn([command]);
     expect(actions.length).toBe(1);
     const action = actions[0];

@@ -372,10 +372,7 @@ export default class Game {
       } else if (command.type === "dropOffFood") {
         unitCommandMap[command.unit.id] = command;
         foodDropOffs.push(command);
-      } else if (
-        command.type == "spawnCitizen" ||
-        command.type == "spawnFighter"
-      ) {
+      } else if (command.type == "spawn") {
         unitCommandMap[command.unit.id] = command;
         spawns.push(command);
       }
@@ -585,6 +582,7 @@ export default class Game {
   }
 
   async executeSpawn(command: Command) {
+    if (command.type !== "spawn") return;
     try {
       const position =
         command.args.position || (command.unit as HQ).nextSpawnPosition;
@@ -599,7 +597,7 @@ export default class Game {
           "Invalid position: " + JSON.stringify(position.toJSON())
         );
 
-      if (command.type == "spawnCitizen") {
+      if (command.args.unitType == "Citizen") {
         const newCitizen = this.spawnCitizen(command.unit as HQ, { position });
         const successAction = new Action({
           command,
@@ -608,10 +606,10 @@ export default class Game {
         });
         this.history.pushActions(this.turn, successAction);
         return successAction;
-      } else if (command.type == "spawnFighter") {
+      } else {
         const newFighter = this.spawnFighter(
           command.unit as HQ,
-          command.args.fighterType,
+          command.args.unitType,
           {
             position
           }
@@ -664,16 +662,13 @@ export default class Game {
         } else if (unit.class === "Fighter") {
           this.handleFighterMove(unit as Fighter, position);
         }
-      } else if (
-        command.type === "spawnCitizen" ||
-        command.type === "spawnFighter"
-      ) {
+      } else if (command.type === "spawn") {
         const hq = command.unit as HQ;
         const position = Position.fromJSON(response.position);
-        if (command.type === "spawnCitizen") {
+        if (command.args.unitType === "Citizen") {
           this.spawnCitizen(hq, { ...response, position });
-        } else if (command.type === "spawnFighter") {
-          this.spawnFighter(hq, command.args.fighterType, {
+        } else {
+          this.spawnFighter(hq, command.args.unitType, {
             ...response,
             position
           });

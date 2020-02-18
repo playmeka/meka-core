@@ -4,8 +4,7 @@ import { Position, PositionJSON } from "./ObjectWithPosition";
 export type CommandType =
   | "move"
   | "attack"
-  | "spawnCitizen"
-  | "spawnFighter"
+  | "spawn"
   | "pickUpFood"
   | "dropOffFood";
 export type CommandJSON = [
@@ -15,7 +14,7 @@ export type CommandJSON = [
     position?: PositionJSON;
     autoPickUpFood?: boolean;
     autoDropOffFood?: boolean;
-    fighterType?: FighterType;
+    unitType?: FighterType | "Citizen";
     targetId?: string;
   }
 ];
@@ -27,7 +26,7 @@ export default class Command {
     position?: Position;
     autoPickUpFood?: boolean;
     autoDropOffFood?: boolean;
-    fighterType?: FighterType;
+    unitType?: FighterType | "Citizen";
     targetId?: string;
   };
 
