@@ -29,6 +29,10 @@ export class Position {
     ];
   }
 
+  isEqualTo(position: Position | PositionJSON) {
+    return this.x === position.x && this.y === position.y;
+  }
+
   isAdjacentTo(position: Position) {
     return this.adjacents.find(
       adjacent => adjacent.x == position.x && adjacent.y == position.y
