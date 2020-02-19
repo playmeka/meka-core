@@ -487,8 +487,8 @@ export default class Game {
 
   async executeFoodPickUp(command: Command) {
     if (command.type !== "pickUpFood") return;
-    const unit = command.unit as Citizen;
     try {
+      const unit = command.unit as Citizen;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
@@ -535,17 +535,17 @@ export default class Game {
   async executeAttack(command: Command) {
     if (command.type !== "attack") return;
     try {
-      const attackPosition = command.args.position;
-      if (!attackPosition) throw new Error("No position passed to attack");
-      const fighter = command.unit as Fighter | HQ;
-      if (fighter.hp <= 0)
-        throw new Error("Unit is dead (HP is at or below 0)");
-      const target = this.lookup[command.args.targetId] as Unit;
-      if (!target)
-        throw new Error("No target with ID: " + command.args.targetId);
+      const { position, targetId } = command.args;
+      const target = this.lookup[targetId] as Unit;
+      const unit = command.unit as Fighter | HQ;
 
-      if (fighter.isValidAttack(target, attackPosition)) {
-        this.handleAttack(fighter, target);
+      if (!position && !target)
+        throw new Error("No position or target passed to attack");
+      if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
+      const attackPosition = (target || {}).position || position;
+
+      if (unit.isValidAttack(target, attackPosition)) {
+        this.handleAttack(unit, target);
         const successAction = new Action({
           command,
           status: "success",
@@ -553,13 +553,13 @@ export default class Game {
         });
         this.history.pushActions(this.turn, successAction);
         return successAction;
-      } else if (fighter.class === "HQ") {
+      } else if (unit.class === "HQ") {
         throw new Error(
           "Target is not within range: " + attackPosition.toJSON()
         ); // miss!
       } else {
         return await this.executeMove(
-          new Command(fighter, "move", { position: target.position })
+          new Command(unit, "move", { position: target.position })
         );
       }
     } catch (err) {
@@ -575,8 +575,8 @@ export default class Game {
 
   async executeMove(command: Command) {
     if (command.type !== "move") return;
-    const unit = command.unit as Citizen | Fighter;
     try {
+      const unit = command.unit as Citizen | Fighter;
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
@@ -587,7 +587,9 @@ export default class Game {
           "Valid path does not exist to position: " +
             JSON.stringify(position.toJSON())
         );
-      const newPosition = path[0];
+
+      // Take unit.speed steps at a time
+      const newPosition = path[unit.speed - 1] || path[path.length - 1];
 
       if (!unit.isValidMove(newPosition))
         throw new Error(
@@ -623,8 +625,8 @@ export default class Game {
 
   async executeSpawn(command: Command) {
     if (command.type !== "spawn") return;
-    const { unit } = command;
     try {
+      const { unit } = command;
       if (unit.hp <= 0) throw new Error("HQ is dead (HP is at or below 0)");
       const position = command.args.position || (unit as HQ).nextSpawnPosition;
       if (!position) throw new Error("No position available for spawn");
