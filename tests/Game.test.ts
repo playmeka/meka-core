@@ -39,7 +39,7 @@ describe("Sending invalid spawn command", () => {
   });
 });
 
-describe("Sending valid move command", () => {
+describe("Sending valid move command with position that's adjacent to the unit", () => {
   let game: Game,
     json: GameJSON,
     citizen: Citizen,
@@ -67,7 +67,7 @@ describe("Sending valid move command", () => {
   test("returns response with data changes", () => {
     const action = actions[0];
     expect(action.response.id).toBeTruthy();
-    // TODO: check class is CitizenJSON
+    expect(action.response.class).toEqual("Citizen");
   });
 
   test("increments game turn", () => {
@@ -96,13 +96,17 @@ describe("Sending valid move command", () => {
       expect(err).toBeTruthy();
     }
   });
+
+  test("clears unitToCommandMap", () => {
+    expect(game.unitToCommandMap[command.unit.id]).toBeFalsy();
+  });
 });
 
-describe("Sending invalid move command", () => {
+describe("Sending valid move command with position that's not adjacent to the unit", () => {
   let game: Game, citizen: Citizen, command: Command, actions: Action[];
 
   beforeEach(async () => {
-    game = Game.generate(defaultGameProps);
+    game = Game.generate({ ...defaultGameProps, wallCount: 0 });
     citizen = game.teams[0].citizens[0];
     // Note: position is a valid position, just not adjacent to citizen
     const position = shuffle(
@@ -123,16 +127,25 @@ describe("Sending invalid move command", () => {
     expect(actions.length).toBe(1);
   });
 
-  test("returns failure action", () => {
+  test("returns success action", () => {
     const action = actions[0];
-    expect(action.status).toBe("failure");
-    expect(action.error).toBeTruthy();
-    expect(action.response).toBeFalsy();
+    expect(action.status).toBe("success");
+    expect(action.error).toBeFalsy();
+  });
+
+  test("returns response with data changes", () => {
+    const action = actions[0];
+    expect(action.response.id).toBeTruthy();
+    expect(action.response.class).toEqual("Citizen");
   });
 
   test("adds action to history", () => {
     const turnHistory = game.history.getActions(game.turn);
     expect(turnHistory.length).toBe(1);
+  });
+
+  test("does not clear unitToCommandMap", () => {
+    expect(game.unitToCommandMap[command.unit.id]).toBeTruthy();
   });
 });
 

@@ -367,7 +367,7 @@ export default class Game {
       return allCommands.find(command => command.unit.id === id);
     });
 
-    // Assign actions to queues
+    // Assign commands to queues
     uniqueCommandsByUnitId.forEach(command => {
       // Do nothing if command is invalid
       if (!command || !command.type) return null;
@@ -589,7 +589,9 @@ export default class Game {
         );
 
       // Take unit.speed steps at a time
-      const newPosition = path[unit.speed - 1] || path[path.length - 1];
+      // Note: it is not unit.speed - 1 because PathFinder returns the unit
+      // position as the first step in the path
+      const newPosition = path[unit.speed] || path[path.length - 1];
 
       if (!unit.isValidMove(newPosition))
         throw new Error(
