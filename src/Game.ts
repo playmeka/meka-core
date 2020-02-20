@@ -535,16 +535,20 @@ export default class Game {
   async executeAttack(command: Command) {
     if (command.type !== "attack") return;
     try {
-      const { position, targetId } = command.args;
+      const { targetId } = command.args;
       const target = this.lookup[targetId] as Unit;
       const unit = command.unit as Fighter | HQ;
 
-      if (!position && !target)
-        throw new Error("No position or target passed to attack");
+      if (!target) throw new Error("No target passed to attack");
+      if (target.hp <= 0)
+        throw new Error("Target is dead (HP is at or below 0)");
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
-      const attackPosition = (target || {}).position || position;
 
-      if (unit.isValidAttack(target, attackPosition)) {
+      const isTargetInRange = target.covering.some(position =>
+        unit.isValidAttack(target, position)
+      );
+
+      if (isTargetInRange) {
         this.handleAttack(unit, target);
         const successAction = new Action({
           command,
@@ -554,12 +558,10 @@ export default class Game {
         this.history.pushActions(this.turn, successAction);
         return successAction;
       } else if (unit.class === "HQ") {
-        throw new Error(
-          "Target is not within range: " + attackPosition.toJSON()
-        ); // miss!
+        throw new Error("Target is not within range: " + target.id); // miss!
       } else {
         return await this.executeMove(
-          new Command(unit, "move", { position: target.position })
+          new Command(unit, "move", { targetId: target.id })
         );
       }
     } catch (err) {
@@ -580,14 +582,24 @@ export default class Game {
       if (!unit)
         throw new Error("Unable to find unit with ID: " + command.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
-      const { position } = command.args;
-      const path = this.pathFinder.getPath(unit, position);
+      const { position, targetId } = command.args;
+      const target = this.lookup[targetId] as Unit;
+
+      if (!position && !target)
+        throw new Error("No target or position passed to move towards");
+
+      let path;
+      if (position) {
+        path = this.pathFinder.getPath(unit, position);
+      } else {
+        path = this.getOptimalPathToTarget(unit, target);
+      }
+
       if (path === null)
         throw new Error(
           "Valid path does not exist to position: " +
             JSON.stringify(position.toJSON())
         );
-
       // Take unit.speed steps at a time
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
@@ -846,5 +858,47 @@ export default class Game {
       (this.lookup[command.args.targetId] as Unit).hp <= 0
     )
       delete this.unitToCommandMap[command.unit.id];
+  }
+
+  getOptimalPathToTarget(unit: Citizen | Fighter, target: Unit) {
+    let allPaths: Position[][] = [];
+
+    // If the unit is a Citizen, go to the closest position that the target covers
+    if (unit.class === "Citizen") {
+      allPaths = target.covering
+        .map(position => this.pathFinder.getPath(unit, position))
+        .filter(Boolean);
+    }
+    // If the unit is a Fighter, go to the closest position that's adjacent the area that the target covers
+    else {
+      let allPositions: Position[] = [];
+      target.covering.forEach(position =>
+        allPositions.push(
+          ...position.adjacentsWithinDistance((unit as Fighter).range)
+        )
+      );
+
+      // TODO: Check if this is stable.
+      const uniquePositions = Array.from(
+        new Set(allPositions.map(position => position.key))
+      ).map(key => {
+        return allPositions.find(position => position.key === key);
+      });
+
+      allPaths = uniquePositions
+        .map(position => this.pathFinder.getPath(unit, position))
+        .filter(Boolean);
+    }
+
+    if (allPaths.length > 0) {
+      const shortestPathIndex = allPaths.reduce(
+        (indexShortest, path, currentIndex, paths) =>
+          path.length < paths[indexShortest].length
+            ? currentIndex
+            : indexShortest,
+        0
+      );
+      return allPaths[shortestPathIndex];
+    } else return null;
   }
 }
