@@ -7,7 +7,8 @@ import Wall, { WallJSON } from "./Wall";
 import Food, { FoodJSON } from "./Food";
 import Command from "./Command";
 import Action from "./Action";
-import HQ from "./HQ";
+import HQ, { HQJSON } from "./HQ";
+import CommandResponse from "./CommandResponse";
 import History, { HistoryJSON } from "./History";
 import PathFinder from "./PathFinder";
 import isValidPosition from "./utils/isValidPosition";
@@ -30,6 +31,7 @@ export type FighterType =
   | "CavalryFighter";
 export type Fighter = CavalryFighter | InfantryFighter | RangedFighter;
 export type Unit = Citizen | Fighter | HQ;
+export type UnitJSON = CitizenJSON | FighterJSON | HQJSON;
 export type FighterJSON =
   | CavalryFighterJSON
   | InfantryFighterJSON
@@ -146,7 +148,6 @@ export default class Game {
   walls: { [key: string]: Wall } = {};
   history: History;
   lookup: { [id: string]: Unit | Food } = {};
-  unitToCommandMap: { [id: string]: Command } = {};
   pathFinder: PathFinder;
   id: string;
   width: number;
@@ -349,95 +350,92 @@ export default class Game {
     // Start new turn and history
     this.turn += 1;
     // Create action queues
-    const attacks: Command[] = [];
-    const moves: Command[] = [];
-    const spawns: Command[] = [];
-    const foodPickUps: Command[] = [];
-    const foodDropOffs: Command[] = [];
+    const attacks: Action[] = [];
+    const moves: Action[] = [];
+    const spawns: Action[] = [];
+    const foodPickUps: Action[] = [];
+    const foodDropOffs: Action[] = [];
 
-    // Combine commands passed by the user with the stored commands
-    const allCommands: Command[] = commands.concat(
-      ...Object.values(this.unitToCommandMap)
-    );
-
-    // Get one command per unit ID
-    const uniqueCommandsByUnitId = Array.from(
-      new Set(allCommands.map(command => command.unit.id))
-    ).map(id => {
-      return allCommands.find(command => command.unit.id === id);
-    });
+    // Create map for ensuring one action per unit
+    const unitToActionMap: { [id: string]: Action } = {};
+    const commandResponses: CommandResponse[] = [];
 
     // Assign commands to queues
-    uniqueCommandsByUnitId.forEach(command => {
+    commands.forEach(command => {
+      const action = command.getNextAction(this);
       // Do nothing if command is invalid
-      if (!command || !command.type) return null;
-      if (command.type == "attack") {
-        this.unitToCommandMap[command.unit.id] = command;
-        attacks.push(command);
-      } else if (command.type == "move") {
-        this.unitToCommandMap[command.unit.id] = command;
-        moves.push(command);
-      } else if (command.type === "pickUpFood") {
-        this.unitToCommandMap[command.unit.id] = command;
-        foodPickUps.push(command);
-      } else if (command.type === "dropOffFood") {
-        this.unitToCommandMap[command.unit.id] = command;
-        foodDropOffs.push(command);
-      } else if (command.type == "spawn") {
-        this.unitToCommandMap[command.unit.id] = command;
-        spawns.push(command);
+      if (!action || unitToActionMap[action.unit.id]) {
+        commandResponses.push(
+          new CommandResponse({
+            command,
+            action,
+            status: "failure"
+          })
+        );
+        return null;
+      }
+      if (action.type == "attack") {
+        unitToActionMap[action.unit.id] = action;
+        attacks.push(action);
+      } else if (action.type == "move") {
+        unitToActionMap[action.unit.id] = action;
+        moves.push(action);
+      } else if (action.type === "pickUpFood") {
+        unitToActionMap[action.unit.id] = action;
+        foodPickUps.push(action);
+      } else if (action.type === "dropOffFood") {
+        unitToActionMap[action.unit.id] = action;
+        foodDropOffs.push(action);
+      } else if (action.type == "spawn") {
+        unitToActionMap[action.unit.id] = action;
+        spawns.push(action);
       }
     });
     // Execute attacks in order
     await attacks.reduce(
-      (promise, command) =>
+      (promise, action) =>
         promise.then(async () => {
-          const action = await this.executeAttack(command);
-          this.checkStopConditionForCommand(command, action);
+          await this.executeAttack(action);
         }),
       Promise.resolve()
     );
     // Execute food pick ups in order
     await foodPickUps.reduce(
-      (promise, command) =>
+      (promise, action) =>
         promise.then(async () => {
-          const action = await this.executeFoodPickUp(command);
-          this.checkStopConditionForCommand(command, action);
+          await this.executeFoodPickUp(action);
         }),
       Promise.resolve()
     );
     // Execute food drop offs in order
     await foodDropOffs.reduce(
-      (promise, command) =>
+      (promise, action) =>
         promise.then(async () => {
-          const action = await this.executeFoodDropOff(command);
-          this.checkStopConditionForCommand(command, action);
+          await this.executeFoodDropOff(action);
         }),
       Promise.resolve()
     );
     // Execute moves in order
     await moves.reduce(
-      (promise, command) =>
+      (promise, action) =>
         promise.then(async () => {
-          const action = await this.executeMove(command);
-          this.checkStopConditionForCommand(command, action);
+          await this.executeMove(action);
         }),
       Promise.resolve()
     );
     // Execute spawns in order
     await spawns.reduce(
-      (promise, command) =>
+      (promise, action) =>
         promise.then(async () => {
-          const action = await this.executeSpawn(command);
-          this.checkStopConditionForCommand(command, action);
+          await this.executeSpawn(action);
         }),
       Promise.resolve()
     );
     // Return turn from history
-    return this.history.getActions(this.turn);
+    return commandResponses;
   }
 
-  async executeFoodDropOff(command: Command) {
+  async executeFoodDropOff(command: Action) {
     if (command.type !== "dropOffFood") return;
     try {
       const unit = command.unit as Citizen;
@@ -465,27 +463,21 @@ export default class Game {
           food.move(position);
           this.foods[position.key] = food;
         }
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: unit.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
+        command.status = "success";
+        command.response = unit.toJSON();
+        this.history.pushActions(this.turn, command);
+        return command;
       } else {
-        return await this.executeMove(new Command(unit, "move", { position }));
+        throw new Error("Unit is not adjacent to the food");
       }
     } catch (err) {
-      const failureAction = new Action({
-        command,
-        status: "failure",
-        error: err.message
-      });
-      this.history.pushActions(this.turn, failureAction);
+      command.status = "failure";
+      command.error = err.message;
+      return command;
     }
   }
 
-  async executeFoodPickUp(command: Command) {
+  async executeFoodPickUp(command: Action) {
     if (command.type !== "pickUpFood") return;
     try {
       const unit = command.unit as Citizen;
@@ -512,27 +504,21 @@ export default class Game {
         unit.eatFood(food);
         food.getEatenBy(unit);
         delete this.foods[food.key]; // Un-register food
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: unit.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
+        command.status = "success";
+        command.response = unit.toJSON();
+        this.history.pushActions(this.turn, command);
+        return command;
       } else {
-        return await this.executeMove(new Command(unit, "move", { position }));
+        throw new Error("Unit is not adjacent to the food");
       }
     } catch (err) {
-      const failureAction = new Action({
-        command,
-        status: "failure",
-        error: err.message
-      });
-      this.history.pushActions(this.turn, failureAction);
+      command.status = "failure";
+      command.error = err.message;
+      return command;
     }
   }
 
-  async executeAttack(command: Command) {
+  async executeAttack(command: Action) {
     if (command.type !== "attack") return;
     try {
       const { targetId } = command.args;
@@ -550,32 +536,23 @@ export default class Game {
 
       if (isTargetInRange) {
         this.handleAttack(unit, target);
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: target.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
+        command.status = "success";
+        command.response = unit.toJSON();
+        this.history.pushActions(this.turn, command);
+        return command;
       } else if (unit.class === "HQ") {
         throw new Error("Target is not within range: " + target.id); // miss!
       } else {
-        return await this.executeMove(
-          new Command(unit, "move", { targetId: target.id })
-        );
+        throw new Error("Target is not in range of the unit");
       }
     } catch (err) {
-      const failureAction = new Action({
-        command,
-        status: "failure",
-        error: err.message
-      });
-      this.history.pushActions(this.turn, failureAction);
-      return failureAction;
+      command.status = "failure";
+      command.error = err.message;
+      return command;
     }
   }
 
-  async executeMove(command: Command) {
+  async executeMove(command: Action) {
     if (command.type !== "move") return;
     try {
       const unit = command.unit as Citizen | Fighter;
@@ -617,27 +594,18 @@ export default class Game {
       } else {
         this.handleFighterMove(unit as Fighter, newPosition);
       }
-      // Create success action, add to history, and return
-      const successAction = new Action({
-        command,
-        status: "success",
-        response: unit.toJSON()
-      });
-      this.history.pushActions(this.turn, successAction);
-      return successAction;
+      command.status = "success";
+      command.response = unit.toJSON();
+      this.history.pushActions(this.turn, command);
+      return command;
     } catch (err) {
-      // Create failure action, add to history, and return
-      const failureAction = new Action({
-        command,
-        status: "failure",
-        error: err.message
-      });
-      this.history.pushActions(this.turn, failureAction);
-      return failureAction;
+      command.status = "failure";
+      command.error = err.message;
+      return command;
     }
   }
 
-  async executeSpawn(command: Command) {
+  async executeSpawn(command: Action) {
     if (command.type !== "spawn") return;
     try {
       const { unit } = command;
@@ -651,13 +619,10 @@ export default class Game {
 
       if (command.args.unitType == "Citizen") {
         const newCitizen = this.spawnCitizen(unit as HQ, { position });
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: newCitizen.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
+        command.status = "success";
+        command.response = newCitizen.toJSON();
+        this.history.pushActions(this.turn, command);
+        return command;
       } else {
         const newFighter = this.spawnFighter(
           unit as HQ,
@@ -666,22 +631,15 @@ export default class Game {
             position
           }
         );
-        const successAction = new Action({
-          command,
-          status: "success",
-          response: newFighter.toJSON()
-        });
-        this.history.pushActions(this.turn, successAction);
-        return successAction;
+        command.status = "success";
+        command.response = newFighter.toJSON();
+        this.history.pushActions(this.turn, command);
+        return command;
       }
     } catch (err) {
-      const failureAction = new Action({
-        command,
-        status: "failure",
-        error: err.message
-      });
-      this.history.pushActions(this.turn, failureAction);
-      return failureAction;
+      command.status = "failure";
+      command.error = err.message;
+      return command;
     }
   }
 
@@ -697,30 +655,30 @@ export default class Game {
     this.turn = turn;
     // Iterate through actions
     actions.forEach(action => {
-      const { command, status, response } = action;
+      const { type, unit, status, response, args } = action;
       if (status !== "success") return;
-      if (command.type === "attack") {
-        const fighter = this.lookup[command.unit.id] as Fighter;
+      if (type === "attack") {
+        const fighter = this.lookup[unit.id] as Fighter;
         const target = this.lookup[response.id] as Unit;
         this.handleAttack(fighter, target);
-      } else if (command.type === "move") {
-        const unit = this.lookup[command.unit.id] as Citizen | Fighter;
+      } else if (type === "move") {
+        const citizenOrFighter = this.lookup[unit.id] as Citizen | Fighter;
         const position = Position.fromJSON(response.position);
-        if (unit.class === "Citizen") {
-          this.handleCitizenMove(unit as Citizen, position, {
-            autoPickUpFood: command.args.autoPickUpFood,
-            autoDropOffFood: command.args.autoDropOffFood
+        if (citizenOrFighter.class === "Citizen") {
+          this.handleCitizenMove(citizenOrFighter as Citizen, position, {
+            autoPickUpFood: args.autoPickUpFood,
+            autoDropOffFood: args.autoDropOffFood
           });
-        } else if (unit.class === "Fighter") {
-          this.handleFighterMove(unit as Fighter, position);
+        } else if (citizenOrFighter.class === "Fighter") {
+          this.handleFighterMove(citizenOrFighter as Fighter, position);
         }
-      } else if (command.type === "spawn") {
-        const hq = command.unit as HQ;
+      } else if (type === "spawn") {
+        const hq = unit as HQ;
         const position = Position.fromJSON(response.position);
-        if (command.args.unitType === "Citizen") {
+        if (args.unitType === "Citizen") {
           this.spawnCitizen(hq, { ...response, position });
         } else {
-          this.spawnFighter(hq, command.args.unitType, {
+          this.spawnFighter(hq, args.unitType, {
             ...response,
             position
           });
@@ -827,39 +785,6 @@ export default class Game {
     }
   }
 
-  checkStopConditionForCommand(command: Command, action: Action) {
-    if (action.status === "failure") {
-      delete this.unitToCommandMap[command.unit.id];
-      return;
-    }
-
-    if (
-      command.type === "spawn" &&
-      action.response.class === command.args.unitType
-    )
-      delete this.unitToCommandMap[command.unit.id];
-    else if (
-      command.type === "move" &&
-      command.args.position.isEqualTo(action.response.position)
-    )
-      delete this.unitToCommandMap[command.unit.id];
-    else if (
-      command.type === "pickUpFood" &&
-      !!(action.response as Citizen).foodId
-    )
-      delete this.unitToCommandMap[command.unit.id];
-    else if (
-      command.type === "dropOffFood" &&
-      !(action.response as Citizen).foodId
-    )
-      delete this.unitToCommandMap[command.unit.id];
-    else if (
-      command.type === "attack" &&
-      (this.lookup[command.args.targetId] as Unit).hp <= 0
-    )
-      delete this.unitToCommandMap[command.unit.id];
-  }
-
   getOptimalPathToTarget(unit: Citizen | Fighter, target: Unit) {
     let allPaths: Position[][] = [];
 
@@ -890,15 +815,8 @@ export default class Game {
         .filter(Boolean);
     }
 
-    if (allPaths.length > 0) {
-      const shortestPathIndex = allPaths.reduce(
-        (indexShortest, path, currentIndex, paths) =>
-          path.length < paths[indexShortest].length
-            ? currentIndex
-            : indexShortest,
-        0
-      );
-      return allPaths[shortestPathIndex];
-    } else return null;
+    if (allPaths.length > 0)
+      return allPaths.reduce((a, b) => (a.length < b.length ? a : b));
+    else return null;
   }
 }

@@ -1,15 +1,9 @@
 import Game, { Unit, FighterType } from "./Game";
+import Action from "./Action";
 import { Position, PositionJSON } from "./ObjectWithPosition";
 
-export type CommandType =
-  | "move"
-  | "attack"
-  | "spawn"
-  | "pickUpFood"
-  | "dropOffFood";
 export type CommandJSON = [
   string,
-  CommandType,
   {
     position?: PositionJSON;
     autoPickUpFood?: boolean;
@@ -21,7 +15,6 @@ export type CommandJSON = [
 
 export default class Command {
   unit: Unit;
-  type: CommandType;
   args?: {
     position?: Position;
     autoPickUpFood?: boolean;
@@ -30,22 +23,25 @@ export default class Command {
     targetId?: string;
   };
 
-  constructor(Unit: Unit, commandType: CommandType, args = {}) {
+  constructor(Unit: Unit, args = {}) {
     this.unit = Unit;
-    this.type = commandType;
     this.args = args;
   }
 
+  getNextAction(_game: Game): Action {
+    return null;
+  }
+
   toJSON() {
-    return [this.unit.id, this.type, this.args] as CommandJSON;
+    return [this.unit.id, this.args] as CommandJSON;
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
     const unit = game.lookup[json[0]] as Unit;
-    const args = json[2] || {};
+    const args = json[1] || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
-    return new Command(unit, json[1], args);
+    return new Command(unit, args);
   }
 }
