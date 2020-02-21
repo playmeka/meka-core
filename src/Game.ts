@@ -176,11 +176,16 @@ export default class Game {
   }
 
   get citizensList() {
-    return Object.values(this.citizens).filter(citizen => !!citizen);
+    return Object.values(this.lookup).filter(
+      object => object.class === "Citizen"
+    ) as Citizen[];
   }
 
   get fightersList() {
-    return Object.values(this.fighters).filter(fighter => !!fighter);
+    const fighterTypes = ["InfantryFighter", "CavalryFighter", "RangedFighter"];
+    return Object.values(this.lookup).filter(object =>
+      fighterTypes.includes(object.class)
+    ) as Fighter[];
   }
 
   get hqsList() {
@@ -661,7 +666,7 @@ export default class Game {
             autoPickUpFood: command.args.autoPickUpFood,
             autoDropOffFood: command.args.autoDropOffFood
           });
-        } else if (unit.class === "Fighter") {
+        } else {
           this.handleFighterMove(unit as Fighter, position);
         }
       } else if (
