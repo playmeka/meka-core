@@ -18,6 +18,7 @@ export {
   GameProps,
   GameGenerateProps,
   Fighter,
+  FighterType,
   Unit
 } from "./Game";
 export { default as HQ, HQJSON } from "./HQ";
