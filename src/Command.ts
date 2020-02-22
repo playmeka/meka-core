@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import Game, { Unit, FighterType } from "./Game";
 import Action from "./Action";
 import { Position, PositionJSON } from "./ObjectWithPosition";
@@ -25,16 +26,18 @@ export type CommandClassName =
   | "DropOffFoodCommand"
   | "PickUpFoodCommand";
 
-export type CommandJSON = [CommandClassName, string, CommandArgsJSON];
+export type CommandJSON = [CommandClassName, string, string, CommandArgsJSON];
 
 export default class Command {
   class: string = "Command";
   unit: Unit;
   args?: CommandArgs;
+  id: string;
 
-  constructor(unit: Unit, args = {}) {
-    this.unit = unit;
-    this.args = args;
+  constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
+    this.id = props.id || uuidv4();
+    this.unit = props.unit;
+    this.args = props.args || {};
   }
 
   getNextAction(_game: Game): Action {
@@ -42,16 +45,16 @@ export default class Command {
   }
 
   toJSON() {
-    return [this.class, this.unit.id, this.args] as CommandJSON;
+    return [this.class, this.id, this.unit.id, this.args] as CommandJSON;
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[1]] as Unit;
-    let args = json[2] || {};
+    const unit = game.lookup[json[2]] as Unit;
+    let args = json[3] || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new Command(unit, args);
+    return new Command({ ...json, unit, args: args as CommandArgs });
   }
 }

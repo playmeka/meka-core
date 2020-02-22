@@ -1,12 +1,12 @@
 import Game, { Unit } from "../Game";
-import Command, { CommandJSON } from "../Command";
+import Command, { CommandJSON, CommandArgs } from "../Command";
 import { Position } from "../ObjectWithPosition";
 import Action from "../Action";
 import Citizen from "../Citizen";
 
 export default class PickUpFoodCommand extends Command {
-  constructor(unit: Unit, args = {}) {
-    super(unit, args);
+  constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
+    super(props);
   }
 
   getNextAction(game: Game): Action {
@@ -54,12 +54,16 @@ export default class PickUpFoodCommand extends Command {
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[1]] as Unit;
-    let args = json[2] || {};
+    const unit = game.lookup[json[2]] as Unit;
+    let args = json[3] || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new PickUpFoodCommand(unit, args);
+    return new PickUpFoodCommand({
+      ...json,
+      unit: unit,
+      args: args as CommandArgs
+    });
   }
 }

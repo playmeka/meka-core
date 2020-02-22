@@ -29,7 +29,7 @@ export default class CommandResponse {
   constructor(props: CommandResponseProps) {
     this.command = props.command;
     this.status = props.status;
-    this.action = props.action;
+    this.action = props.action || null;
   }
 
   toJSON() {

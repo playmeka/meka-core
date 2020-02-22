@@ -43,9 +43,12 @@ export default function fighterAttackDamageBehavior(
         game.killCitizen(target as Citizen);
         game.addFighter(targetFighter);
         target = targetFighter;
-        command = new AttackCommand(fighter, {
-          position: target.position,
-          targetId: target.id
+        command = new AttackCommand({
+          unit: fighter,
+          args: {
+            position: target.position,
+            targetId: target.id
+          }
         });
       });
 
@@ -79,9 +82,12 @@ export default function fighterAttackDamageBehavior(
 
     describe("target is of type citizen", () => {
       beforeEach(() => {
-        command = new AttackCommand(fighter, {
-          position: target.position,
-          targetId: target.id
+        command = new AttackCommand({
+          unit: fighter,
+          args: {
+            position: target.position,
+            targetId: target.id
+          }
         });
       });
 

@@ -376,20 +376,17 @@ export default class Game {
 
     // Create map for ensuring one action per unit
     const unitToActionMap: { [id: string]: Action } = {};
-    const commandResponses: CommandResponse[] = [];
+    const commandIdToResponses: { [id: string]: CommandResponse } = {};
 
     // Assign commands to Action queues
     commands.forEach(command => {
       const action = command.getNextAction(this);
-      // Do nothing if command is invalid
       if (!action || unitToActionMap[action.unit.id]) {
-        commandResponses.push(
-          new CommandResponse({
-            command,
-            action,
-            status: "failure"
-          })
-        );
+        commandIdToResponses[command.id] = new CommandResponse({
+          command,
+          action,
+          status: "failure"
+        });
         return null;
       }
       if (action.type == "attack") {
@@ -414,13 +411,11 @@ export default class Game {
       (promise, action) =>
         promise.then(async () => {
           const response = await this.executeAttack(action);
-          commandResponses.push(
-            new CommandResponse({
-              command: response.command,
-              action: response,
-              status: response.status === "success" ? "success" : "failure"
-            })
-          );
+          commandIdToResponses[response.command.id] = new CommandResponse({
+            command: response.command,
+            action: response,
+            status: response.status === "success" ? "success" : "failure"
+          });
         }),
       Promise.resolve()
     );
@@ -429,13 +424,11 @@ export default class Game {
       (promise, action) =>
         promise.then(async () => {
           const response = await this.executeFoodPickUp(action);
-          commandResponses.push(
-            new CommandResponse({
-              command: response.command,
-              action: response,
-              status: response.status === "success" ? "success" : "failure"
-            })
-          );
+          commandIdToResponses[response.command.id] = new CommandResponse({
+            command: response.command,
+            action: response,
+            status: response.status === "success" ? "success" : "failure"
+          });
         }),
       Promise.resolve()
     );
@@ -444,13 +437,11 @@ export default class Game {
       (promise, action) =>
         promise.then(async () => {
           const response = await this.executeFoodDropOff(action);
-          commandResponses.push(
-            new CommandResponse({
-              command: response.command,
-              action: response,
-              status: response.status === "success" ? "success" : "failure"
-            })
-          );
+          commandIdToResponses[response.command.id] = new CommandResponse({
+            command: response.command,
+            action: response,
+            status: response.status === "success" ? "success" : "failure"
+          });
         }),
       Promise.resolve()
     );
@@ -459,13 +450,11 @@ export default class Game {
       (promise, action) =>
         promise.then(async () => {
           const response = await this.executeMove(action);
-          commandResponses.push(
-            new CommandResponse({
-              command: response.command,
-              action: response,
-              status: response.status === "success" ? "success" : "failure"
-            })
-          );
+          commandIdToResponses[response.command.id] = new CommandResponse({
+            command: response.command,
+            action: response,
+            status: response.status === "success" ? "success" : "failure"
+          });
         }),
       Promise.resolve()
     );
@@ -474,19 +463,16 @@ export default class Game {
       (promise, action) =>
         promise.then(async () => {
           const response = await this.executeSpawn(action);
-          commandResponses.push(
-            new CommandResponse({
-              command: response.command,
-              action: response,
-              status: response.status === "success" ? "success" : "failure"
-            })
-          );
+          commandIdToResponses[response.command.id] = new CommandResponse({
+            command: response.command,
+            action: response,
+            status: response.status === "success" ? "success" : "failure"
+          });
         }),
       Promise.resolve()
     );
 
-    // TODO: Set commandResponses correctly and return
-    return commandResponses;
+    return commands.map(command => commandIdToResponses[command.id]);
   }
 
   async executeFoodDropOff(action: Action) {

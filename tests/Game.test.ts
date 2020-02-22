@@ -28,8 +28,11 @@ describe("Sending invalid spawn command", () => {
   test("returns failure action", async () => {
     const game = Game.generate(defaultGameProps);
     // Note: this command is invalid because the team does not have enough food for a spawn
-    const command = new SpawnCommand(game.teams[0].hq, {
-      unitType: "Citizen"
+    const command = new SpawnCommand({
+      unit: game.teams[0].hq,
+      args: {
+        unitType: "Citizen"
+      }
     });
     const commandResponses = await game.executeTurn([command]);
     expect(commandResponses.length).toBe(1);
@@ -49,7 +52,10 @@ describe("Sending valid move command with position that's adjacent to the unit",
     game = Game.generate(defaultGameProps);
     json = game.toJSON();
     citizen = game.teams[0].citizens[0];
-    command = new MoveCommand(citizen, { position: citizen.validMoves[0] });
+    command = new MoveCommand({
+      unit: citizen,
+      args: { position: citizen.validMoves[0] }
+    });
     const responses = await game.executeTurn([command]);
     actions = responses.map(response => response.action);
   });
@@ -112,8 +118,11 @@ describe("Sending valid move command with position that's not adjacent to the un
         );
       })
     )[0];
-    command = new MoveCommand(citizen, {
-      position
+    command = new MoveCommand({
+      unit: citizen,
+      args: {
+        position
+      }
     });
     const responses = await game.executeTurn([command]);
     actions = responses.map(response => response.action);
@@ -155,9 +164,12 @@ describe("Sending valid attack command", () => {
       position: attackPosition
     });
     game.addFighter(fighter);
-    command = new AttackCommand(fighter, {
-      position: target.position,
-      targetId: target.id
+    command = new AttackCommand({
+      unit: fighter,
+      args: {
+        position: target.position,
+        targetId: target.id
+      }
     });
   });
 
@@ -209,9 +221,12 @@ describe("Fighter range behavior", () => {
           position: fighterPosition
         });
         game.addFighter(fighter);
-        command = new AttackCommand(fighter, {
-          position: target.position,
-          targetId: target.id
+        command = new AttackCommand({
+          unit: fighter,
+          args: {
+            position: target.position,
+            targetId: target.id
+          }
         });
       });
 
