@@ -99,6 +99,19 @@ export default class CavalryFighter extends ObjectWithPosition {
     );
   }
 
+  getAttackPositionsFor(enemyUnit: Unit) {
+    let allPositions: Position[] = [];
+    enemyUnit.covering.forEach(position =>
+      allPositions.push(...position.adjacentsWithinDistance(this.range))
+    );
+
+    return Array.from(new Set(allPositions.map(position => position.key))).map(
+      key => {
+        return allPositions.find(position => position.key === key);
+      }
+    );
+  }
+
   toJSON() {
     const { id, hp, teamId, position, cost, speed, range, className } = this;
     return {

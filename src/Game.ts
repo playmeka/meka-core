@@ -205,9 +205,10 @@ export default class Game {
   }
 
   get fightersList() {
-    const fighterTypes = ["InfantryFighter", "CavalryFighter", "RangedFighter"];
     return Object.values(this.lookup).filter(object =>
-      fighterTypes.includes(object.className)
+      ["InfantryFighter", "CavalryFighter", "RangedFighter"].includes(
+        object.className
+      )
     ) as Fighter[];
   }
 
@@ -817,33 +818,21 @@ export default class Game {
 
     // If the unit is a Citizen, go to the closest position that the target covers
     if (unit.className === "Citizen") {
-      allPaths = target.covering
-        .map(position => this.pathFinder.getPath(unit, position))
-        .filter(Boolean);
+      allPaths = this.pathFinder.getPaths(unit, target.covering);
     }
     // If the unit is a Fighter, go to the closest position that's adjacent the area that the target covers
-    else {
-      let allPositions: Position[] = [];
-      target.covering.forEach(position =>
-        allPositions.push(
-          ...position.adjacentsWithinDistance((unit as Fighter).range)
-        )
-      );
+    else if (
+      ["InfantryFighter", "CavalryFighter", "RangedFighter"].includes(
+        unit.className
+      )
+    ) {
+      const attackPositions = (unit as Fighter).getAttackPositionsFor(target);
 
-      // TODO: Check if this is stable.
-      const uniquePositions = Array.from(
-        new Set(allPositions.map(position => position.key))
-      ).map(key => {
-        return allPositions.find(position => position.key === key);
-      });
-
-      allPaths = uniquePositions
-        .map(position => this.pathFinder.getPath(unit, position))
-        .filter(Boolean);
+      allPaths = this.pathFinder.getPaths(unit, attackPositions);
     }
 
     if (allPaths.length > 0)
       return allPaths.reduce((a, b) => (a.length < b.length ? a : b));
-    else return null;
+    return null;
   }
 }
