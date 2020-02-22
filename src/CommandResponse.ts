@@ -55,6 +55,7 @@ export default class CommandResponse {
       PickUpFoodCommand
     }[json.command.className];
 
+    // TODO: Handle commandJSON type
     const command = commandClass.fromJSON(game, json.command as any);
     const action = Action.fromJSON(game, json.action);
     return new CommandResponse({ ...json, command, action });

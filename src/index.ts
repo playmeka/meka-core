@@ -1,5 +1,8 @@
 export { default as Action, ActionJSON, ActionType } from "./Action";
-export { default as CommandResponse } from "./CommandResponse";
+export {
+  default as CommandResponse,
+  CommandResponseJSON
+} from "./CommandResponse";
 export { default as History, HistoryJSON } from "./History";
 export { default as Citizen, CitizenJSON } from "./Citizen";
 export {

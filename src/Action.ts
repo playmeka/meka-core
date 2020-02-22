@@ -1,6 +1,11 @@
-import Game, { Unit, UnitJSON, CommandChildClass, CommandJSON } from "./Game";
-import { CommandArgs, CommandArgsJSON } from "./Command";
-import { Position } from "./ObjectWithPosition";
+import Game, {
+  Unit,
+  UnitJSON,
+  CommandChildClass,
+  CommandJSON,
+  FighterType
+} from "./Game";
+import { Position, PositionJSON } from "./ObjectWithPosition";
 import {
   MoveCommand,
   AttackCommand,
@@ -16,20 +21,36 @@ export type ActionType =
   | "pickUpFood"
   | "dropOffFood";
 
+export type ActionArgs = {
+  position?: Position;
+  autoPickUpFood?: boolean;
+  autoDropOffFood?: boolean;
+  unitType?: FighterType | "Citizen";
+  targetId?: string;
+};
+
+export type ActionArgsJSON = {
+  position?: PositionJSON;
+  autoPickUpFood?: boolean;
+  autoDropOffFood?: boolean;
+  unitType?: FighterType | "Citizen";
+  targetId?: string;
+};
+
 export type ActionResponse = UnitJSON;
 export type ActionJSON = {
   command: CommandJSON;
   response?: any;
   type: ActionType;
   unit: UnitJSON;
-  args: CommandArgsJSON;
+  args: ActionArgsJSON;
 };
 export type ActionProps = {
   command: CommandChildClass;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
-  args: CommandArgs;
+  args: ActionArgs;
 };
 
 export default class Action {
@@ -37,7 +58,7 @@ export default class Action {
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
-  args: CommandArgs;
+  args: ActionArgs;
 
   constructor(props: ActionProps) {
     this.command = props.command;
@@ -67,12 +88,13 @@ export default class Action {
       PickUpFoodCommand
     }[json.command.className];
 
+    // TODO: Handle commandJSON type
     const command = commandClass.fromJSON(game, json.command as any);
     const unit = game.lookup[json.unit.id] as Unit;
     let args = json.args || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
-    return new Action({ ...json, command, unit, args: args as CommandArgs });
+    return new Action({ ...json, command, unit, args: args as ActionArgs });
   }
 }
