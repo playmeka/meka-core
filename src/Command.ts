@@ -18,14 +18,14 @@ export type CommandArgsJSON = {
   targetId?: string;
 };
 
-export type CommandClass =
+export type CommandClassName =
   | "MoveCommand"
   | "AttackCommand"
   | "SpawnCommand"
   | "DropOffFoodCommand"
   | "PickUpFoodCommand";
 
-export type CommandJSON = [CommandClass, string, CommandArgsJSON];
+export type CommandJSON = [CommandClassName, string, CommandArgsJSON];
 
 export default class Command {
   class: string = "Command";
