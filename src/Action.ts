@@ -1,6 +1,13 @@
-import { v4 as uuidv4 } from "uuid";
-import Game, { Unit, UnitJSON } from "./Game";
-import Command, { CommandJSON } from "./Command";
+import Game, { Unit, UnitJSON, Command } from "./Game";
+import { CommandJSON, CommandArgs, CommandArgsJSON } from "./Command";
+import { Position } from "./ObjectWithPosition";
+import {
+  MoveCommand,
+  AttackCommand,
+  SpawnCommand,
+  DropOffFoodCommand,
+  PickUpFoodCommand
+} from "./commands";
 
 export type ActionType =
   | "move"
@@ -9,41 +16,37 @@ export type ActionType =
   | "pickUpFood"
   | "dropOffFood";
 
-export type ActionStatus = "success" | "failure";
+export type ActionStatus = "success" | "inprogress" | "failure";
 export type ActionResponse = UnitJSON;
 export type ActionJSON = {
-  id: string;
   command: CommandJSON;
   status: ActionStatus;
   error?: string;
   response?: any;
   type: ActionType;
-  args: any;
   unit: UnitJSON;
+  args: CommandArgsJSON;
 };
 export type ActionProps = {
   command: Command;
   status: ActionStatus;
-  id?: string;
   error?: string;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
-  args: any;
+  args: CommandArgs;
 };
 
 export default class Action {
-  id: string;
   command: Command;
   status: ActionStatus;
   error?: string;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
-  args: any;
+  args: CommandArgs;
 
   constructor(props: ActionProps) {
-    this.id = props.id || uuidv4();
     this.command = props.command;
     this.status = props.status;
     this.error = props.error;
@@ -54,9 +57,8 @@ export default class Action {
   }
 
   toJSON() {
-    const { id, command, status, error, response, type, unit, args } = this;
+    const { command, status, error, response, type, unit, args } = this;
     return {
-      id,
       status,
       error,
       response,
@@ -68,8 +70,20 @@ export default class Action {
   }
 
   static fromJSON(game: Game, json: ActionJSON) {
-    const command = Command.fromJSON(game, json.command);
+    const commandClass = {
+      MoveCommand,
+      AttackCommand,
+      SpawnCommand,
+      DropOffFoodCommand,
+      PickUpFoodCommand
+    }[json.command[0]];
+
+    const command = commandClass.fromJSON(game, json.command);
     const unit = game.lookup[json.unit.id] as Unit;
-    return new Action({ ...json, command, unit });
+    let args = json.args || {};
+    if (args.position) {
+      args.position = new Position(args.position.x, args.position.y);
+    }
+    return new Action({ ...json, command, unit, args: args as CommandArgs });
   }
 }

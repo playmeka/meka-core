@@ -1,7 +1,8 @@
-import Game, { Fighter, Unit } from "./Game";
-import Command from "./Command";
-import Action from "./Action";
-import Citizen from "./Citizen";
+import Game, { Fighter, Unit } from "../Game";
+import Command, { CommandJSON } from "../Command";
+import { Position } from "../ObjectWithPosition";
+import Action from "../Action";
+import Citizen from "../Citizen";
 
 export default class MoveCommand extends Command {
   constructor(unit: Unit, args = {}) {
@@ -30,6 +31,22 @@ export default class MoveCommand extends Command {
     // Note: it is not unit.speed - 1 because PathFinder returns the unit
     // position as the first step in the path
     const newPosition = path[unit.speed] || path[path.length - 1];
-    return newPosition;
+    return new Action({
+      command: this,
+      type: "move",
+      status: "inprogress",
+      args: { ...this.args, position: newPosition },
+      unit
+    });
+  }
+
+  static fromJSON(game: Game, json: CommandJSON) {
+    const unit = game.lookup[json[1]] as Unit;
+    let args = json[2] || {};
+    if (args.position) {
+      args.position = new Position(args.position.x, args.position.y);
+    }
+
+    return new MoveCommand(unit, args);
   }
 }

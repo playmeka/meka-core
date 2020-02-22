@@ -1,5 +1,5 @@
-export { default as Action, ActionJSON } from "./Action";
-export { default as Command, CommandJSON, CommandType } from "./Command";
+export { default as Action, ActionJSON, ActionType } from "./Action";
+export { default as Command, CommandJSON } from "./Command";
 export { default as History, HistoryJSON } from "./History";
 export { default as Citizen, CitizenJSON } from "./Citizen";
 export {
@@ -18,6 +18,7 @@ export {
   GameProps,
   GameGenerateProps,
   Fighter,
+  FighterType,
   Unit
 } from "./Game";
 export { default as HQ, HQJSON } from "./HQ";
@@ -26,6 +27,7 @@ export {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
+export * from "./commands";
 export { default as Team, TeamJSON } from "./Team";
 export { default as Wall, WallJSON } from "./Wall";
 export { default as isValidPosition } from "./utils/isValidPosition";
