@@ -5,6 +5,8 @@ import Action from "../Action";
 import Citizen from "../Citizen";
 
 export default class MoveCommand extends Command {
+  className: string = "MoveCommand";
+
   constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
     super(props);
   }
@@ -26,7 +28,7 @@ export default class MoveCommand extends Command {
       path = game.getOptimalPathToTarget(unit, target);
     }
 
-    if (path === null) return null;
+    if (!path) return null;
     // Take unit.speed steps at a time
     // Note: it is not unit.speed - 1 because PathFinder returns the unit
     // position as the first step in the path
@@ -34,23 +36,18 @@ export default class MoveCommand extends Command {
     return new Action({
       command: this,
       type: "move",
-      status: "inprogress",
       args: { ...this.args, position: newPosition },
       unit
     });
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[2]] as Unit;
-    let args = json[3] || {};
+    const unit = game.lookup[json.unit.id] as Unit;
+    let args = json.args || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new MoveCommand({
-      ...json,
-      unit: unit,
-      args: args as CommandArgs
-    });
+    return new MoveCommand({ ...json, unit, args: args as CommandArgs });
   }
 }

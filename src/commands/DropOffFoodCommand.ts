@@ -1,11 +1,13 @@
-import Game, { Unit } from "../Game";
+import Game from "../Game";
 import Command, { CommandJSON, CommandArgs } from "../Command";
 import { Position } from "../ObjectWithPosition";
 import Action from "../Action";
 import Citizen from "../Citizen";
 
 export default class DropOffFoodCommand extends Command {
-  constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
+  className: string = "DropOffFoodCommand";
+
+  constructor(props: { unit: Citizen; args?: CommandArgs; id?: string }) {
     super(props);
   }
 
@@ -13,7 +15,7 @@ export default class DropOffFoodCommand extends Command {
     const unit = this.unit as Citizen;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
-    if (unit.class !== "Citizen") return null;
+    if (unit.className !== "Citizen") return null;
     if (!unit.food) return null;
     const { position } = this.args;
     const food = unit.food;
@@ -24,14 +26,13 @@ export default class DropOffFoodCommand extends Command {
       return new Action({
         command: this,
         type: "dropOffFood",
-        status: "inprogress",
         args: { position },
         unit
       });
     } else {
-      let path = game.pathFinder.getPath(unit, position);
+      const path = game.pathFinder.getPath(unit, position);
 
-      if (path === null) return null;
+      if (!path) return null;
 
       // Take unit.speed steps at a time
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
@@ -40,7 +41,6 @@ export default class DropOffFoodCommand extends Command {
       return new Action({
         command: this,
         type: "move",
-        status: "inprogress",
         args: {
           position: newPosition,
           autoPickUpFood: false,
@@ -52,16 +52,12 @@ export default class DropOffFoodCommand extends Command {
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[2]] as Unit;
-    let args = json[3] || {};
+    const unit = game.lookup[json.unit.id] as Citizen;
+    let args = json.args || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new DropOffFoodCommand({
-      ...json,
-      unit: unit,
-      args: args as CommandArgs
-    });
+    return new DropOffFoodCommand({ ...json, unit, args: args as CommandArgs });
   }
 }

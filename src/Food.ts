@@ -8,7 +8,7 @@ import isValidFoodPosition from "./utils/isValidFoodPosition";
 export type FoodJSON = [string, number, number, string];
 
 export default class Food extends ObjectWithPosition {
-  class = "Food";
+  className = "Food";
   eatenById: string;
   game: Game;
   id: string;

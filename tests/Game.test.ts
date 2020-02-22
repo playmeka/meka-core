@@ -1,12 +1,12 @@
 import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
-import Game, { Command, GameJSON, Fighter } from "../src/Game";
+import Game, { CommandChildClass, GameJSON, Fighter } from "../src/Game";
 import Citizen from "../src/Citizen";
+import CommandResponse from "../src/CommandResponse";
 import InfantryFighter from "../src/InfantryFighter";
 import RangedFighter from "../src/RangedFighter";
 import HQ from "../src/HQ";
 import { MoveCommand, SpawnCommand, AttackCommand } from "../src/commands";
-import Action from "../src/Action";
 import fighterAttackDamageBehavior from "./utils/fighterAttackDamageBehavior";
 import defaultGameProps from "./utils/defaultGameProps";
 
@@ -45,8 +45,8 @@ describe("Sending valid move command with position that's adjacent to the unit",
   let game: Game,
     json: GameJSON,
     citizen: Citizen,
-    command: Command,
-    actions: Action[];
+    command: CommandChildClass,
+    responses: CommandResponse[];
 
   beforeEach(async () => {
     game = Game.generate(defaultGameProps);
@@ -56,23 +56,20 @@ describe("Sending valid move command with position that's adjacent to the unit",
       unit: citizen,
       args: { position: citizen.validMoves[0] }
     });
-    const responses = await game.executeTurn([command]);
-    actions = responses.map(response => response.action);
+    responses = await game.executeTurn([command]);
   });
 
   test("returns actions", () => {
-    expect(actions.length).toBe(1);
+    expect(responses.length).toBe(1);
   });
 
   test("returns success action", () => {
-    const action = actions[0];
-    expect(action.status).toBe("success");
+    expect(responses[0].status).toBe("success");
   });
 
   test("returns response with data changes", () => {
-    const action = actions[0];
-    expect(action.response.id).toBeTruthy();
-    expect(action.response.class).toEqual("Citizen");
+    expect(responses[0].action.response.id).toBeTruthy();
+    expect(responses[0].action.response.className).toEqual("Citizen");
   });
 
   test("increments game turn", () => {
@@ -87,7 +84,7 @@ describe("Sending valid move command with position that's adjacent to the unit",
   test("can be imported into game copy", () => {
     const newGame = Game.fromJSON(json);
     expect(newGame.turn).toBe(game.turn - 1);
-    newGame.importTurn(game.turn, actions);
+    newGame.importTurn(game.turn, [responses[0].action]);
     const newCitizen = game.teams[0].citizens[0];
     expect(newGame.turn).toBe(game.turn);
     expect(newCitizen.position).toBe(citizen.position);
@@ -96,7 +93,7 @@ describe("Sending valid move command with position that's adjacent to the unit",
   test("cannot be imported into generated game", () => {
     const generatedGame = Game.generate(defaultGameProps);
     try {
-      generatedGame.importTurn(game.turn, actions);
+      generatedGame.importTurn(game.turn, [responses[0].action]);
     } catch (err) {
       expect(err).toBeTruthy();
     }
@@ -104,7 +101,10 @@ describe("Sending valid move command with position that's adjacent to the unit",
 });
 
 describe("Sending valid move command with position that's not adjacent to the unit", () => {
-  let game: Game, citizen: Citizen, command: Command, actions: Action[];
+  let game: Game,
+    citizen: Citizen,
+    command: CommandChildClass,
+    responses: CommandResponse[];
 
   beforeEach(async () => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });
@@ -124,24 +124,22 @@ describe("Sending valid move command with position that's not adjacent to the un
         position
       }
     });
-    const responses = await game.executeTurn([command]);
-    actions = responses.map(response => response.action);
+    responses = await game.executeTurn([command]);
   });
 
   test("returns actions", () => {
-    expect(actions.length).toBe(1);
+    expect(responses.length).toBe(1);
   });
 
   test("returns success action", () => {
-    const action = actions[0];
-    expect(action.status).toBe("success");
-    expect(action.error).toBeFalsy();
+    expect(responses[0].status).toBe("success");
+    expect(responses[0].error).toBeFalsy();
   });
 
   test("returns response with data changes", () => {
-    const action = actions[0];
+    const { action } = responses[0];
     expect(action.response.id).toBeTruthy();
-    expect(action.response.class).toEqual("Citizen");
+    expect(action.response.className).toEqual("Citizen");
   });
 
   test("adds action to history", () => {
@@ -151,7 +149,10 @@ describe("Sending valid move command with position that's not adjacent to the un
 });
 
 describe("Sending valid attack command", () => {
-  let game: Game, fighter: InfantryFighter, target: HQ, command: Command;
+  let game: Game,
+    fighter: InfantryFighter,
+    target: HQ,
+    command: CommandChildClass;
 
   beforeEach(() => {
     game = Game.generate(defaultGameProps);
@@ -181,8 +182,8 @@ describe("Sending valid attack command", () => {
   test("returns success action with target (HQ) as response", async () => {
     const responses = await game.executeTurn([command]);
     const action = responses.map(response => response.action)[0];
-    expect(action.status).toBe("success");
-    expect(action.error).toBeFalsy();
+    expect(responses[0].status).toBe("success");
+    expect(responses[0].error).toBeFalsy();
     expect(action.response).toEqual(target.toJSON());
   });
 
@@ -200,7 +201,10 @@ describe("Fighter attack damage behavior", () => {
 });
 
 describe("Fighter range behavior", () => {
-  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
+  let game: Game,
+    fighter: Fighter,
+    target: Fighter | Citizen,
+    command: CommandChildClass;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });
@@ -238,8 +242,8 @@ describe("Fighter range behavior", () => {
       test("returns success action with target as response", async () => {
         const responses = await game.executeTurn([command]);
         const action = responses.map(response => response.action)[0];
-        expect(action.status).toBe("success");
-        expect(action.error).toBeFalsy();
+        expect(responses[0].status).toBe("success");
+        expect(responses[0].error).toBeFalsy();
         expect(action.response).toEqual(target.toJSON());
       });
 

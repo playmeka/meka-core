@@ -1,4 +1,4 @@
-import Game, { Fighter, FighterType, Command } from "../../src/Game";
+import Game, { Fighter, FighterType, CommandChildClass } from "../../src/Game";
 import Citizen from "../../src/Citizen";
 import InfantryFighter from "../../src/InfantryFighter";
 import CavalryFighter from "../../src/CavalryFighter";
@@ -10,7 +10,10 @@ export default function fighterAttackDamageBehavior(
   fighterType: FighterType,
   hardCounterType: FighterType
 ) {
-  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
+  let game: Game,
+    fighter: Fighter,
+    target: Fighter | Citizen,
+    command: CommandChildClass;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });
@@ -62,8 +65,8 @@ export default function fighterAttackDamageBehavior(
         const responses = await game.executeTurn([command]);
         const actions = responses.map(response => response.action);
         const action = actions[0];
-        expect(action.status).toBe("success");
-        expect(action.error).toBeFalsy();
+        expect(responses[0].status).toBe("success");
+        expect(responses[0].error).toBeFalsy();
         expect(action.response).toEqual(target.toJSON());
       });
 
@@ -101,8 +104,8 @@ export default function fighterAttackDamageBehavior(
         const responses = await game.executeTurn([command]);
         const actions = responses.map(response => response.action);
         const action = actions[0];
-        expect(action.status).toBe("success");
-        expect(action.error).toBeFalsy();
+        expect(responses[0].status).toBe("success");
+        expect(responses[0].error).toBeFalsy();
         expect(action.response).toEqual(target.toJSON());
       });
 

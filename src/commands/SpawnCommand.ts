@@ -1,11 +1,13 @@
-import Game, { Unit } from "../Game";
+import Game from "../Game";
 import Command, { CommandJSON, CommandArgs } from "../Command";
 import { Position } from "../ObjectWithPosition";
 import Action from "../Action";
 import HQ from "../HQ";
 
 export default class SpawnCommand extends Command {
-  constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
+  className: string = "SpawnCommand";
+
+  constructor(props: { unit: HQ; args?: CommandArgs; id?: string }) {
     super(props);
   }
 
@@ -23,23 +25,18 @@ export default class SpawnCommand extends Command {
     return new Action({
       command: this,
       type: "spawn",
-      status: "inprogress",
       args: { position, unitType: args.unitType },
       unit
     });
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[2]] as Unit;
-    let args = json[3] || {};
+    const unit = game.lookup[json.unit.id] as HQ;
+    let args = json.args || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new SpawnCommand({
-      ...json,
-      unit: unit,
-      args: args as CommandArgs
-    });
+    return new SpawnCommand({ ...json, unit, args: args as CommandArgs });
   }
 }

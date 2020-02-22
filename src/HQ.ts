@@ -9,7 +9,7 @@ import isTargetAtPosition from "./utils/isTargetAtPosition";
 
 export type HQJSON = {
   id: string;
-  class: "HQ";
+  className: "HQ";
   hp: number;
   teamId: string;
   width: number;
@@ -28,7 +28,7 @@ type HQProps = {
 };
 
 export default class HQ extends ObjectWithPosition {
-  class: string = "HQ";
+  className: string = "HQ";
   hp: number = 500;
   baseAttackDamage: number = 6;
   range: number = 3;

@@ -1,5 +1,5 @@
 import { CommandJSON } from "./Command";
-import Game, { Command } from "./Game";
+import Game, { CommandChildClass } from "./Game";
 import Action, { ActionJSON } from "./Action";
 import {
   MoveCommand,
@@ -11,33 +11,38 @@ import {
 
 export type CommandResponseStatus = "success" | "failure";
 export type CommandResponseProps = {
-  command: Command;
+  command: CommandChildClass;
   status: CommandResponseStatus;
   action?: Action;
+  error?: string;
 };
 export type CommandResponseJSON = {
   command: CommandJSON;
   action?: ActionJSON;
   status: CommandResponseStatus;
+  error?: string;
 };
 
 export default class CommandResponse {
-  command: Command;
+  command: CommandChildClass;
   status: CommandResponseStatus;
   action?: Action;
+  error?: string;
 
   constructor(props: CommandResponseProps) {
     this.command = props.command;
     this.status = props.status;
     this.action = props.action || null;
+    this.error = props.error;
   }
 
   toJSON() {
-    const { command, status, action } = this;
+    const { command, status, action, error } = this;
     return {
       status,
       command: command.toJSON(),
-      action: action.toJSON()
+      action: action.toJSON(),
+      error
     } as CommandResponseJSON;
   }
 
@@ -48,7 +53,7 @@ export default class CommandResponse {
       SpawnCommand,
       DropOffFoodCommand,
       PickUpFoodCommand
-    }[json.command[0]];
+    }[json.command.className];
 
     const command = commandClass.fromJSON(game, json.command);
     const action = Action.fromJSON(game, json.action);

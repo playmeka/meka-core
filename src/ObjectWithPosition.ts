@@ -62,7 +62,7 @@ export class Position {
 }
 
 export default class ObjectWithPosition {
-  class = "ObjectWithPosition";
+  className = "ObjectWithPosition";
   position: Position;
   width: number;
   height: number;

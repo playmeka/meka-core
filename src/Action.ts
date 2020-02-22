@@ -1,4 +1,4 @@
-import Game, { Unit, UnitJSON, Command } from "./Game";
+import Game, { Unit, UnitJSON, CommandChildClass } from "./Game";
 import { CommandJSON, CommandArgs, CommandArgsJSON } from "./Command";
 import { Position } from "./ObjectWithPosition";
 import {
@@ -16,21 +16,16 @@ export type ActionType =
   | "pickUpFood"
   | "dropOffFood";
 
-export type ActionStatus = "success" | "inprogress" | "failure";
 export type ActionResponse = UnitJSON;
 export type ActionJSON = {
   command: CommandJSON;
-  status: ActionStatus;
-  error?: string;
   response?: any;
   type: ActionType;
   unit: UnitJSON;
   args: CommandArgsJSON;
 };
 export type ActionProps = {
-  command: Command;
-  status: ActionStatus;
-  error?: string;
+  command: CommandChildClass;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
@@ -38,9 +33,7 @@ export type ActionProps = {
 };
 
 export default class Action {
-  command: Command;
-  status: ActionStatus;
-  error?: string;
+  command: CommandChildClass;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
@@ -48,8 +41,6 @@ export default class Action {
 
   constructor(props: ActionProps) {
     this.command = props.command;
-    this.status = props.status;
-    this.error = props.error;
     this.response = props.response;
     this.type = props.type;
     this.unit = props.unit;
@@ -57,10 +48,8 @@ export default class Action {
   }
 
   toJSON() {
-    const { command, status, error, response, type, unit, args } = this;
+    const { command, response, type, unit, args } = this;
     return {
-      status,
-      error,
       response,
       command: command.toJSON(),
       type,
@@ -76,7 +65,7 @@ export default class Action {
       SpawnCommand,
       DropOffFoodCommand,
       PickUpFoodCommand
-    }[json.command[0]];
+    }[json.command.className];
 
     const command = commandClass.fromJSON(game, json.command);
     const unit = game.lookup[json.unit.id] as Unit;

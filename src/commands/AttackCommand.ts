@@ -5,6 +5,8 @@ import Action from "../Action";
 import HQ from "../HQ";
 
 export default class AttackCommand extends Command {
+  className: string = "AttackCommand";
+
   constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
     super(props);
   }
@@ -26,16 +28,19 @@ export default class AttackCommand extends Command {
       return new Action({
         command: this,
         type: "attack",
-        status: "inprogress",
         args: { targetId },
         unit
       });
-    } else if (unit.class === "HQ") {
+    } else if (unit.className === "HQ") {
       return null;
-    } else {
-      let path = game.getOptimalPathToTarget(unit as Fighter, target);
+    } else if (
+      ["InfantryFighter", "RangedFighter", "CavalryFighter"].includes(
+        unit.className
+      )
+    ) {
+      const path = game.getOptimalPathToTarget(unit as Fighter, target);
 
-      if (path === null) return null;
+      if (!path) return null;
       // Take unit.speed steps at a time
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
@@ -45,7 +50,6 @@ export default class AttackCommand extends Command {
       return new Action({
         command: this,
         type: "move",
-        status: "inprogress",
         args: {
           position: newPosition,
           autoDropOffFood: false,
@@ -57,16 +61,12 @@ export default class AttackCommand extends Command {
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[2]] as Unit;
-    let args = json[3] || {};
+    const unit = game.lookup[json.unit.id] as Unit;
+    let args = json.args || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new AttackCommand({
-      ...json,
-      unit: unit,
-      args: args as CommandArgs
-    });
+    return new AttackCommand({ ...json, unit, args: args as CommandArgs });
   }
 }

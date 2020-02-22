@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import Game, { Unit, FighterType } from "./Game";
+import Game, { Unit, FighterType, UnitJSON } from "./Game";
 import Action from "./Action";
 import { Position, PositionJSON } from "./ObjectWithPosition";
 
@@ -26,10 +26,15 @@ export type CommandClassName =
   | "DropOffFoodCommand"
   | "PickUpFoodCommand";
 
-export type CommandJSON = [CommandClassName, string, string, CommandArgsJSON];
+export type CommandJSON = {
+  className: CommandClassName;
+  id: string;
+  unit: UnitJSON;
+  args: CommandArgsJSON;
+};
 
 export default class Command {
-  class: string = "Command";
+  className: string = "Command";
   unit: Unit;
   args?: CommandArgs;
   id: string;
@@ -45,12 +50,18 @@ export default class Command {
   }
 
   toJSON() {
-    return [this.class, this.id, this.unit.id, this.args] as CommandJSON;
+    const { className, id, unit, args } = this;
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as CommandJSON;
   }
 
   static fromJSON(game: Game, json: CommandJSON) {
-    const unit = game.lookup[json[2]] as Unit;
-    let args = json[3] || {};
+    const unit = game.lookup[json.unit.id] as Unit;
+    let args = json.args || {};
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }

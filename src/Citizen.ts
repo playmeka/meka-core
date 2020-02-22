@@ -9,7 +9,7 @@ import isValidPosition from "./utils/isValidPosition";
 
 export type CitizenJSON = {
   id: string;
-  class: "Citizen";
+  className: "Citizen";
   hp: number;
   foodId?: string;
   teamId: string;
@@ -26,7 +26,7 @@ export type CitizenProps = {
 };
 
 export default class Citizen extends ObjectWithPosition {
-  class: string = "Citizen";
+  className: string = "Citizen";
   game: Game;
   hp: number = 10;
   id: string;
@@ -99,7 +99,7 @@ export default class Citizen extends ObjectWithPosition {
   toJSON() {
     return {
       id: this.id,
-      class: this.class,
+      className: this.className,
       hp: this.hp,
       foodId: this.foodId,
       teamId: this.teamId,
