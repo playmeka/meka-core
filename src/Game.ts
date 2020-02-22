@@ -23,13 +23,15 @@ import RangedFighter, {
   RangedFighterJSON,
   RangedFighterProps
 } from "./RangedFighter";
-import {
-  MoveCommand,
-  AttackCommand,
-  SpawnCommand,
-  DropOffFoodCommand,
-  PickUpFoodCommand
-} from "./commands";
+import MoveCommand, { MoveCommandJSON } from "./commands/MoveCommand";
+import AttackCommand, { AttackCommandJSON } from "./commands/AttackCommand";
+import SpawnCommand, { SpawnCommandJSON } from "./commands/SpawnCommand";
+import DropOffFoodCommand, {
+  DropOffFoodCommandJSON
+} from "./commands/DropOffFoodCommand";
+import PickUpFoodCommand, {
+  PickUpFoodCommandJSON
+} from "./commands/PickUpFoodCommand";
 
 export type CommandChildClass =
   | MoveCommand
@@ -37,6 +39,12 @@ export type CommandChildClass =
   | SpawnCommand
   | DropOffFoodCommand
   | PickUpFoodCommand;
+export type CommandJSON =
+  | MoveCommandJSON
+  | AttackCommandJSON
+  | SpawnCommandJSON
+  | DropOffFoodCommandJSON
+  | PickUpFoodCommandJSON;
 
 export type FighterType =
   | "InfantryFighter"
@@ -385,6 +393,7 @@ export default class Game {
         commandToResponseMap[command.id] = new CommandResponse({
           command,
           action,
+          error: "Duplicate command for unit: " + command.unit.id,
           status: "failure"
         });
         return null;

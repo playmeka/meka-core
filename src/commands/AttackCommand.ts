@@ -1,13 +1,27 @@
-import Game, { Fighter, Unit } from "../Game";
-import Command, { CommandJSON, CommandArgs } from "../Command";
-import { Position } from "../ObjectWithPosition";
+import Game, { Fighter, Unit, UnitJSON } from "../Game";
+import Command from "../Command";
 import Action from "../Action";
 import HQ from "../HQ";
+
+export type AttackCommandArgs = {
+  targetId: string;
+};
+
+export type AttackCommandArgsJSON = {
+  targetId: string;
+};
+
+export type AttackCommandJSON = {
+  className: "AttackCommand";
+  id: string;
+  unit: UnitJSON;
+  args: AttackCommandArgsJSON;
+};
 
 export default class AttackCommand extends Command {
   className: string = "AttackCommand";
 
-  constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
+  constructor(props: { unit: Unit; args: AttackCommandArgs; id?: string }) {
     super(props);
   }
 
@@ -60,13 +74,8 @@ export default class AttackCommand extends Command {
     }
   }
 
-  static fromJSON(game: Game, json: CommandJSON) {
+  static fromJSON(game: Game, json: AttackCommandJSON) {
     const unit = game.lookup[json.unit.id] as Unit;
-    let args = json.args || {};
-    if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
-    }
-
-    return new AttackCommand({ ...json, unit, args: args as CommandArgs });
+    return new AttackCommand({ ...json, unit });
   }
 }

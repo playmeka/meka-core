@@ -49,7 +49,6 @@ export default function fighterAttackDamageBehavior(
         command = new AttackCommand({
           unit: fighter,
           args: {
-            position: target.position,
             targetId: target.id
           }
         });
@@ -88,7 +87,6 @@ export default function fighterAttackDamageBehavior(
         command = new AttackCommand({
           unit: fighter,
           args: {
-            position: target.position,
             targetId: target.id
           }
         });

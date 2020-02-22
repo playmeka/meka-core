@@ -1,13 +1,32 @@
 import Game from "../Game";
-import Command, { CommandJSON, CommandArgs } from "../Command";
-import { Position } from "../ObjectWithPosition";
+import Command from "../Command";
+import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
-import Citizen from "../Citizen";
+import Citizen, { CitizenJSON } from "../Citizen";
+
+export type PickUpFoodCommandArgs = {
+  position: Position;
+};
+
+export type PickUpFoodCommandArgsJSON = {
+  position: PositionJSON;
+};
+
+export type PickUpFoodCommandJSON = {
+  className: "PickUpFoodCommand";
+  id: string;
+  unit: CitizenJSON;
+  args: PickUpFoodCommandArgs;
+};
 
 export default class PickUpFoodCommand extends Command {
   className: string = "PickUpFoodCommand";
 
-  constructor(props: { unit: Citizen; args?: CommandArgs; id?: string }) {
+  constructor(props: {
+    unit: Citizen;
+    args?: PickUpFoodCommandArgs;
+    id?: string;
+  }) {
     super(props);
   }
 
@@ -53,13 +72,13 @@ export default class PickUpFoodCommand extends Command {
     }
   }
 
-  static fromJSON(game: Game, json: CommandJSON) {
+  static fromJSON(game: Game, json: PickUpFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    let args = json.args || {};
+    let args = json.args;
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new Command({ ...json, unit, args: args as CommandArgs });
+    return new Command({ ...json, unit, args });
   }
 }

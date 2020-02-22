@@ -1,5 +1,5 @@
-import Game, { Unit, UnitJSON, CommandChildClass } from "./Game";
-import { CommandJSON, CommandArgs, CommandArgsJSON } from "./Command";
+import Game, { Unit, UnitJSON, CommandChildClass, CommandJSON } from "./Game";
+import { CommandArgs, CommandArgsJSON } from "./Command";
 import { Position } from "./ObjectWithPosition";
 import {
   MoveCommand,
@@ -67,7 +67,7 @@ export default class Action {
       PickUpFoodCommand
     }[json.command.className];
 
-    const command = commandClass.fromJSON(game, json.command);
+    const command = commandClass.fromJSON(game, json.command as any);
     const unit = game.lookup[json.unit.id] as Unit;
     let args = json.args || {};
     if (args.position) {

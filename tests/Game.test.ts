@@ -168,7 +168,6 @@ describe("Sending valid attack command", () => {
     command = new AttackCommand({
       unit: fighter,
       args: {
-        position: target.position,
         targetId: target.id
       }
     });
@@ -228,7 +227,6 @@ describe("Fighter range behavior", () => {
         command = new AttackCommand({
           unit: fighter,
           args: {
-            position: target.position,
             targetId: target.id
           }
         });

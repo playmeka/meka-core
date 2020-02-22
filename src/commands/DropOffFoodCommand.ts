@@ -1,13 +1,32 @@
 import Game from "../Game";
-import Command, { CommandJSON, CommandArgs } from "../Command";
-import { Position } from "../ObjectWithPosition";
+import Command from "../Command";
+import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
-import Citizen from "../Citizen";
+import Citizen, { CitizenJSON } from "../Citizen";
+
+export type DropOffFoodCommandArgs = {
+  position: Position;
+};
+
+export type DropOffFoodCommandArgsJSON = {
+  position: PositionJSON;
+};
+
+export type DropOffFoodCommandJSON = {
+  className: "DropOffFoodCommand";
+  id: string;
+  unit: CitizenJSON;
+  args: DropOffFoodCommandArgs;
+};
 
 export default class DropOffFoodCommand extends Command {
   className: string = "DropOffFoodCommand";
 
-  constructor(props: { unit: Citizen; args?: CommandArgs; id?: string }) {
+  constructor(props: {
+    unit: Citizen;
+    args?: DropOffFoodCommandArgs;
+    id?: string;
+  }) {
     super(props);
   }
 
@@ -51,13 +70,13 @@ export default class DropOffFoodCommand extends Command {
     }
   }
 
-  static fromJSON(game: Game, json: CommandJSON) {
+  static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    let args = json.args || {};
+    let args = json.args;
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new DropOffFoodCommand({ ...json, unit, args: args as CommandArgs });
+    return new DropOffFoodCommand({ ...json, unit, args });
   }
 }

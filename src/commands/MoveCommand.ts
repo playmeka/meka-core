@@ -1,13 +1,32 @@
-import Game, { Fighter, Unit } from "../Game";
-import Command, { CommandJSON, CommandArgs } from "../Command";
-import { Position } from "../ObjectWithPosition";
+import Game, { Fighter, Unit, FighterJSON } from "../Game";
+import Command from "../Command";
+import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
-import Citizen from "../Citizen";
+import Citizen, { CitizenJSON } from "../Citizen";
+
+export type MoveCommandArgs = {
+  position: Position;
+  autoPickUpFood?: boolean;
+  autoDropOffFood?: boolean;
+};
+
+export type MoveCommandArgsJSON = {
+  position?: PositionJSON;
+  autoPickUpFood?: boolean;
+  autoDropOffFood?: boolean;
+};
+
+export type MoveCommandJSON = {
+  className: "MoveCommand";
+  id: string;
+  unit: CitizenJSON | FighterJSON;
+  args: MoveCommandArgs;
+};
 
 export default class MoveCommand extends Command {
   className: string = "MoveCommand";
 
-  constructor(props: { unit: Unit; args?: CommandArgs; id?: string }) {
+  constructor(props: { unit: Unit; args?: MoveCommandArgs; id?: string }) {
     super(props);
   }
 
@@ -41,13 +60,13 @@ export default class MoveCommand extends Command {
     });
   }
 
-  static fromJSON(game: Game, json: CommandJSON) {
+  static fromJSON(game: Game, json: MoveCommandJSON) {
     const unit = game.lookup[json.unit.id] as Unit;
-    let args = json.args || {};
+    let args = json.args;
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }
 
-    return new MoveCommand({ ...json, unit, args: args as CommandArgs });
+    return new MoveCommand({ ...json, unit, args });
   }
 }
