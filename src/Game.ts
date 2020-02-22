@@ -413,7 +413,14 @@ export default class Game {
     await attacks.reduce(
       (promise, action) =>
         promise.then(async () => {
-          await this.executeAttack(action);
+          const response = await this.executeAttack(action);
+          commandResponses.push(
+            new CommandResponse({
+              command: response.command,
+              action: response,
+              status: response.status === "success" ? "success" : "failure"
+            })
+          );
         }),
       Promise.resolve()
     );
@@ -421,7 +428,14 @@ export default class Game {
     await foodPickUps.reduce(
       (promise, action) =>
         promise.then(async () => {
-          await this.executeFoodPickUp(action);
+          const response = await this.executeFoodPickUp(action);
+          commandResponses.push(
+            new CommandResponse({
+              command: response.command,
+              action: response,
+              status: response.status === "success" ? "success" : "failure"
+            })
+          );
         }),
       Promise.resolve()
     );
@@ -429,7 +443,14 @@ export default class Game {
     await foodDropOffs.reduce(
       (promise, action) =>
         promise.then(async () => {
-          await this.executeFoodDropOff(action);
+          const response = await this.executeFoodDropOff(action);
+          commandResponses.push(
+            new CommandResponse({
+              command: response.command,
+              action: response,
+              status: response.status === "success" ? "success" : "failure"
+            })
+          );
         }),
       Promise.resolve()
     );
@@ -437,7 +458,14 @@ export default class Game {
     await moves.reduce(
       (promise, action) =>
         promise.then(async () => {
-          await this.executeMove(action);
+          const response = await this.executeMove(action);
+          commandResponses.push(
+            new CommandResponse({
+              command: response.command,
+              action: response,
+              status: response.status === "success" ? "success" : "failure"
+            })
+          );
         }),
       Promise.resolve()
     );
@@ -445,7 +473,14 @@ export default class Game {
     await spawns.reduce(
       (promise, action) =>
         promise.then(async () => {
-          await this.executeSpawn(action);
+          const response = await this.executeSpawn(action);
+          commandResponses.push(
+            new CommandResponse({
+              command: response.command,
+              action: response,
+              status: response.status === "success" ? "success" : "failure"
+            })
+          );
         }),
       Promise.resolve()
     );
@@ -556,11 +591,9 @@ export default class Game {
       if (isTargetInRange) {
         this.handleAttack(unit, target);
         action.status = "success";
-        action.response = unit.toJSON();
+        action.response = target.toJSON();
         this.history.pushActions(this.turn, action);
         return action;
-      } else if (unit.class === "HQ") {
-        throw new Error("Target is not within range: " + target.id); // miss!
       } else {
         throw new Error("Target is not within range: " + target.id); // miss!
       }
@@ -578,40 +611,21 @@ export default class Game {
       if (!unit)
         throw new Error("Unable to find unit with ID: " + action.unit.id);
       if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
-      const { position, targetId } = action.args;
-      const target = this.lookup[targetId] as Unit;
-
-      if (!position && !target)
+      const { position } = action.args;
+      if (!position)
         throw new Error("No target or position passed to move towards");
 
-      let path;
-      if (position) {
-        path = this.pathFinder.getPath(unit, position);
-      } else {
-        path = this.getOptimalPathToTarget(unit, target);
-      }
-
-      if (path === null)
+      if (!unit.isValidMove(position))
         throw new Error(
-          "Valid path does not exist to position: " +
-            JSON.stringify(position.toJSON())
-        );
-      // Take unit.speed steps at a time
-      // Note: it is not unit.speed - 1 because PathFinder returns the unit
-      // position as the first step in the path
-      const newPosition = path[unit.speed] || path[path.length - 1];
-
-      if (!unit.isValidMove(newPosition))
-        throw new Error(
-          "Invalid position: " + JSON.stringify(newPosition.toJSON())
+          "Invalid position: " + JSON.stringify(position.toJSON())
         );
       if (unit.class == "Citizen") {
-        this.handleCitizenMove(unit as Citizen, newPosition, {
+        this.handleCitizenMove(unit as Citizen, position, {
           autoPickUpFood: action.args.autoPickUpFood,
           autoDropOffFood: action.args.autoDropOffFood
         });
       } else {
-        this.handleFighterMove(unit as Fighter, newPosition);
+        this.handleFighterMove(unit as Fighter, position);
       }
       action.status = "success";
       action.response = unit.toJSON();
