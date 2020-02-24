@@ -100,7 +100,7 @@ export default class InfantryFighter extends ObjectWithPosition {
   }
 
   getAttackPositionsFor(enemyUnit: Unit) {
-    let positionMap: { [key: string]: Position };
+    const positionMap: { [key: string]: Position } = {};
     enemyUnit.covering.forEach(position => {
       position.adjacentsWithinDistance(this.range).forEach(attackPosition => {
         positionMap[attackPosition.key] = attackPosition;
