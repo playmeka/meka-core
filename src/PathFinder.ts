@@ -47,4 +47,10 @@ export default class PathFinder {
       .map(array => new Position(array[0], array[1]));
     return path.length ? path : null;
   }
+
+  getPaths(unit: Unit, toOptions: Position[]) {
+    return toOptions
+      .map(position => this.getPath(unit, position))
+      .filter(Boolean);
+  }
 }

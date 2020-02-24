@@ -9,7 +9,7 @@ import isTargetAtPosition from "./utils/isTargetAtPosition";
 
 export type InfantryFighterJSON = {
   id: string;
-  class: "InfantryFighter";
+  className: "InfantryFighter";
   hp: number;
   teamId: string;
   position: PositionJSON;
@@ -26,7 +26,7 @@ export type InfantryFighterProps = {
 };
 
 export default class InfantryFighter extends ObjectWithPosition {
-  class: string = "InfantryFighter";
+  className: string = "InfantryFighter";
   game: Game;
   teamId: string;
   baseAttackDamage: number;
@@ -65,7 +65,7 @@ export default class InfantryFighter extends ObjectWithPosition {
   }
 
   getAttackDamageFor(enemyUnit: Unit) {
-    return enemyUnit.class === "CavalryFighter"
+    return enemyUnit.className === "CavalryFighter"
       ? this.baseAttackDamage + 5
       : this.baseAttackDamage;
   }
@@ -99,11 +99,21 @@ export default class InfantryFighter extends ObjectWithPosition {
     );
   }
 
+  getAttackPositionsFor(enemyUnit: Unit) {
+    let positionMap: { [key: string]: Position };
+    enemyUnit.covering.forEach(position => {
+      position.adjacentsWithinDistance(this.range).forEach(attackPosition => {
+        positionMap[attackPosition.key] = attackPosition;
+      });
+    });
+    return Object.values(positionMap);
+  }
+
   toJSON() {
-    const { id, hp, teamId, position, cost, speed, range } = this;
+    const { id, hp, teamId, position, cost, speed, range, className } = this;
     return {
       id,
-      class: this.class,
+      className,
       hp,
       teamId,
       position: position.toJSON(),

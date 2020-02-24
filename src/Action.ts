@@ -1,54 +1,95 @@
-import { v4 as uuidv4 } from "uuid";
-import Game, { FighterJSON } from "./Game";
-import { CitizenJSON } from "./Citizen";
-import { HQJSON } from "./HQ";
-import Command, { CommandJSON } from "./Command";
+import Game, { Unit, UnitJSON, FighterType } from "./Game";
+import { Position, PositionJSON } from "./ObjectWithPosition";
+import {
+  MoveCommand,
+  AttackCommand,
+  SpawnCommand,
+  DropOffFoodCommand,
+  PickUpFoodCommand
+} from "./commands";
+import { CommandChildClass, CommandJSON } from "./Command";
 
-export type ActionStatus = "success" | "failure"; // TODO: use numbers like HTTP?
-export type ActionResponse = CitizenJSON | FighterJSON | HQJSON;
+export type ActionType =
+  | "move"
+  | "attack"
+  | "spawn"
+  | "pickUpFood"
+  | "dropOffFood";
+
+export type ActionArgs = {
+  position?: Position;
+  autoPickUpFood?: boolean;
+  autoDropOffFood?: boolean;
+  unitType?: FighterType | "Citizen";
+  targetId?: string;
+};
+
+export type ActionArgsJSON = {
+  position?: PositionJSON;
+  autoPickUpFood?: boolean;
+  autoDropOffFood?: boolean;
+  unitType?: FighterType | "Citizen";
+  targetId?: string;
+};
+
+export type ActionResponse = UnitJSON;
 export type ActionJSON = {
-  id: string;
   command: CommandJSON;
-  status: ActionStatus;
-  error?: string;
   response?: any;
+  type: ActionType;
+  unit: UnitJSON;
+  args: ActionArgsJSON;
 };
 export type ActionProps = {
-  command: Command;
-  status: ActionStatus;
-  id?: string;
-  error?: string;
+  command: CommandChildClass;
   response?: ActionResponse;
+  type: ActionType;
+  unit: Unit;
+  args: ActionArgs;
 };
 
 export default class Action {
-  id: string;
-  command: Command;
-  status: ActionStatus;
-  error?: string;
+  command: CommandChildClass;
   response?: ActionResponse;
+  type: ActionType;
+  unit: Unit;
+  args: ActionArgs;
 
   constructor(props: ActionProps) {
-    this.id = props.id || uuidv4();
     this.command = props.command;
-    this.status = props.status;
-    this.error = props.error;
     this.response = props.response;
+    this.type = props.type;
+    this.unit = props.unit;
+    this.args = props.args;
   }
 
   toJSON() {
-    const { id, command, status, error, response } = this;
+    const { command, response, type, unit, args } = this;
     return {
-      id,
-      status,
-      error,
       response,
-      command: command.toJSON()
+      command: command.toJSON(),
+      type,
+      unit: unit.toJSON(),
+      args
     } as ActionJSON;
   }
 
   static fromJSON(game: Game, json: ActionJSON) {
-    const command = Command.fromJSON(game, json.command);
-    return new Action({ ...json, command });
+    const commandClass = {
+      MoveCommand,
+      AttackCommand,
+      SpawnCommand,
+      DropOffFoodCommand,
+      PickUpFoodCommand
+    }[json.command.className];
+
+    // TODO: Handle commandJSON type
+    const command = commandClass.fromJSON(game, json.command as any);
+    const unit = game.lookup[json.unit.id] as Unit;
+    let args = json.args || {};
+    if (args.position) {
+      args.position = new Position(args.position.x, args.position.y);
+    }
+    return new Action({ ...json, command, unit, args: args as ActionArgs });
   }
 }

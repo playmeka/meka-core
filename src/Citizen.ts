@@ -9,12 +9,13 @@ import isValidPosition from "./utils/isValidPosition";
 
 export type CitizenJSON = {
   id: string;
-  class: "Citizen";
+  className: "Citizen";
   hp: number;
   foodId?: string;
   teamId: string;
   position: PositionJSON;
   cost: number;
+  speed: number;
 };
 
 export type CitizenProps = {
@@ -25,13 +26,14 @@ export type CitizenProps = {
 };
 
 export default class Citizen extends ObjectWithPosition {
-  class: string = "Citizen";
+  className: string = "Citizen";
   game: Game;
   hp: number = 10;
   id: string;
   teamId: string;
   foodId?: string = null;
   cost: number;
+  speed: number;
 
   constructor(game: Game, props: CitizenProps) {
     super(props);
@@ -40,6 +42,7 @@ export default class Citizen extends ObjectWithPosition {
     this.id = props.id || uuidv4();
     this.foodId = props.foodId;
     this.cost = 2;
+    this.speed = 1;
   }
 
   get food() {
@@ -96,12 +99,13 @@ export default class Citizen extends ObjectWithPosition {
   toJSON() {
     return {
       id: this.id,
-      class: this.class,
+      className: this.className,
       hp: this.hp,
       foodId: this.foodId,
       teamId: this.teamId,
       position: this.position.toJSON(),
-      cost: this.cost
+      cost: this.cost,
+      speed: this.speed
     } as CitizenJSON;
   }
 

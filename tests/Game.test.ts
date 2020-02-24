@@ -2,11 +2,12 @@ import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
 import Game, { GameJSON, Fighter } from "../src/Game";
 import Citizen from "../src/Citizen";
+import CommandResponse from "../src/CommandResponse";
 import InfantryFighter from "../src/InfantryFighter";
 import RangedFighter from "../src/RangedFighter";
 import HQ from "../src/HQ";
-import Command from "../src/Command";
-import Action from "../src/Action";
+import { MoveCommand, SpawnCommand, AttackCommand } from "../src/commands";
+import { CommandChildClass } from "../src/Command";
 import fighterAttackDamageBehavior from "./utils/fighterAttackDamageBehavior";
 import defaultGameProps from "./utils/defaultGameProps";
 
@@ -28,44 +29,48 @@ describe("Sending invalid spawn command", () => {
   test("returns failure action", async () => {
     const game = Game.generate(defaultGameProps);
     // Note: this command is invalid because the team does not have enough food for a spawn
-    const command = new Command(game.teams[0].hq, "spawnCitizen");
-    const actions = await game.executeTurn([command]);
-    expect(actions.length).toBe(1);
-    const action = actions[0];
-    expect(action.status).toBe("failure");
-    expect(action.error).toBeTruthy();
+    const command = new SpawnCommand({
+      unit: game.teams[0].hq,
+      args: {
+        unitType: "Citizen"
+      }
+    });
+    const commandResponses = await game.executeTurn([command]);
+    expect(commandResponses.length).toBe(1);
+    const response = commandResponses[0];
+    expect(response.status).toBe("failure");
   });
 });
 
-describe("Sending valid move command", () => {
+describe("Sending valid move command with position that's adjacent to the unit", () => {
   let game: Game,
     json: GameJSON,
     citizen: Citizen,
-    command: Command,
-    actions: Action[];
+    command: CommandChildClass,
+    responses: CommandResponse[];
 
   beforeEach(async () => {
     game = Game.generate(defaultGameProps);
     json = game.toJSON();
     citizen = game.teams[0].citizens[0];
-    command = new Command(citizen, "move", { position: citizen.validMoves[0] });
-    actions = await game.executeTurn([command]);
+    command = new MoveCommand({
+      unit: citizen,
+      args: { position: citizen.validMoves[0] }
+    });
+    responses = await game.executeTurn([command]);
   });
 
   test("returns actions", () => {
-    expect(actions.length).toBe(1);
+    expect(responses.length).toBe(1);
   });
 
   test("returns success action", () => {
-    const action = actions[0];
-    expect(action.status).toBe("success");
-    expect(action.error).toBeFalsy();
+    expect(responses[0].status).toBe("success");
   });
 
   test("returns response with data changes", () => {
-    const action = actions[0];
-    expect(action.response.id).toBeTruthy();
-    // TODO: check class is CitizenJSON
+    expect(responses[0].action.response.id).toBeTruthy();
+    expect(responses[0].action.response.className).toEqual("Citizen");
   });
 
   test("increments game turn", () => {
@@ -80,7 +85,7 @@ describe("Sending valid move command", () => {
   test("can be imported into game copy", () => {
     const newGame = Game.fromJSON(json);
     expect(newGame.turn).toBe(game.turn - 1);
-    newGame.importTurn(game.turn, actions);
+    newGame.importTurn(game.turn, [responses[0].action]);
     const newCitizen = game.teams[0].citizens[0];
     expect(newGame.turn).toBe(game.turn);
     expect(newCitizen.position).toBe(citizen.position);
@@ -89,18 +94,21 @@ describe("Sending valid move command", () => {
   test("cannot be imported into generated game", () => {
     const generatedGame = Game.generate(defaultGameProps);
     try {
-      generatedGame.importTurn(game.turn, actions);
+      generatedGame.importTurn(game.turn, [responses[0].action]);
     } catch (err) {
       expect(err).toBeTruthy();
     }
   });
 });
 
-describe("Sending invalid move command", () => {
-  let game: Game, citizen: Citizen, command: Command, actions: Action[];
+describe("Sending valid move command with position that's not adjacent to the unit", () => {
+  let game: Game,
+    citizen: Citizen,
+    command: CommandChildClass,
+    responses: CommandResponse[];
 
   beforeEach(async () => {
-    game = Game.generate(defaultGameProps);
+    game = Game.generate({ ...defaultGameProps, wallCount: 0 });
     citizen = game.teams[0].citizens[0];
     // Note: position is a valid position, just not adjacent to citizen
     const position = shuffle(
@@ -111,21 +119,28 @@ describe("Sending invalid move command", () => {
         );
       })
     )[0];
-    command = new Command(citizen, "move", {
-      position
+    command = new MoveCommand({
+      unit: citizen,
+      args: {
+        position
+      }
     });
-    actions = await game.executeTurn([command]);
+    responses = await game.executeTurn([command]);
   });
 
   test("returns actions", () => {
-    expect(actions.length).toBe(1);
+    expect(responses.length).toBe(1);
   });
 
-  test("returns failure action", () => {
-    const action = actions[0];
-    expect(action.status).toBe("failure");
-    expect(action.error).toBeTruthy();
-    expect(action.response).toBeFalsy();
+  test("returns success action", () => {
+    expect(responses[0].status).toBe("success");
+    expect(responses[0].error).toBeFalsy();
+  });
+
+  test("returns response with data changes", () => {
+    const { action } = responses[0];
+    expect(action.response.id).toBeTruthy();
+    expect(action.response.className).toEqual("Citizen");
   });
 
   test("adds action to history", () => {
@@ -135,7 +150,10 @@ describe("Sending invalid move command", () => {
 });
 
 describe("Sending valid attack command", () => {
-  let game: Game, fighter: InfantryFighter, target: HQ, command: Command;
+  let game: Game,
+    fighter: InfantryFighter,
+    target: HQ,
+    command: CommandChildClass;
 
   beforeEach(() => {
     game = Game.generate(defaultGameProps);
@@ -148,9 +166,11 @@ describe("Sending valid attack command", () => {
       position: attackPosition
     });
     game.addFighter(fighter);
-    command = new Command(fighter, "attack", {
-      position: target.position,
-      targetId: target.id
+    command = new AttackCommand({
+      unit: fighter,
+      args: {
+        targetId: target.id
+      }
     });
   });
 
@@ -160,10 +180,10 @@ describe("Sending valid attack command", () => {
   });
 
   test("returns success action with target (HQ) as response", async () => {
-    const actions = await game.executeTurn([command]);
-    const action = actions[0];
-    expect(action.status).toBe("success");
-    expect(action.error).toBeFalsy();
+    const responses = await game.executeTurn([command]);
+    const action = responses.map(response => response.action)[0];
+    expect(responses[0].status).toBe("success");
+    expect(responses[0].error).toBeFalsy();
     expect(action.response).toEqual(target.toJSON());
   });
 
@@ -181,7 +201,10 @@ describe("Fighter attack damage behavior", () => {
 });
 
 describe("Fighter range behavior", () => {
-  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
+  let game: Game,
+    fighter: Fighter,
+    target: Fighter | Citizen,
+    command: CommandChildClass;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });
@@ -202,9 +225,11 @@ describe("Fighter range behavior", () => {
           position: fighterPosition
         });
         game.addFighter(fighter);
-        command = new Command(fighter, "attack", {
-          position: target.position,
-          targetId: target.id
+        command = new AttackCommand({
+          unit: fighter,
+          args: {
+            targetId: target.id
+          }
         });
       });
 
@@ -214,10 +239,10 @@ describe("Fighter range behavior", () => {
       });
 
       test("returns success action with target as response", async () => {
-        const actions = await game.executeTurn([command]);
-        const action = actions[0];
-        expect(action.status).toBe("success");
-        expect(action.error).toBeFalsy();
+        const responses = await game.executeTurn([command]);
+        const action = responses.map(response => response.action)[0];
+        expect(responses[0].status).toBe("success");
+        expect(responses[0].error).toBeFalsy();
         expect(action.response).toEqual(target.toJSON());
       });
 
@@ -225,53 +250,6 @@ describe("Fighter range behavior", () => {
         const hp = target.hp;
         await game.executeTurn([command]);
         expect(target.hp).toBeLessThan(hp);
-      });
-    });
-
-    describe("target is outside its range", () => {
-      beforeEach(() => {
-        const validPositions = target.position
-          .adjacentsWithinDistance(3)
-          .filter(move => isValidPosition(game, move));
-
-        const broaderPositions = target.position
-          .adjacentsWithinDistance(5)
-          .filter(move => isValidPosition(game, move));
-
-        var fighterPosition = broaderPositions.filter(function(obj) {
-          return !validPositions.some(function(obj2) {
-            return obj.x == obj2.x && obj.y == obj2.y;
-          });
-        })[0];
-
-        fighter = new RangedFighter(game, {
-          teamId: "home",
-          position: fighterPosition
-        });
-        game.addFighter(fighter);
-        command = new Command(fighter, "attack", {
-          position: target.position,
-          targetId: target.id
-        });
-      });
-
-      test("returns actions", async () => {
-        const actions = await game.executeTurn([command]);
-        expect(actions.length).toBe(1);
-      });
-
-      test("returns failure action", async () => {
-        const actions = await game.executeTurn([command]);
-        const action = actions[0];
-        expect(action.status).toBe("failure");
-        expect(action.error).toBeTruthy();
-        expect(action.response).toBeFalsy();
-      });
-
-      test("target does not take damage", async () => {
-        const hp = target.hp;
-        await game.executeTurn([command]);
-        expect(target.hp).toEqual(hp);
       });
     });
   });
