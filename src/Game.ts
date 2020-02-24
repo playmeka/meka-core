@@ -23,28 +23,7 @@ import RangedFighter, {
   RangedFighterJSON,
   RangedFighterProps
 } from "./RangedFighter";
-import MoveCommand, { MoveCommandJSON } from "./commands/MoveCommand";
-import AttackCommand, { AttackCommandJSON } from "./commands/AttackCommand";
-import SpawnCommand, { SpawnCommandJSON } from "./commands/SpawnCommand";
-import DropOffFoodCommand, {
-  DropOffFoodCommandJSON
-} from "./commands/DropOffFoodCommand";
-import PickUpFoodCommand, {
-  PickUpFoodCommandJSON
-} from "./commands/PickUpFoodCommand";
-
-export type CommandChildClass =
-  | MoveCommand
-  | AttackCommand
-  | SpawnCommand
-  | DropOffFoodCommand
-  | PickUpFoodCommand;
-export type CommandJSON =
-  | MoveCommandJSON
-  | AttackCommandJSON
-  | SpawnCommandJSON
-  | DropOffFoodCommandJSON
-  | PickUpFoodCommandJSON;
+import { CommandChildClass } from "./Command";
 
 export type FighterType =
   | "InfantryFighter"

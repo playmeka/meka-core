@@ -1,5 +1,5 @@
-import { CommandJSON } from "./Command";
-import Game, { CommandChildClass } from "./Game";
+import { CommandJSON, CommandChildClass } from "./Command";
+import Game from "./Game";
 import Action, { ActionJSON } from "./Action";
 import {
   MoveCommand,

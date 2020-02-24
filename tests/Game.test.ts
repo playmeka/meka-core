@@ -1,12 +1,13 @@
 import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
-import Game, { CommandChildClass, GameJSON, Fighter } from "../src/Game";
+import Game, { GameJSON, Fighter } from "../src/Game";
 import Citizen from "../src/Citizen";
 import CommandResponse from "../src/CommandResponse";
 import InfantryFighter from "../src/InfantryFighter";
 import RangedFighter from "../src/RangedFighter";
 import HQ from "../src/HQ";
 import { MoveCommand, SpawnCommand, AttackCommand } from "../src/commands";
+import { CommandChildClass } from "../src/Command";
 import fighterAttackDamageBehavior from "./utils/fighterAttackDamageBehavior";
 import defaultGameProps from "./utils/defaultGameProps";
 

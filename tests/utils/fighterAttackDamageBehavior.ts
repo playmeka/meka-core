@@ -1,10 +1,11 @@
-import Game, { Fighter, FighterType, CommandChildClass } from "../../src/Game";
+import Game, { Fighter, FighterType } from "../../src/Game";
 import Citizen from "../../src/Citizen";
 import InfantryFighter from "../../src/InfantryFighter";
 import CavalryFighter from "../../src/CavalryFighter";
 import RangedFighter from "../../src/RangedFighter";
 import { AttackCommand } from "../../src/commands";
 import defaultGameProps from "./defaultGameProps";
+import { CommandChildClass } from "../../src/Command";
 
 export default function fighterAttackDamageBehavior(
   fighterType: FighterType,
