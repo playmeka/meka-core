@@ -690,6 +690,7 @@ export default class Game {
             position
           });
         }
+      } else if (type === "dropOffFood") {
       }
     });
     // Add turn to history
