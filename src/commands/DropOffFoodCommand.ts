@@ -2,21 +2,24 @@ import Game from "../Game";
 import Command from "../Command";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
+import HQ from "../HQ";
 import Citizen, { CitizenJSON } from "../Citizen";
 
 export type DropOffFoodCommandArgs = {
-  position: Position;
+  position?: Position;
+  hqId?: string;
 };
 
 export type DropOffFoodCommandArgsJSON = {
-  position: PositionJSON;
+  position?: PositionJSON;
+  hqId?: string;
 };
 
 export type DropOffFoodCommandJSON = {
   className: "DropOffFoodCommand";
   id: string;
   unit: CitizenJSON;
-  args: DropOffFoodCommandArgs;
+  args: DropOffFoodCommandArgsJSON;
 };
 
 export default class DropOffFoodCommand extends Command {
@@ -32,12 +35,16 @@ export default class DropOffFoodCommand extends Command {
 
   getNextAction(game: Game): Action {
     const unit = this.unit as Citizen;
+    const food = unit.food;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
     if (unit.className !== "Citizen") return null;
-    if (!unit.food) return null;
-    const { position } = this.args;
-    const food = unit.food;
+    if (!food) return null;
+
+    const { position, hqId } = this.args;
+    const hq = hqId ? (game.lookup[hqId] as HQ) : undefined;
+
+    if (!hq && !position) return null;
 
     if (unit.position.isAdjacentTo(position)) {
       if (!food.isValidDropOff(position)) return null;
@@ -49,7 +56,10 @@ export default class DropOffFoodCommand extends Command {
         unit
       });
     } else {
-      const path = game.pathFinder.getPath(unit, position);
+      // TODO: Abstract this logic in `getPathTo`
+      const path = hq
+        ? game.getOptimalPathToTarget(unit, hq)
+        : unit.getPathTo(position);
 
       if (!path) return null;
 
@@ -72,10 +82,11 @@ export default class DropOffFoodCommand extends Command {
 
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    let args = json.args;
-    if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
-    }
+    const { position } = json.args;
+
+    const args = position
+      ? { ...json.args, position: Position.fromJSON(position) }
+      : (json.args as DropOffFoodCommandArgs);
 
     return new DropOffFoodCommand({ ...json, unit, args });
   }

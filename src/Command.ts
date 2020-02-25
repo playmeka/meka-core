@@ -19,6 +19,7 @@ export type CommandArgs = {
   unitType?: FighterType | "Citizen";
   targetId?: string;
   foodId?: string;
+  hqId?: string;
 };
 
 export type CommandArgsJSON = {
@@ -28,6 +29,7 @@ export type CommandArgsJSON = {
   unitType?: FighterType | "Citizen";
   targetId?: string;
   foodId?: string;
+  hqId?: string;
 };
 
 export type CommandClassName =
