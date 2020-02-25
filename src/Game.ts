@@ -369,30 +369,36 @@ export default class Game {
     // Assign commands to Action queues
     commands.forEach(command => {
       const action = command.getNextAction(this);
-      if (!action || unitToActionMap[action.unit.id]) {
+      try {
+        if (!action) {
+          throw new Error("No action available for command: " + command.id);
+        } else if (unitToActionMap[action.unit.id]) {
+          throw new Error("Duplicate command for unit: " + command.unit.id);
+        }
+
+        if (action.type == "attack") {
+          unitToActionMap[action.unit.id] = action;
+          attacks.push(action);
+        } else if (action.type == "move") {
+          unitToActionMap[action.unit.id] = action;
+          moves.push(action);
+        } else if (action.type === "pickUpFood") {
+          unitToActionMap[action.unit.id] = action;
+          foodPickUps.push(action);
+        } else if (action.type === "dropOffFood") {
+          unitToActionMap[action.unit.id] = action;
+          foodDropOffs.push(action);
+        } else if (action.type == "spawn") {
+          unitToActionMap[action.unit.id] = action;
+          spawns.push(action);
+        }
+      } catch (err) {
         commandToResponseMap[command.id] = new CommandResponse({
           command,
           action,
-          error: "Duplicate command for unit: " + command.unit.id,
+          error: err.message,
           status: "failure"
         });
-        return null;
-      }
-      if (action.type == "attack") {
-        unitToActionMap[action.unit.id] = action;
-        attacks.push(action);
-      } else if (action.type == "move") {
-        unitToActionMap[action.unit.id] = action;
-        moves.push(action);
-      } else if (action.type === "pickUpFood") {
-        unitToActionMap[action.unit.id] = action;
-        foodPickUps.push(action);
-      } else if (action.type === "dropOffFood") {
-        unitToActionMap[action.unit.id] = action;
-        foodDropOffs.push(action);
-      } else if (action.type == "spawn") {
-        unitToActionMap[action.unit.id] = action;
-        spawns.push(action);
       }
     });
     // Execute attacks in order
