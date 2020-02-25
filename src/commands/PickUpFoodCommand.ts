@@ -37,9 +37,7 @@ export default class PickUpFoodCommand extends Command {
     if (unit.className !== "Citizen") return null;
     if (unit.food) return null;
 
-    const { foodId } = this.args;
-    const food = game.lookup[foodId] as Food;
-
+    const food = game.lookup[this.args.foodId] as Food;
     if (!food || food.eatenBy) return null;
 
     if (unit.position.isAdjacentTo(food.position)) {

@@ -532,16 +532,7 @@ export default class Game {
           "Invalid drop-off position: " + JSON.stringify(position.toJSON())
         );
 
-      const hq = this.hqs[position.key];
-      unit.dropOffFood();
-      if (hq) {
-        hq.eatFood();
-        food.getEatenBy(hq);
-      } else {
-        food.eatenById = null;
-        food.move(position);
-        this.foods[position.key] = food;
-      }
+      this.handleFoodDropOff(unit, position);
       action.response = unit.toJSON();
       this.history.pushActions(this.turn, action);
       return action;
@@ -573,9 +564,7 @@ export default class Game {
       );
 
     if (unit.position.isAdjacentTo(food.position)) {
-      unit.eatFood(food);
-      food.getEatenBy(unit);
-      delete this.foods[food.key]; // Un-register food
+      this.handleFoodPickUp(unit, food.position);
       action.response = unit.toJSON();
       this.history.pushActions(this.turn, action);
       return action;
@@ -697,6 +686,9 @@ export default class Game {
           });
         }
       } else if (type === "dropOffFood") {
+        this.handleFoodDropOff(unit as Citizen, args.position);
+      } else if (type === "pickUpFood") {
+        this.handleFoodPickUp(unit as Citizen, args.position);
       }
     });
     // Add turn to history
@@ -743,6 +735,27 @@ export default class Game {
     this.clearUnitPosition(fighter, this.fighters);
     fighter.move(position);
     this.registerUnitPosition(fighter, this.fighters);
+  }
+
+  handleFoodPickUp(unit: Citizen, position: Position) {
+    const food = this.foods[position.key];
+    unit.eatFood(food);
+    food.getEatenBy(unit);
+    delete this.foods[food.key]; // Un-register food
+  }
+
+  handleFoodDropOff(unit: Citizen, position: Position) {
+    const food = unit.food;
+    const hq = this.hqs[position.key];
+    unit.dropOffFood();
+    if (hq) {
+      hq.eatFood();
+      food.getEatenBy(hq);
+    } else {
+      food.eatenById = null;
+      food.move(position);
+      this.foods[position.key] = food;
+    }
   }
 
   spawnCitizen(hq: HQ, props: Partial<CitizenProps>) {

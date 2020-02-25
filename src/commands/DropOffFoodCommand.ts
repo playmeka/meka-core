@@ -45,16 +45,20 @@ export default class DropOffFoodCommand extends Command {
     const hq = hqId ? (game.lookup[hqId] as HQ) : undefined;
 
     if (!hq && !position) return null;
+    const dropOffPositions = hq ? hq.covering : [position];
 
-    if (unit.position.isAdjacentTo(position)) {
-      if (!food.isValidDropOff(position)) return null;
-
-      return new Action({
-        command: this,
-        type: "dropOffFood",
-        args: { position },
-        unit
-      });
+    if (unit.position.isAdjacentTo(dropOffPositions)) {
+      if (dropOffPositions.every(position => !food.isValidDropOff(position)))
+        return null;
+      for (let position of dropOffPositions) {
+        if (food.isValidDropOff(position))
+          return new Action({
+            command: this,
+            type: "dropOffFood",
+            args: { position },
+            unit
+          });
+      }
     } else {
       // TODO: Abstract this logic in `getPathTo`
       const path = hq
@@ -84,7 +88,7 @@ export default class DropOffFoodCommand extends Command {
     const unit = game.lookup[json.unit.id] as Citizen;
     const args = json.args as DropOffFoodCommandArgs;
     if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
+      args.position = Position.fromJSON(args.position);
     }
 
     return new DropOffFoodCommand({ ...json, unit, args });

@@ -64,7 +64,7 @@ export default class MoveCommand extends Command {
     const unit = game.lookup[json.unit.id] as Unit;
     const args = json.args as MoveCommandArgs;
     if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
+      args.position = Position.fromJSON(args.position);
     }
 
     return new MoveCommand({ ...json, unit, args });

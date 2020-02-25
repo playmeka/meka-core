@@ -12,6 +12,7 @@ import PickUpFoodCommand, {
   PickUpFoodCommandJSON
 } from "./commands/PickUpFoodCommand";
 
+// TODO: Move these to `commands/index`
 export type CommandArgs = {
   position?: Position;
   autoPickUpFood?: boolean;
