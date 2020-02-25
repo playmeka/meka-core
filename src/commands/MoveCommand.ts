@@ -20,7 +20,7 @@ export type MoveCommandJSON = {
   className: "MoveCommand";
   id: string;
   unit: CitizenJSON | FighterJSON;
-  args: MoveCommandArgs;
+  args: MoveCommandArgsJSON;
 };
 
 export default class MoveCommand extends Command {
@@ -62,7 +62,7 @@ export default class MoveCommand extends Command {
 
   static fromJSON(game: Game, json: MoveCommandJSON) {
     const unit = game.lookup[json.unit.id] as Unit;
-    let args = json.args;
+    const args = json.args as MoveCommandArgs;
     if (args.position) {
       args.position = new Position(args.position.x, args.position.y);
     }

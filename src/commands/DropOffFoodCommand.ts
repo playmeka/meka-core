@@ -82,11 +82,10 @@ export default class DropOffFoodCommand extends Command {
 
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    const { position } = json.args;
-
-    const args = position
-      ? { ...json.args, position: Position.fromJSON(position) }
-      : (json.args as DropOffFoodCommandArgs);
+    const args = json.args as DropOffFoodCommandArgs;
+    if (args.position) {
+      args.position = new Position(args.position.x, args.position.y);
+    }
 
     return new DropOffFoodCommand({ ...json, unit, args });
   }
