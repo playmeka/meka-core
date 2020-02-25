@@ -16,7 +16,7 @@ export type PickUpFoodCommandJSON = {
   className: "PickUpFoodCommand";
   id: string;
   unit: CitizenJSON;
-  args: PickUpFoodCommandArgs;
+  args: PickUpFoodCommandArgsJSON;
 };
 
 export default class PickUpFoodCommand extends Command {
@@ -41,7 +41,6 @@ export default class PickUpFoodCommand extends Command {
     const food = game.foods[position.key];
 
     if (!food || food.eatenBy) return null;
-    if (food.eatenBy) return null;
 
     if (unit.position.isAdjacentTo(food.position)) {
       return new Action({
@@ -74,11 +73,8 @@ export default class PickUpFoodCommand extends Command {
 
   static fromJSON(game: Game, json: PickUpFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    let args = json.args;
-    if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
-    }
-
-    return new Command({ ...json, unit, args });
+    const position = Position.fromJSON(json.args.position);
+    const args: PickUpFoodCommandArgs = { ...json.args, position };
+    return new PickUpFoodCommand({ ...json, unit, args });
   }
 }

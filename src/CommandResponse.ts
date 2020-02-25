@@ -41,7 +41,7 @@ export default class CommandResponse {
     return {
       status,
       command: command.toJSON(),
-      action: action.toJSON(),
+      action: action ? action.toJSON() : undefined,
       error
     } as CommandResponseJSON;
   }
