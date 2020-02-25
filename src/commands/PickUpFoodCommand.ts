@@ -1,15 +1,15 @@
 import Game from "../Game";
 import Command from "../Command";
-import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
 import Citizen, { CitizenJSON } from "../Citizen";
+import Food from "../Food";
 
 export type PickUpFoodCommandArgs = {
-  position: Position;
+  foodId: string;
 };
 
 export type PickUpFoodCommandArgsJSON = {
-  position: PositionJSON;
+  foodId: string;
 };
 
 export type PickUpFoodCommandJSON = {
@@ -37,8 +37,8 @@ export default class PickUpFoodCommand extends Command {
     if (unit.className !== "Citizen") return null;
     if (unit.food) return null;
 
-    const { position } = this.args;
-    const food = game.foods[position.key];
+    const { foodId } = this.args;
+    const food = game.lookup[foodId] as Food;
 
     if (!food || food.eatenBy) return null;
 
@@ -46,11 +46,11 @@ export default class PickUpFoodCommand extends Command {
       return new Action({
         command: this,
         type: "pickUpFood",
-        args: { position },
+        args: { position: food.position },
         unit
       });
     } else {
-      const path = game.pathFinder.getPath(unit, position);
+      const path = game.pathFinder.getPath(unit, food.position);
 
       if (!path) return null;
 
@@ -73,8 +73,6 @@ export default class PickUpFoodCommand extends Command {
 
   static fromJSON(game: Game, json: PickUpFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    const position = Position.fromJSON(json.args.position);
-    const args: PickUpFoodCommandArgs = { ...json.args, position };
-    return new PickUpFoodCommand({ ...json, unit, args });
+    return new PickUpFoodCommand({ ...json, unit });
   }
 }

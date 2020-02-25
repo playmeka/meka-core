@@ -18,6 +18,7 @@ export type CommandArgs = {
   autoDropOffFood?: boolean;
   unitType?: FighterType | "Citizen";
   targetId?: string;
+  foodId?: string;
 };
 
 export type CommandArgsJSON = {
@@ -26,6 +27,7 @@ export type CommandArgsJSON = {
   autoDropOffFood?: boolean;
   unitType?: FighterType | "Citizen";
   targetId?: string;
+  foodId?: string;
 };
 
 export type CommandClassName =
