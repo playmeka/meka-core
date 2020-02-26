@@ -4,16 +4,20 @@ import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
 import HQ from "../HQ";
 import Citizen, { CitizenJSON } from "../Citizen";
+import shuffle from "../utils/shuffle";
 
-export type DropOffFoodCommandArgs = {
-  position?: Position;
-  hqId?: string;
-};
+type DropOffFoodCommandArgsWithPosition = { position: Position };
+type DropOffFoodCommandArgsJSONWithPosition = { position: PositionJSON };
+type DropOffFoodCommandArgsWithHQ = { hqId: string };
+type DropOffFoodCommandArgsJSONWithHQ = { hqId: string };
 
-export type DropOffFoodCommandArgsJSON = {
-  position?: PositionJSON;
-  hqId?: string;
-};
+export type DropOffFoodCommandArgs =
+  | DropOffFoodCommandArgsWithPosition
+  | DropOffFoodCommandArgsWithHQ;
+
+export type DropOffFoodCommandArgsJSON =
+  | DropOffFoodCommandArgsJSONWithPosition
+  | DropOffFoodCommandArgsJSONWithHQ;
 
 export type DropOffFoodCommandJSON = {
   className: "DropOffFoodCommand";
@@ -47,18 +51,20 @@ export default class DropOffFoodCommand extends Command {
     if (!hq && !position) return null;
     const dropOffPositions = hq ? hq.covering : [position];
 
-    if (unit.position.isAdjacentTo(dropOffPositions)) {
-      if (dropOffPositions.every(position => !food.isValidDropOff(position)))
-        return null;
-      for (let position of dropOffPositions) {
-        if (food.isValidDropOff(position))
-          return new Action({
-            command: this,
-            type: "dropOffFood",
-            args: { position },
-            unit
-          });
-      }
+    if (unit.position.isAdjacentToAny(dropOffPositions)) {
+      const dropOffPosition = shuffle(dropOffPositions).find(position => {
+        return (
+          unit.position.isAdjacentTo(position) && food.isValidDropOff(position)
+        );
+      });
+      if (dropOffPosition)
+        return new Action({
+          command: this,
+          type: "dropOffFood",
+          args: { position: dropOffPosition },
+          unit
+        });
+      else return null;
     } else {
       // TODO: Abstract this logic in `getPathTo`
       const path = hq
@@ -86,10 +92,13 @@ export default class DropOffFoodCommand extends Command {
 
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    const args = json.args as DropOffFoodCommandArgs;
-    if (args.position) {
-      args.position = Position.fromJSON(args.position);
-    }
+    const position = (<DropOffFoodCommandArgsJSONWithPosition>json.args)
+      .position
+      ? Position.fromJSON(
+          (<DropOffFoodCommandArgsJSONWithPosition>json.args).position
+        )
+      : null;
+    const args: DropOffFoodCommandArgs = { ...json.args, position };
 
     return new DropOffFoodCommand({ ...json, unit, args });
   }

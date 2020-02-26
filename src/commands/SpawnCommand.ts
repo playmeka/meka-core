@@ -49,11 +49,10 @@ export default class SpawnCommand extends Command {
 
   static fromJSON(game: Game, json: SpawnCommandJSON) {
     const unit = game.lookup[json.unit.id] as HQ;
-    let args = json.args as SpawnCommandArgs;
-    if (args.position) {
-      args.position = Position.fromJSON(args.position);
-    }
-
+    const position = json.args.position
+      ? Position.fromJSON(json.args.position)
+      : null;
+    const args: SpawnCommandArgs = { ...json.args, position };
     return new SpawnCommand({ ...json, unit, args });
   }
 }

@@ -11,7 +11,7 @@ export type MoveCommandArgs = {
 };
 
 export type MoveCommandArgsJSON = {
-  position?: PositionJSON;
+  position: PositionJSON;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
 };
@@ -62,11 +62,8 @@ export default class MoveCommand extends Command {
 
   static fromJSON(game: Game, json: MoveCommandJSON) {
     const unit = game.lookup[json.unit.id] as Unit;
-    const args = json.args as MoveCommandArgs;
-    if (args.position) {
-      args.position = Position.fromJSON(args.position);
-    }
-
+    const position = Position.fromJSON(json.args.position);
+    const args: MoveCommandArgs = { ...json.args, position };
     return new MoveCommand({ ...json, unit, args });
   }
 }
