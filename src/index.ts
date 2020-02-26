@@ -13,7 +13,6 @@ export {
   GameGenerateProps,
   Unit
 } from "./Game";
-export { CommandJSON, CommandChildClass } from "./Command";
 export { default as HQ, HQJSON } from "./HQ";
 export {
   default as ObjectWithPosition,

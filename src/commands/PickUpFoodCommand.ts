@@ -1,5 +1,5 @@
 import Game from "../Game";
-import Command from "../Command";
+import BaseCommand from "./BaseCommand";
 import Action from "../Action";
 import Citizen, { CitizenJSON } from "../Citizen";
 import Food from "../Food";
@@ -19,7 +19,7 @@ export type PickUpFoodCommandJSON = {
   args: PickUpFoodCommandArgsJSON;
 };
 
-export default class PickUpFoodCommand extends Command {
+export default class PickUpFoodCommand extends BaseCommand {
   className: string = "PickUpFoodCommand";
 
   constructor(props: {

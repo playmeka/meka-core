@@ -18,10 +18,10 @@ import {
   Fighter,
   FighterJSON,
   FighterProps,
-  FighterType,
+  FighterClassName,
   BaseFighter
 } from "./fighters";
-import { CommandChildClass } from "./Command";
+import { Command } from "./commands";
 
 export type Unit = Citizen | Fighter | HQ;
 export type UnitJSON = CitizenJSON | FighterJSON | HQJSON;
@@ -352,7 +352,7 @@ export default class Game {
 
   // Command execution
   // executeAttack, executeMove, executeSpawn, executeFoodPickUp, executeFoodDropOff all return actions
-  async executeTurn(commands: CommandChildClass[] = []) {
+  async executeTurn(commands: Command[] = []) {
     if (this.isOver) return null;
     // Start new turn and history
     this.turn += 1;
@@ -778,7 +778,11 @@ export default class Game {
     return newCitizen;
   }
 
-  spawnFighter(hq: HQ, fighterType: FighterType, props: Partial<FighterProps>) {
+  spawnFighter(
+    hq: HQ,
+    fighterType: FighterClassName,
+    props: Partial<FighterProps>
+  ) {
     const { team } = hq;
     if (team.pop >= this.maxPop) {
       throw new Error("Population cap reached");

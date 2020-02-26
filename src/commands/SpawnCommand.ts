@@ -1,18 +1,18 @@
 import Game from "../Game";
-import Command from "../Command";
+import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
 import HQ, { HQJSON } from "../HQ";
-import { FighterType } from "../fighters";
+import { FighterClassName } from "../fighters";
 
 export type SpawnCommandArgs = {
   position?: Position;
-  unitType: FighterType | "Citizen";
+  unitType: FighterClassName | "Citizen";
 };
 
 export type SpawnCommandArgsJSON = {
   position?: PositionJSON;
-  unitType: FighterType | "Citizen";
+  unitType: FighterClassName | "Citizen";
 };
 
 export type SpawnCommandJSON = {
@@ -22,7 +22,7 @@ export type SpawnCommandJSON = {
   args: SpawnCommandArgsJSON;
 };
 
-export default class SpawnCommand extends Command {
+export default class SpawnCommand extends BaseCommand {
   className: string = "SpawnCommand";
 
   constructor(props: { unit: HQ; args?: SpawnCommandArgs; id?: string }) {

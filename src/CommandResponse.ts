@@ -1,4 +1,4 @@
-import { CommandJSON, CommandChildClass } from "./Command";
+import { Command, CommandJSON } from "./commands";
 import Game from "./Game";
 import Action, { ActionJSON } from "./Action";
 import {
@@ -11,7 +11,7 @@ import {
 
 export type CommandResponseStatus = "success" | "failure";
 export type CommandResponseProps = {
-  command: CommandChildClass;
+  command: Command;
   status: CommandResponseStatus;
   action?: Action;
   error?: string;
@@ -24,7 +24,7 @@ export type CommandResponseJSON = {
 };
 
 export default class CommandResponse {
-  command: CommandChildClass;
+  command: Command;
   status: CommandResponseStatus;
   action?: Action;
   error?: string;

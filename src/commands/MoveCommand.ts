@@ -1,5 +1,5 @@
 import Game, { Unit } from "../Game";
-import Command from "../Command";
+import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
 import Citizen, { CitizenJSON } from "../Citizen";
@@ -24,7 +24,7 @@ export type MoveCommandJSON = {
   args: MoveCommandArgsJSON;
 };
 
-export default class MoveCommand extends Command {
+export default class MoveCommand extends BaseCommand {
   className: string = "MoveCommand";
 
   constructor(props: { unit: Unit; args?: MoveCommandArgs; id?: string }) {

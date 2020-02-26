@@ -2,23 +2,20 @@ import Game from "../../src/Game";
 import Citizen from "../../src/Citizen";
 import {
   Fighter,
-  FighterType,
+  FighterClassName,
   InfantryFighter,
   CavalryFighter,
   RangedFighter
 } from "../../src/fighters";
 import { AttackCommand } from "../../src/commands";
 import defaultGameProps from "./defaultGameProps";
-import { CommandChildClass } from "../../src/Command";
+import { Command } from "../../src/commands";
 
 export default function fighterAttackDamageBehavior(
-  fighterType: FighterType,
-  hardCounterType: FighterType
+  fighterType: FighterClassName,
+  hardCounterType: FighterClassName
 ) {
-  let game: Game,
-    fighter: Fighter,
-    target: Fighter | Citizen,
-    command: CommandChildClass;
+  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });

@@ -26,7 +26,6 @@ export type BaseFighterProps = {
 };
 
 export default class BaseFighter extends ObjectWithPosition {
-  className: string = "BaseFighter";
   game: Game;
   teamId: string;
   baseAttackDamage: number;

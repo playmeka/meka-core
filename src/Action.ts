@@ -7,8 +7,8 @@ import {
   DropOffFoodCommand,
   PickUpFoodCommand
 } from "./commands";
-import { CommandChildClass, CommandJSON } from "./Command";
-import { FighterType } from "./fighters";
+import { Command, CommandJSON } from "./commands";
+import { FighterClassName } from "./fighters";
 
 export type ActionType =
   | "move"
@@ -21,7 +21,7 @@ export type ActionArgs = {
   position?: Position;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
-  unitType?: FighterType | "Citizen";
+  unitType?: FighterClassName | "Citizen";
   targetId?: string;
 };
 
@@ -29,7 +29,7 @@ export type ActionArgsJSON = {
   position?: PositionJSON;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
-  unitType?: FighterType | "Citizen";
+  unitType?: FighterClassName | "Citizen";
   targetId?: string;
 };
 
@@ -42,7 +42,7 @@ export type ActionJSON = {
   args: ActionArgsJSON;
 };
 export type ActionProps = {
-  command: CommandChildClass;
+  command: Command;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
@@ -50,7 +50,7 @@ export type ActionProps = {
 };
 
 export default class Action {
-  command: CommandChildClass;
+  command: Command;
   response?: ActionResponse;
   type: ActionType;
   unit: Unit;
