@@ -229,7 +229,7 @@ export default class Game {
   }
 
   getTeam(teamId: string) {
-    return this.teams.filter(team => team.id == teamId)[0];
+    return this.teams.find(team => team.id == teamId);
   }
 
   toJSON() {
@@ -749,10 +749,10 @@ export default class Game {
       teamId: team.id
     } as CitizenProps);
 
-    if (team.foodCount < newCitizen.cost) {
+    if (team.foodCount < team.cost("Citizen")) {
       throw new Error("Not enough food to pay for spawn");
     }
-    team.spendFood(newCitizen.cost);
+    team.spendFood(team.cost("Citizen"));
     this.addCitizen(newCitizen);
     return newCitizen;
   }
@@ -771,10 +771,10 @@ export default class Game {
       teamId: team.id
     } as FighterProps);
 
-    if (team.foodCount < newFighter.cost) {
+    if (team.foodCount < team.cost(fighterType)) {
       throw new Error("Not enough food to pay for spawn");
     }
-    team.spendFood(newFighter.cost);
+    team.spendFood(team.cost(fighterType));
     this.addFighter(newFighter);
     return newFighter;
   }

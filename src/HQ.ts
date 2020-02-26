@@ -25,6 +25,7 @@ type HQProps = {
   id?: string;
   width?: number;
   height?: number;
+  hp?: number;
 };
 
 export default class HQ extends ObjectWithPosition {
@@ -35,6 +36,7 @@ export default class HQ extends ObjectWithPosition {
   teamId: string;
   id: string;
   game: Game;
+  baseHP: number;
 
   constructor(game: Game, props: HQProps) {
     super(props);
@@ -43,6 +45,10 @@ export default class HQ extends ObjectWithPosition {
     this.id = props.id || uuidv4();
     this.width = props.width || 2;
     this.height = props.height || 2;
+    this.hp = props.hp || this.team.baseHP("HQ");
+    this.baseHP = this.team.baseHP("HQ");
+    this.baseAttackDamage = this.team.baseAttackDamage("HQ");
+    this.range = this.team.range("HQ");
   }
 
   get team() {

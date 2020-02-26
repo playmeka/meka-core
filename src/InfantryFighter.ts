@@ -15,7 +15,6 @@ export type InfantryFighterJSON = {
   position: PositionJSON;
   range: number;
   speed: number;
-  cost: number;
 };
 
 export type InfantryFighterProps = {
@@ -31,21 +30,21 @@ export default class InfantryFighter extends ObjectWithPosition {
   teamId: string;
   baseAttackDamage: number;
   hp: number;
+  baseHP: number;
   speed: number;
   range: number;
   id: string;
-  cost: number;
 
   constructor(game: Game, props: InfantryFighterProps) {
     super(props);
     this.game = game;
     this.teamId = props.teamId;
     this.id = props.id || uuidv4();
-    this.hp = props.hp || 32;
-    this.baseAttackDamage = 10;
-    this.cost = 4;
-    this.range = 1;
-    this.speed = 1;
+    this.hp = props.hp || this.team.baseHP("InfantryFighter");
+    this.baseHP = this.team.baseHP("InfantryFighter");
+    this.baseAttackDamage = this.team.baseAttackDamage("InfantryFighter");
+    this.range = this.team.range("InfantryFighter");
+    this.speed = this.team.speed("InfantryFighter");
   }
 
   get team() {
@@ -110,14 +109,13 @@ export default class InfantryFighter extends ObjectWithPosition {
   }
 
   toJSON() {
-    const { id, hp, teamId, position, cost, speed, range, className } = this;
+    const { id, hp, teamId, position, speed, range, className } = this;
     return {
       id,
       className,
       hp,
       teamId,
       position: position.toJSON(),
-      cost,
       speed,
       range
     } as InfantryFighterJSON;
