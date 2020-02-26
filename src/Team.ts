@@ -92,26 +92,6 @@ export default class Team {
     );
   }
 
-  baseAttackDamage(unitType: "HQ" | FighterType) {
-    return this.settings.baseAttackDamage[unitType];
-  }
-
-  speed(unitType: "Citizen" | FighterType) {
-    return this.settings.speed[unitType];
-  }
-
-  baseHP(unitType: "Citizen" | "HQ" | FighterType) {
-    return this.settings.baseHP[unitType];
-  }
-
-  range(unitType: "HQ" | FighterType) {
-    return this.settings.range[unitType];
-  }
-
-  cost(unitType: "Citizen" | FighterType) {
-    return this.settings.cost[unitType];
-  }
-
   toJSON() {
     return {
       id: this.id,

@@ -15,6 +15,7 @@ export type CitizenJSON = {
   teamId: string;
   position: PositionJSON;
   speed: number;
+  baseHP: number;
 };
 
 export type CitizenProps = {
@@ -41,9 +42,9 @@ export default class Citizen extends ObjectWithPosition {
     this.teamId = props.teamId;
     this.id = props.id || uuidv4();
     this.foodId = props.foodId;
-    this.hp = props.hp || this.team.baseHP("Citizen");
-    this.baseHP = this.team.baseHP("Citizen");
-    this.speed = this.team.speed("Citizen");
+    this.hp = props.hp || this.team.settings.baseHP["Citizen"];
+    this.baseHP = this.team.settings.baseHP["Citizen"];
+    this.speed = this.team.settings.speed["Citizen"];
   }
 
   get food() {
@@ -105,7 +106,8 @@ export default class Citizen extends ObjectWithPosition {
       foodId: this.foodId,
       teamId: this.teamId,
       position: this.position.toJSON(),
-      speed: this.speed
+      speed: this.speed,
+      baseHP: this.baseHP
     } as CitizenJSON;
   }
 

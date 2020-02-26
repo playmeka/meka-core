@@ -17,6 +17,7 @@ export type HQJSON = {
   position: PositionJSON;
   baseAttackDamage: number;
   range: number;
+  baseHP: number;
 };
 
 type HQProps = {
@@ -45,10 +46,10 @@ export default class HQ extends ObjectWithPosition {
     this.id = props.id || uuidv4();
     this.width = props.width || 2;
     this.height = props.height || 2;
-    this.hp = props.hp || this.team.baseHP("HQ");
-    this.baseHP = this.team.baseHP("HQ");
-    this.baseAttackDamage = this.team.baseAttackDamage("HQ");
-    this.range = this.team.range("HQ");
+    this.hp = props.hp || this.team.settings.baseHP["HQ"];
+    this.baseHP = this.team.settings.baseHP["HQ"];
+    this.baseAttackDamage = this.team.settings.baseAttackDamage["HQ"];
+    this.range = this.team.settings.range["HQ"];
   }
 
   get team() {
@@ -113,7 +114,8 @@ export default class HQ extends ObjectWithPosition {
       hp,
       position,
       range,
-      baseAttackDamage
+      baseAttackDamage,
+      baseHP
     } = this;
     return {
       id,
@@ -123,6 +125,7 @@ export default class HQ extends ObjectWithPosition {
       hp,
       range,
       baseAttackDamage,
+      baseHP,
       position: position.toJSON()
     } as HQJSON;
   }

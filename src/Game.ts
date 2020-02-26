@@ -55,6 +55,7 @@ export type GameJSON = {
   citizens: CitizenJSON[];
   fighters: FighterJSON[];
   history: HistoryJSON;
+  hqs: HQJSON[];
 };
 
 export type GameProps = {
@@ -253,7 +254,8 @@ export default class Game {
       teams: this.teams.map(team => team.toJSON()),
       citizens: this.citizensList.map(citizen => citizen.toJSON()),
       fighters: this.fightersList.map(fighter => fighter.toJSON()),
-      history: this.history.toJSON()
+      history: this.history.toJSON(),
+      hqs: this.hqsList.map(hq => hq.toJSON())
     } as GameJSON;
   }
 
@@ -268,6 +270,7 @@ export default class Game {
   static fromJSON(json: GameJSON) {
     const game = new Game(json);
     game.importTeams(json.teams.map(teamJson => Team.fromJSON(game, teamJson)));
+    game.importHQs(json.hqs.map(hqJson => HQ.fromJSON(game, hqJson)));
     game.importWalls(json.walls.map(wallJson => Wall.fromJSON(wallJson)));
     game.importFoods(json.foods.map(foodJson => Food.fromJSON(game, foodJson)));
     game.importCitizens(
@@ -293,6 +296,10 @@ export default class Game {
 
   importTeams(teams: Team[]) {
     teams.forEach(team => this.addTeam(team));
+  }
+
+  importHQs(hqs: HQ[]) {
+    hqs.forEach(hq => this.addHQ(hq));
   }
 
   importCitizens(citizens: Citizen[]) {
@@ -760,10 +767,10 @@ export default class Game {
       teamId: team.id
     } as CitizenProps);
 
-    if (team.foodCount < team.cost("Citizen")) {
+    if (team.foodCount < team.settings.cost["Citizen"]) {
       throw new Error("Not enough food to pay for spawn");
     }
-    team.spendFood(team.cost("Citizen"));
+    team.spendFood(team.settings.cost["Citizen"]);
     this.addCitizen(newCitizen);
     return newCitizen;
   }
@@ -782,10 +789,10 @@ export default class Game {
       teamId: team.id
     } as FighterProps);
 
-    if (team.foodCount < team.cost(fighterType)) {
+    if (team.foodCount < team.settings.cost[fighterType]) {
       throw new Error("Not enough food to pay for spawn");
     }
-    team.spendFood(team.cost(fighterType));
+    team.spendFood(team.settings.cost[fighterType]);
     this.addFighter(newFighter);
     return newFighter;
   }

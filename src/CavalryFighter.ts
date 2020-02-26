@@ -15,6 +15,7 @@ export type CavalryFighterJSON = {
   position: PositionJSON;
   range: number;
   speed: number;
+  baseHP: number;
 };
 
 export type CavalryFighterProps = {
@@ -40,11 +41,13 @@ export default class CavalryFighter extends ObjectWithPosition {
     this.id = props.id || uuidv4();
     this.game = game;
     this.teamId = props.teamId;
-    this.hp = props.hp || this.team.baseHP("CavalryFighter");
-    this.baseHP = this.team.baseHP("CavalryFighter");
-    this.baseAttackDamage = this.team.baseAttackDamage("CavalryFighter");
-    this.range = this.team.range("CavalryFighter");
-    this.speed = this.team.speed("CavalryFighter");
+    this.hp = props.hp || this.team.settings.baseHP["CavalryFighter"];
+    this.baseHP = this.team.settings.baseHP["CavalryFighter"];
+    this.baseAttackDamage = this.team.settings.baseAttackDamage[
+      "CavalryFighter"
+    ];
+    this.range = this.team.settings.range["CavalryFighter"];
+    this.speed = this.team.settings.speed["CavalryFighter"];
   }
 
   get team() {
@@ -109,7 +112,7 @@ export default class CavalryFighter extends ObjectWithPosition {
   }
 
   toJSON() {
-    const { id, hp, teamId, position, speed, range, className } = this;
+    const { id, hp, teamId, position, speed, range, className, baseHP } = this;
     return {
       id,
       className,
@@ -117,7 +120,8 @@ export default class CavalryFighter extends ObjectWithPosition {
       teamId,
       position: position.toJSON(),
       speed,
-      range
+      range,
+      baseHP
     } as CavalryFighterJSON;
   }
 
