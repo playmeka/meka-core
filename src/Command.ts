@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import Game, { Unit, FighterType, UnitJSON } from "./Game";
+import Game, { Unit, UnitJSON } from "./Game";
 import Action from "./Action";
 import { Position, PositionJSON } from "./ObjectWithPosition";
 import MoveCommand, { MoveCommandJSON } from "./commands/MoveCommand";
@@ -11,6 +11,7 @@ import DropOffFoodCommand, {
 import PickUpFoodCommand, {
   PickUpFoodCommandJSON
 } from "./commands/PickUpFoodCommand";
+import { FighterType } from "./fighters";
 
 // TODO: Move these to `commands/index`
 export type CommandArgs = {

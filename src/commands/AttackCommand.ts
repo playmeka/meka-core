@@ -1,7 +1,8 @@
-import Game, { Fighter, Unit, UnitJSON } from "../Game";
+import Game, { Unit, UnitJSON } from "../Game";
 import Command from "../Command";
 import Action from "../Action";
 import HQ from "../HQ";
+import { Fighter, BaseFighter } from "../fighters";
 
 export type AttackCommandArgs = {
   targetId: string;
@@ -47,11 +48,7 @@ export default class AttackCommand extends Command {
       });
     } else if (unit.className === "HQ") {
       return null;
-    } else if (
-      ["InfantryFighter", "RangedFighter", "CavalryFighter"].includes(
-        unit.className
-      )
-    ) {
+    } else if (unit instanceof BaseFighter) {
       const path = game.getOptimalPathToTarget(unit as Fighter, target);
 
       if (!path) return null;

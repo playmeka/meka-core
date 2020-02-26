@@ -1,4 +1,4 @@
-import Game, { Unit, UnitJSON, FighterType } from "./Game";
+import Game, { Unit, UnitJSON } from "./Game";
 import { Position, PositionJSON } from "./ObjectWithPosition";
 import {
   MoveCommand,
@@ -8,6 +8,7 @@ import {
   PickUpFoodCommand
 } from "./commands";
 import { CommandChildClass, CommandJSON } from "./Command";
+import { FighterType } from "./fighters";
 
 export type ActionType =
   | "move"

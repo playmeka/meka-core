@@ -11,35 +11,20 @@ import CommandResponse from "./CommandResponse";
 import History, { HistoryJSON } from "./History";
 import PathFinder from "./PathFinder";
 import isValidPosition from "./utils/isValidPosition";
-import CavalryFighter, {
-  CavalryFighterJSON,
-  CavalryFighterProps
-} from "./CavalryFighter";
-import InfantryFighter, {
-  InfantryFighterJSON,
-  InfantryFighterProps
-} from "./InfantryFighter";
-import RangedFighter, {
-  RangedFighterJSON,
-  RangedFighterProps
-} from "./RangedFighter";
+import {
+  CavalryFighter,
+  RangedFighter,
+  InfantryFighter,
+  Fighter,
+  FighterJSON,
+  FighterProps,
+  FighterType,
+  BaseFighter
+} from "./fighters";
 import { CommandChildClass } from "./Command";
 
-export type FighterType =
-  | "InfantryFighter"
-  | "RangedFighter"
-  | "CavalryFighter";
-export type Fighter = CavalryFighter | InfantryFighter | RangedFighter;
 export type Unit = Citizen | Fighter | HQ;
 export type UnitJSON = CitizenJSON | FighterJSON | HQJSON;
-export type FighterJSON =
-  | CavalryFighterJSON
-  | InfantryFighterJSON
-  | RangedFighterJSON;
-export type FighterProps =
-  | CavalryFighterProps
-  | InfantryFighterProps
-  | RangedFighterProps;
 
 export type GameJSON = {
   width: number;
@@ -191,10 +176,8 @@ export default class Game {
   }
 
   get fightersList() {
-    return Object.values(this.lookup).filter(object =>
-      ["InfantryFighter", "CavalryFighter", "RangedFighter"].includes(
-        object.className
-      )
+    return Object.values(this.lookup).filter(
+      object => object instanceof BaseFighter
     ) as Fighter[];
   }
 
@@ -839,11 +822,7 @@ export default class Game {
       allPaths = this.pathFinder.getPaths(unit, target.covering);
     }
     // If the unit is a Fighter, go to the closest position that's adjacent the area that the target covers
-    else if (
-      ["InfantryFighter", "CavalryFighter", "RangedFighter"].includes(
-        unit.className
-      )
-    ) {
+    else if (unit instanceof BaseFighter) {
       const attackPositions = (unit as Fighter).getAttackPositionsFor(target);
 
       allPaths = this.pathFinder.getPaths(unit, attackPositions);

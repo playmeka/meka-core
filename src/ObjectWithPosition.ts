@@ -90,7 +90,7 @@ export default class ObjectWithPosition {
     return this.position.y;
   }
 
-  get covering() {
+  get covering(): Position[] {
     const positions: Position[] = [];
     for (let x = 0; x < this.width; x++) {
       for (let y = 0; y < this.height; y++) {

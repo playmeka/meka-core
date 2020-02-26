@@ -1,8 +1,9 @@
-import Game, { FighterType } from "../Game";
+import Game from "../Game";
 import Command from "../Command";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
 import HQ, { HQJSON } from "../HQ";
+import { FighterType } from "../fighters";
 
 export type SpawnCommandArgs = {
   position?: Position;

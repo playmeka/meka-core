@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import Game, { FighterType } from "./Game";
+import Game from "./Game";
+import { FighterType } from "./fighters";
 
 const DEFAULT_SETTINGS: TeamSettings = {
   cost: {

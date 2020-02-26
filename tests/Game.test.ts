@@ -1,10 +1,9 @@
 import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
-import Game, { GameJSON, Fighter } from "../src/Game";
+import Game, { GameJSON } from "../src/Game";
 import Citizen from "../src/Citizen";
 import CommandResponse from "../src/CommandResponse";
-import InfantryFighter from "../src/InfantryFighter";
-import RangedFighter from "../src/RangedFighter";
+import { InfantryFighter, RangedFighter, Fighter } from "../src/fighters";
 import HQ from "../src/HQ";
 import { MoveCommand, SpawnCommand, AttackCommand } from "../src/commands";
 import { CommandChildClass } from "../src/Command";

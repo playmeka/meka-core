@@ -1,8 +1,12 @@
-import Game, { Fighter, FighterType } from "../../src/Game";
+import Game from "../../src/Game";
 import Citizen from "../../src/Citizen";
-import InfantryFighter from "../../src/InfantryFighter";
-import CavalryFighter from "../../src/CavalryFighter";
-import RangedFighter from "../../src/RangedFighter";
+import {
+  Fighter,
+  FighterType,
+  InfantryFighter,
+  CavalryFighter,
+  RangedFighter
+} from "../../src/fighters";
 import { AttackCommand } from "../../src/commands";
 import defaultGameProps from "./defaultGameProps";
 import { CommandChildClass } from "../../src/Command";

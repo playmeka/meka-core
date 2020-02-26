@@ -2,14 +2,14 @@ import { v4 as uuidv4 } from "uuid";
 import ObjectWithPosition, {
   Position,
   PositionJSON
-} from "./ObjectWithPosition";
-import Game, { Unit } from "./Game";
-import isValidPosition from "./utils/isValidPosition";
-import isTargetAtPosition from "./utils/isTargetAtPosition";
+} from "../ObjectWithPosition";
+import Game, { Unit } from "../Game";
+import isValidPosition from "../utils/isValidPosition";
+import isTargetAtPosition from "../utils/isTargetAtPosition";
 
-export type CavalryFighterJSON = {
+export type BaseFighterJSON = {
   id: string;
-  className: "CavalryFighter";
+  className: "BaseFighter";
   hp: number;
   teamId: string;
   position: PositionJSON;
@@ -18,15 +18,15 @@ export type CavalryFighterJSON = {
   baseHP: number;
 };
 
-export type CavalryFighterProps = {
+export type BaseFighterProps = {
   teamId: string;
   position: Position;
   id?: string;
   hp?: number;
 };
 
-export default class CavalryFighter extends ObjectWithPosition {
-  className: string = "CavalryFighter";
+export default class BaseFighter extends ObjectWithPosition {
+  className: string = "BaseFighter";
   game: Game;
   teamId: string;
   baseAttackDamage: number;
@@ -36,18 +36,11 @@ export default class CavalryFighter extends ObjectWithPosition {
   range: number;
   id: string;
 
-  constructor(game: Game, props: CavalryFighterProps) {
+  constructor(game: Game, props: BaseFighterProps) {
     super(props);
     this.id = props.id || uuidv4();
     this.game = game;
     this.teamId = props.teamId;
-    this.hp = props.hp || this.team.settings.baseHP["CavalryFighter"];
-    this.baseHP = this.team.settings.baseHP["CavalryFighter"];
-    this.baseAttackDamage = this.team.settings.baseAttackDamage[
-      "CavalryFighter"
-    ];
-    this.range = this.team.settings.range["CavalryFighter"];
-    this.speed = this.team.settings.speed["CavalryFighter"];
   }
 
   get team() {
@@ -66,27 +59,12 @@ export default class CavalryFighter extends ObjectWithPosition {
       .filter(move => isTargetAtPosition(this.game, move, target, this.teamId));
   }
 
-  getAttackDamageFor(enemyUnit: Unit) {
-    return enemyUnit.className === "RangedFighter"
-      ? this.baseAttackDamage + 6
-      : this.baseAttackDamage;
-  }
-
-  getPathTo(position: Position): Position[] {
-    return this.game.pathFinder.getPath(this, position);
+  getAttackDamageFor(_enemyUnit: Unit) {
+    return 0;
   }
 
   move(position: Position) {
     this.position = position;
-  }
-
-  takeDamage(damage: number) {
-    this.hp -= damage;
-    if (this.hp <= 0) this.die();
-  }
-
-  die() {
-    this.game.killFighter(this);
   }
 
   isValidMove(position: Position) {
@@ -122,11 +100,11 @@ export default class CavalryFighter extends ObjectWithPosition {
       speed,
       range,
       baseHP
-    } as CavalryFighterJSON;
+    } as BaseFighterJSON;
   }
 
-  static fromJSON(game: Game, json: CavalryFighterJSON) {
+  static fromJSON(game: Game, json: BaseFighterJSON) {
     const position = Position.fromJSON(json.position);
-    return new CavalryFighter(game, { ...json, position });
+    return new BaseFighter(game, { ...json, position });
   }
 }

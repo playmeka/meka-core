@@ -1,8 +1,9 @@
-import Game, { Fighter, Unit, FighterJSON } from "../Game";
+import Game, { Unit } from "../Game";
 import Command from "../Command";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
 import Citizen, { CitizenJSON } from "../Citizen";
+import { Fighter, FighterJSON } from "../fighters";
 
 export type MoveCommandArgs = {
   position: Position;
