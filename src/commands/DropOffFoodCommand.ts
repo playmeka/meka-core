@@ -2,21 +2,28 @@ import Game from "../Game";
 import Command from "../Command";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import Action from "../Action";
+import HQ from "../HQ";
 import Citizen, { CitizenJSON } from "../Citizen";
+import shuffle from "../utils/shuffle";
 
-export type DropOffFoodCommandArgs = {
-  position: Position;
-};
+type DropOffFoodCommandArgsWithPosition = { position: Position };
+type DropOffFoodCommandArgsJSONWithPosition = { position: PositionJSON };
+type DropOffFoodCommandArgsWithHQ = { hqId: string };
+type DropOffFoodCommandArgsJSONWithHQ = { hqId: string };
 
-export type DropOffFoodCommandArgsJSON = {
-  position: PositionJSON;
-};
+export type DropOffFoodCommandArgs =
+  | DropOffFoodCommandArgsWithPosition
+  | DropOffFoodCommandArgsWithHQ;
+
+export type DropOffFoodCommandArgsJSON =
+  | DropOffFoodCommandArgsJSONWithPosition
+  | DropOffFoodCommandArgsJSONWithHQ;
 
 export type DropOffFoodCommandJSON = {
   className: "DropOffFoodCommand";
   id: string;
   unit: CitizenJSON;
-  args: DropOffFoodCommandArgs;
+  args: DropOffFoodCommandArgsJSON;
 };
 
 export default class DropOffFoodCommand extends Command {
@@ -32,24 +39,37 @@ export default class DropOffFoodCommand extends Command {
 
   getNextAction(game: Game): Action {
     const unit = this.unit as Citizen;
+    const food = unit.food;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
     if (unit.className !== "Citizen") return null;
-    if (!unit.food) return null;
-    const { position } = this.args;
-    const food = unit.food;
+    if (!food) return null;
 
-    if (unit.position.isAdjacentTo(position)) {
-      if (!food.isValidDropOff(position)) return null;
+    const { position, hqId } = this.args;
+    const hq = hqId ? (game.lookup[hqId] as HQ) : undefined;
 
-      return new Action({
-        command: this,
-        type: "dropOffFood",
-        args: { position },
-        unit
+    if (!hq && !position) return null;
+    const dropOffPositions = hq ? hq.covering : [position];
+
+    if (unit.position.isAdjacentToAny(dropOffPositions)) {
+      const dropOffPosition = shuffle(dropOffPositions).find(position => {
+        return (
+          unit.position.isAdjacentTo(position) && food.isValidDropOff(position)
+        );
       });
+      if (dropOffPosition)
+        return new Action({
+          command: this,
+          type: "dropOffFood",
+          args: { position: dropOffPosition },
+          unit
+        });
+      else return null;
     } else {
-      const path = game.pathFinder.getPath(unit, position);
+      // TODO: Abstract this logic in `getPathTo`
+      const path = hq
+        ? game.getOptimalPathToTarget(unit, hq)
+        : unit.getPathTo(position);
 
       if (!path) return null;
 
@@ -72,10 +92,13 @@ export default class DropOffFoodCommand extends Command {
 
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    let args = json.args;
-    if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
-    }
+    const position = (<DropOffFoodCommandArgsJSONWithPosition>json.args)
+      .position
+      ? Position.fromJSON(
+          (<DropOffFoodCommandArgsJSONWithPosition>json.args).position
+        )
+      : null;
+    const args: DropOffFoodCommandArgs = { ...json.args, position };
 
     return new DropOffFoodCommand({ ...json, unit, args });
   }

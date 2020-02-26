@@ -12,12 +12,15 @@ import PickUpFoodCommand, {
   PickUpFoodCommandJSON
 } from "./commands/PickUpFoodCommand";
 
+// TODO: Move these to `commands/index`
 export type CommandArgs = {
   position?: Position;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
   unitType?: FighterType | "Citizen";
   targetId?: string;
+  foodId?: string;
+  hqId?: string;
 };
 
 export type CommandArgsJSON = {
@@ -26,6 +29,8 @@ export type CommandArgsJSON = {
   autoDropOffFood?: boolean;
   unitType?: FighterType | "Citizen";
   targetId?: string;
+  foodId?: string;
+  hqId?: string;
 };
 
 export type CommandClassName =

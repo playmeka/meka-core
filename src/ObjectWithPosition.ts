@@ -34,8 +34,13 @@ export class Position {
   }
 
   isAdjacentTo(position: Position) {
-    return this.adjacents.find(
-      adjacent => adjacent.x == position.x && adjacent.y == position.y
+    return this.adjacents.find(adjacent => adjacent.isEqualTo(position));
+  }
+
+  isAdjacentToAny(positions: Position[] | Position) {
+    positions = Array.isArray(positions) ? positions : [positions];
+    return this.adjacents.find(adjacent =>
+      (positions as Position[]).some(position => adjacent.isEqualTo(position))
     );
   }
 

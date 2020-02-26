@@ -18,7 +18,7 @@ export type SpawnCommandJSON = {
   className: "SpawnCommand";
   id: string;
   unit: HQJSON;
-  args: SpawnCommandArgs;
+  args: SpawnCommandArgsJSON;
 };
 
 export default class SpawnCommand extends Command {
@@ -49,11 +49,10 @@ export default class SpawnCommand extends Command {
 
   static fromJSON(game: Game, json: SpawnCommandJSON) {
     const unit = game.lookup[json.unit.id] as HQ;
-    let args = json.args;
-    if (args.position) {
-      args.position = new Position(args.position.x, args.position.y);
-    }
-
+    const position = json.args.position
+      ? Position.fromJSON(json.args.position)
+      : null;
+    const args: SpawnCommandArgs = { ...json.args, position };
     return new SpawnCommand({ ...json, unit, args });
   }
 }

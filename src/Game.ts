@@ -387,30 +387,36 @@ export default class Game {
     // Assign commands to Action queues
     commands.forEach(command => {
       const action = command.getNextAction(this);
-      if (!action || unitToActionMap[action.unit.id]) {
+      try {
+        if (!action) {
+          throw new Error("No action available for command: " + command.id);
+        } else if (unitToActionMap[action.unit.id]) {
+          throw new Error("Duplicate command for unit: " + command.unit.id);
+        }
+
+        if (action.type == "attack") {
+          unitToActionMap[action.unit.id] = action;
+          attacks.push(action);
+        } else if (action.type == "move") {
+          unitToActionMap[action.unit.id] = action;
+          moves.push(action);
+        } else if (action.type === "pickUpFood") {
+          unitToActionMap[action.unit.id] = action;
+          foodPickUps.push(action);
+        } else if (action.type === "dropOffFood") {
+          unitToActionMap[action.unit.id] = action;
+          foodDropOffs.push(action);
+        } else if (action.type == "spawn") {
+          unitToActionMap[action.unit.id] = action;
+          spawns.push(action);
+        }
+      } catch (err) {
         commandToResponseMap[command.id] = new CommandResponse({
           command,
           action,
-          error: "Duplicate command for unit: " + command.unit.id,
+          error: err.message,
           status: "failure"
         });
-        return null;
-      }
-      if (action.type == "attack") {
-        unitToActionMap[action.unit.id] = action;
-        attacks.push(action);
-      } else if (action.type == "move") {
-        unitToActionMap[action.unit.id] = action;
-        moves.push(action);
-      } else if (action.type === "pickUpFood") {
-        unitToActionMap[action.unit.id] = action;
-        foodPickUps.push(action);
-      } else if (action.type === "dropOffFood") {
-        unitToActionMap[action.unit.id] = action;
-        foodDropOffs.push(action);
-      } else if (action.type == "spawn") {
-        unitToActionMap[action.unit.id] = action;
-        spawns.push(action);
       }
     });
     // Execute attacks in order
@@ -544,16 +550,7 @@ export default class Game {
           "Invalid drop-off position: " + JSON.stringify(position.toJSON())
         );
 
-      const hq = this.hqs[position.key];
-      unit.dropOffFood();
-      if (hq) {
-        hq.eatFood();
-        food.getEatenBy(hq);
-      } else {
-        food.eatenById = null;
-        food.move(position);
-        this.foods[position.key] = food;
-      }
+      this.handleFoodDropOff(unit, position);
       action.response = unit.toJSON();
       this.history.pushActions(this.turn, action);
       return action;
@@ -585,9 +582,7 @@ export default class Game {
       );
 
     if (unit.position.isAdjacentTo(food.position)) {
-      unit.eatFood(food);
-      food.getEatenBy(unit);
-      delete this.foods[food.key]; // Un-register food
+      this.handleFoodPickUp(unit, food.position);
       action.response = unit.toJSON();
       this.history.pushActions(this.turn, action);
       return action;
@@ -709,6 +704,9 @@ export default class Game {
           });
         }
       } else if (type === "dropOffFood") {
+        this.handleFoodDropOff(unit as Citizen, args.position);
+      } else if (type === "pickUpFood") {
+        this.handleFoodPickUp(unit as Citizen, args.position);
       }
     });
     // Add turn to history
@@ -755,6 +753,28 @@ export default class Game {
     this.clearUnitPosition(fighter, this.fighters);
     fighter.move(position);
     this.registerUnitPosition(fighter, this.fighters);
+  }
+
+  handleFoodPickUp(unit: Citizen, position: Position) {
+    const food = this.foods[position.key];
+    delete this.foods[food.key]; // Un-register food
+    food.move(unit.position);
+    unit.eatFood(food);
+    food.getEatenBy(unit);
+  }
+
+  handleFoodDropOff(unit: Citizen, position: Position) {
+    const food = unit.food;
+    const hq = this.hqs[position.key];
+    unit.dropOffFood();
+    if (hq) {
+      hq.eatFood();
+      food.getEatenBy(hq);
+    } else {
+      food.eatenById = null;
+      food.move(position);
+      this.foods[position.key] = food;
+    }
   }
 
   spawnCitizen(hq: HQ, props: Partial<CitizenProps>) {
