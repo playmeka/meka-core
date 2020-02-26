@@ -757,9 +757,10 @@ export default class Game {
 
   handleFoodPickUp(unit: Citizen, position: Position) {
     const food = this.foods[position.key];
+    delete this.foods[food.key]; // Un-register food
+    food.move(unit.position);
     unit.eatFood(food);
     food.getEatenBy(unit);
-    delete this.foods[food.key]; // Un-register food
   }
 
   handleFoodDropOff(unit: Citizen, position: Position) {
