@@ -6,18 +6,15 @@ import HQ from "../HQ";
 import Citizen, { CitizenJSON } from "../Citizen";
 import shuffle from "../utils/shuffle";
 
-type DropOffFoodCommandArgsWithPosition = { position: Position };
-type DropOffFoodCommandArgsJSONWithPosition = { position: PositionJSON };
-type DropOffFoodCommandArgsWithHQ = { hqId: string };
-type DropOffFoodCommandArgsJSONWithHQ = { hqId: string };
+export type DropOffFoodCommandArgs = {
+  position?: Position;
+  hqId?: string;
+};
 
-export type DropOffFoodCommandArgs =
-  | DropOffFoodCommandArgsWithPosition
-  | DropOffFoodCommandArgsWithHQ;
-
-export type DropOffFoodCommandArgsJSON =
-  | DropOffFoodCommandArgsJSONWithPosition
-  | DropOffFoodCommandArgsJSONWithHQ;
+export type DropOffFoodCommandArgsJSON = {
+  position?: PositionJSON;
+  hqId?: string;
+};
 
 export type DropOffFoodCommandJSON = {
   className: "DropOffFoodCommand";
@@ -92,11 +89,8 @@ export default class DropOffFoodCommand extends Command {
 
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
-    const position = (<DropOffFoodCommandArgsJSONWithPosition>json.args)
-      .position
-      ? Position.fromJSON(
-          (<DropOffFoodCommandArgsJSONWithPosition>json.args).position
-        )
+    const position = json.args.position
+      ? Position.fromJSON(json.args.position)
       : null;
     const args: DropOffFoodCommandArgs = { ...json.args, position };
 
