@@ -55,6 +55,7 @@ export type GameJSON = {
   citizens: CitizenJSON[];
   fighters: FighterJSON[];
   history: HistoryJSON;
+  hqs: HQJSON[];
 };
 
 export type GameProps = {
@@ -83,23 +84,29 @@ const generateCitizen = (game: Game, team: Team) => {
   game.addCitizen(newCitizen);
 };
 
+const generateHQ = (game: Game, team: Team, position: Position) => {
+  const newHQ = new HQ(game, { teamId: team.id, position });
+  game.addHQ(newHQ);
+};
+
 const generateTeams = (
   game: Game,
   props: { homeId?: string; awayId?: string } = {}
 ) => {
   const homeTeam = new Team(game, {
     id: props.homeId || "home",
-    color: "blue",
-    hq: { position: new Position(game.width - 4, 2) } // Top right
+    color: "blue"
   });
+
   game.addTeam(homeTeam);
+  generateHQ(game, homeTeam, new Position(game.width - 4, 2)); // Top right
   generateCitizen(game, homeTeam);
   const awayTeam = new Team(game, {
     id: props.awayId || "away",
-    color: "red",
-    hq: { position: new Position(2, game.height - 4) } // Bottom left
+    color: "red"
   });
   game.addTeam(awayTeam);
+  generateHQ(game, awayTeam, new Position(2, game.height - 4)); // Bottom left
   generateCitizen(game, awayTeam);
 };
 
@@ -192,7 +199,9 @@ export default class Game {
   }
 
   get hqsList() {
-    return this.teams.map(team => team.hq);
+    return Object.values(this.lookup).filter(
+      object => object.className === "HQ"
+    ) as HQ[];
   }
 
   get foodLeft() {
@@ -229,7 +238,7 @@ export default class Game {
   }
 
   getTeam(teamId: string) {
-    return this.teams.filter(team => team.id == teamId)[0];
+    return this.teams.find(team => team.id == teamId);
   }
 
   toJSON() {
@@ -245,7 +254,8 @@ export default class Game {
       teams: this.teams.map(team => team.toJSON()),
       citizens: this.citizensList.map(citizen => citizen.toJSON()),
       fighters: this.fightersList.map(fighter => fighter.toJSON()),
-      history: this.history.toJSON()
+      history: this.history.toJSON(),
+      hqs: this.hqsList.map(hq => hq.toJSON())
     } as GameJSON;
   }
 
@@ -260,6 +270,7 @@ export default class Game {
   static fromJSON(json: GameJSON) {
     const game = new Game(json);
     game.importTeams(json.teams.map(teamJson => Team.fromJSON(game, teamJson)));
+    game.importHQs(json.hqs.map(hqJson => HQ.fromJSON(game, hqJson)));
     game.importWalls(json.walls.map(wallJson => Wall.fromJSON(wallJson)));
     game.importFoods(json.foods.map(foodJson => Food.fromJSON(game, foodJson)));
     game.importCitizens(
@@ -287,6 +298,10 @@ export default class Game {
     teams.forEach(team => this.addTeam(team));
   }
 
+  importHQs(hqs: HQ[]) {
+    hqs.forEach(hq => this.addHQ(hq));
+  }
+
   importCitizens(citizens: Citizen[]) {
     citizens.forEach(citizen => this.addCitizen(citizen));
   }
@@ -297,7 +312,10 @@ export default class Game {
 
   addTeam(team: Team) {
     this.teams.push(team);
-    this.registerUnit(team.hq, this.hqs);
+  }
+
+  addHQ(newHQ: HQ) {
+    this.registerUnit(newHQ, this.hqs);
   }
 
   addCitizen(newCitizen: Citizen) {
@@ -768,10 +786,10 @@ export default class Game {
       teamId: team.id
     } as CitizenProps);
 
-    if (team.foodCount < newCitizen.cost) {
+    if (team.foodCount < team.settings.cost["Citizen"]) {
       throw new Error("Not enough food to pay for spawn");
     }
-    team.spendFood(newCitizen.cost);
+    team.spendFood(team.settings.cost["Citizen"]);
     this.addCitizen(newCitizen);
     return newCitizen;
   }
@@ -790,10 +808,10 @@ export default class Game {
       teamId: team.id
     } as FighterProps);
 
-    if (team.foodCount < newFighter.cost) {
+    if (team.foodCount < team.settings.cost[fighterType]) {
       throw new Error("Not enough food to pay for spawn");
     }
-    team.spendFood(newFighter.cost);
+    team.spendFood(team.settings.cost[fighterType]);
     this.addFighter(newFighter);
     return newFighter;
   }
