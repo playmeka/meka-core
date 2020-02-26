@@ -30,9 +30,9 @@ type HQProps = {
 
 export default class HQ extends ObjectWithPosition {
   className: string = "HQ";
-  hp: number = 500;
-  baseAttackDamage: number = 6;
-  range: number = 3;
+  hp: number;
+  baseAttackDamage: number;
+  range: number;
   teamId: string;
   id: string;
   game: Game;

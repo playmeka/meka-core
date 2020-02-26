@@ -1,7 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import HQ, { HQJSON } from "./HQ";
 import Game, { FighterType } from "./Game";
-import { Position } from "./ObjectWithPosition";
 
 const DEFAULT_SETTINGS: TeamSettings = {
   cost: {
@@ -41,7 +39,6 @@ export type TeamJSON = {
   id: string;
   color: string;
   foodCount: number;
-  hq: HQJSON;
   settings: TeamSettings;
 };
 
@@ -49,7 +46,6 @@ type TeamProps = {
   id?: string;
   color?: string;
   foodCount?: number;
-  hq: { position: Position };
 };
 
 // TODO: Should TeamSettings have settings for each unit type whether it makes sense to include or not?
@@ -66,7 +62,6 @@ export default class Team {
   id: string;
   color: string;
   foodCount: number;
-  hq: HQ;
   settings: TeamSettings;
 
   constructor(game: Game, props: TeamProps) {
@@ -74,7 +69,6 @@ export default class Team {
     this.id = props.id || `${uuidv4()}`;
     this.color = props.color || "blue";
     this.foodCount = props.foodCount || 0;
-    this.hq = new HQ(game, { teamId: this.id, ...props.hq });
     this.settings = DEFAULT_SETTINGS;
   }
 
@@ -82,12 +76,20 @@ export default class Team {
     return this.citizens.length + this.fighters.length;
   }
 
+  get hq() {
+    return this.game.hqsList.find(hq => hq.team.id === this.id);
+  }
+
   get citizens() {
-    return this.game.citizensList.filter(citizen => citizen.team.id == this.id);
+    return this.game.citizensList.filter(
+      citizen => citizen.team.id === this.id
+    );
   }
 
   get fighters() {
-    return this.game.fightersList.filter(fighter => fighter.team.id == this.id);
+    return this.game.fightersList.filter(
+      fighter => fighter.team.id === this.id
+    );
   }
 
   baseAttackDamage(unitType: "HQ" | FighterType) {
@@ -115,14 +117,12 @@ export default class Team {
       id: this.id,
       color: this.color,
       foodCount: this.foodCount,
-      hq: this.hq.toJSON(),
       settings: this.settings
     } as TeamJSON;
   }
 
   static fromJSON(game: Game, json: TeamJSON) {
-    const hq = HQ.fromJSON(game, json.hq);
-    return new Team(game, { ...json, hq });
+    return new Team(game, { ...json });
   }
 
   addFood() {

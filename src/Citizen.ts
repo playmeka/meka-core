@@ -41,9 +41,9 @@ export default class Citizen extends ObjectWithPosition {
     this.teamId = props.teamId;
     this.id = props.id || uuidv4();
     this.foodId = props.foodId;
-    this.hp = props.hp || this.team.baseHP("InfantryFighter");
-    this.baseHP = this.team.baseHP("InfantryFighter");
-    this.speed = this.team.speed("InfantryFighter");
+    this.hp = props.hp || this.team.baseHP("Citizen");
+    this.baseHP = this.team.baseHP("Citizen");
+    this.speed = this.team.speed("Citizen");
   }
 
   get food() {

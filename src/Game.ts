@@ -83,23 +83,29 @@ const generateCitizen = (game: Game, team: Team) => {
   game.addCitizen(newCitizen);
 };
 
+const generateHQ = (game: Game, team: Team, position: Position) => {
+  const newHQ = new HQ(game, { teamId: team.id, position });
+  game.addHQ(newHQ);
+};
+
 const generateTeams = (
   game: Game,
   props: { homeId?: string; awayId?: string } = {}
 ) => {
   const homeTeam = new Team(game, {
     id: props.homeId || "home",
-    color: "blue",
-    hq: { position: new Position(game.width - 4, 2) } // Top right
+    color: "blue"
   });
+
   game.addTeam(homeTeam);
+  generateHQ(game, homeTeam, new Position(game.width - 4, 2)); // Top right
   generateCitizen(game, homeTeam);
   const awayTeam = new Team(game, {
     id: props.awayId || "away",
-    color: "red",
-    hq: { position: new Position(2, game.height - 4) } // Bottom left
+    color: "red"
   });
   game.addTeam(awayTeam);
+  generateHQ(game, awayTeam, new Position(2, game.height - 4)); // Bottom left
   generateCitizen(game, awayTeam);
 };
 
@@ -192,7 +198,9 @@ export default class Game {
   }
 
   get hqsList() {
-    return this.teams.map(team => team.hq);
+    return Object.values(this.lookup).filter(
+      object => object.className === "HQ"
+    ) as HQ[];
   }
 
   get foodLeft() {
@@ -297,7 +305,10 @@ export default class Game {
 
   addTeam(team: Team) {
     this.teams.push(team);
-    this.registerUnit(team.hq, this.hqs);
+  }
+
+  addHQ(newHQ: HQ) {
+    this.registerUnit(newHQ, this.hqs);
   }
 
   addCitizen(newCitizen: Citizen) {
