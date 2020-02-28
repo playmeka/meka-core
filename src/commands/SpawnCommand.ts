@@ -1,7 +1,7 @@
 import Game from "../Game";
-import BaseCommand from "./BaseCommand";
+import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import Action from "../Action";
+import { SpawnAction } from "../actions";
 import HQ, { HQJSON } from "../HQ";
 import { FighterClassName } from "../fighters";
 
@@ -15,9 +15,8 @@ export type SpawnCommandArgsJSON = {
   unitType: FighterClassName | "Citizen";
 };
 
-export type SpawnCommandJSON = {
+export type SpawnCommandJSON = BaseCommandJSON & {
   className: "SpawnCommand";
-  id: string;
   unit: HQJSON;
   args: SpawnCommandArgsJSON;
 };
@@ -29,7 +28,7 @@ export default class SpawnCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(_game: Game): Action {
+  getNextAction(_game: Game): SpawnAction {
     const { unit, args } = this;
     if (unit.hp <= 0) return null;
 
@@ -40,9 +39,8 @@ export default class SpawnCommand extends BaseCommand {
     if (!unit.covering.find(hqPosition => hqPosition.isEqualTo(position)))
       return null;
 
-    return new Action({
+    return new SpawnAction({
       command: this,
-      type: "spawn",
       args: { position, unitType: args.unitType },
       unit
     });

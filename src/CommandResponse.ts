@@ -1,6 +1,14 @@
 import { Command, CommandJSON } from "./commands";
 import Game from "./Game";
-import Action, { ActionJSON } from "./Action";
+import {
+  Action,
+  ActionJSON,
+  MoveAction,
+  AttackAction,
+  SpawnAction,
+  DropOffFoodAction,
+  PickUpFoodAction
+} from "./actions";
 import {
   MoveCommand,
   AttackCommand,
@@ -57,7 +65,19 @@ export default class CommandResponse {
 
     // TODO: Handle commandJSON type
     const command = commandClass.fromJSON(game, json.command as any);
-    const action = json.action ? Action.fromJSON(game, json.action) : undefined;
+
+    let action = undefined;
+    if (json.action) {
+      const actionClass = {
+        MoveAction,
+        AttackAction,
+        SpawnAction,
+        DropOffFoodAction,
+        PickUpFoodAction
+      }[json.action.className];
+      // TODO: Handle actionJSON type
+      action = actionClass.fromJSON(game, json.action as any);
+    }
     return new CommandResponse({ ...json, command, action });
   }
 }

@@ -1,7 +1,7 @@
 import Game from "../Game";
-import BaseCommand from "./BaseCommand";
-import Action from "../Action";
-import Citizen, { CitizenJSON } from "../Citizen";
+import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import { PickUpFoodAction, MoveAction } from "../actions";
+import Citizen from "../Citizen";
 import Food from "../Food";
 
 export type PickUpFoodCommandArgs = {
@@ -12,10 +12,8 @@ export type PickUpFoodCommandArgsJSON = {
   foodId: string;
 };
 
-export type PickUpFoodCommandJSON = {
+export type PickUpFoodCommandJSON = BaseCommandJSON & {
   className: "PickUpFoodCommand";
-  id: string;
-  unit: CitizenJSON;
   args: PickUpFoodCommandArgsJSON;
 };
 
@@ -30,7 +28,7 @@ export default class PickUpFoodCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): PickUpFoodAction | MoveAction {
     const unit = this.unit as Citizen;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
@@ -41,9 +39,8 @@ export default class PickUpFoodCommand extends BaseCommand {
     if (!food || food.eatenBy) return null;
 
     if (unit.position.isAdjacentTo(food.position)) {
-      return new Action({
+      return new PickUpFoodAction({
         command: this,
-        type: "pickUpFood",
         args: { position: food.position },
         unit
       });
@@ -56,9 +53,8 @@ export default class PickUpFoodCommand extends BaseCommand {
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
       const newPosition = path[unit.speed] || path[path.length - 1];
-      return new Action({
+      return new MoveAction({
         command: this,
-        type: "move",
         args: {
           position: newPosition,
           autoPickUpFood: false,

@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import Game, { Unit, UnitJSON } from "../Game";
-import Action from "../Action";
+import { Action } from "../actions";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { FighterClassName } from "../fighters";
 

@@ -1,10 +1,4 @@
 export {
-  default as Action,
-  ActionJSON,
-  ActionType,
-  ActionArgs
-} from "./Action";
-export {
   default as CommandResponse,
   CommandResponseJSON
 } from "./CommandResponse";
@@ -25,6 +19,7 @@ export {
   PositionJSON
 } from "./ObjectWithPosition";
 export * from "./commands";
+export * from "./actions";
 export * from "./fighters";
 export { default as Team, TeamJSON } from "./Team";
 export { default as Wall, WallJSON } from "./Wall";

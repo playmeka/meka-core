@@ -34,6 +34,19 @@ export default class RangedFighter extends BaseFighter {
     return this.game.pathFinder.getPath(this, position);
   }
 
+  getOptimalPathToTarget(target: Unit) {
+    const attackPositions = this.getAttackPositionsFor(target);
+
+    const allPaths: Position[][] = this.game.pathFinder.getPaths(
+      this,
+      attackPositions
+    );
+
+    if (allPaths.length > 0)
+      return allPaths.reduce((a, b) => (a.length < b.length ? a : b));
+    return null;
+  }
+
   takeDamage(damage: number) {
     this.hp -= damage;
     if (this.hp <= 0) this.die();

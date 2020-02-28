@@ -1,6 +1,6 @@
-import Game, { Unit, UnitJSON } from "../Game";
-import BaseCommand from "./BaseCommand";
-import Action from "../Action";
+import Game, { Unit } from "../Game";
+import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import { AttackAction, MoveAction } from "../actions";
 import HQ from "../HQ";
 import { Fighter, BaseFighter } from "../fighters";
 
@@ -12,10 +12,8 @@ export type AttackCommandArgsJSON = {
   targetId: string;
 };
 
-export type AttackCommandJSON = {
+export type AttackCommandJSON = BaseCommandJSON & {
   className: "AttackCommand";
-  id: string;
-  unit: UnitJSON;
   args: AttackCommandArgsJSON;
 };
 
@@ -26,7 +24,7 @@ export default class AttackCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): AttackAction | MoveAction {
     const { targetId } = this.args;
     const target = game.lookup[targetId] as Unit;
     const unit = this.unit as Fighter | HQ;
@@ -40,16 +38,15 @@ export default class AttackCommand extends BaseCommand {
     );
 
     if (isTargetInRange) {
-      return new Action({
+      return new AttackAction({
         command: this,
-        type: "attack",
         args: { targetId },
         unit
       });
     } else if (unit.className === "HQ") {
       return null;
     } else if (unit instanceof BaseFighter) {
-      const path = game.getOptimalPathToTarget(unit as Fighter, target);
+      const path = unit.getOptimalPathToTarget(target);
 
       if (!path) return null;
       // Take unit.speed steps at a time
@@ -58,9 +55,8 @@ export default class AttackCommand extends BaseCommand {
       const newPosition =
         path[(unit as Fighter).speed] || path[path.length - 1];
 
-      return new Action({
+      return new MoveAction({
         command: this,
-        type: "move",
         args: {
           position: newPosition,
           autoDropOffFood: false,

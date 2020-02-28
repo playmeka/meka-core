@@ -1,7 +1,7 @@
 import Game, { Unit } from "../Game";
-import BaseCommand from "./BaseCommand";
+import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import Action from "../Action";
+import { MoveAction } from "../actions";
 import Citizen, { CitizenJSON } from "../Citizen";
 import { Fighter, FighterJSON } from "../fighters";
 
@@ -17,9 +17,8 @@ export type MoveCommandArgsJSON = {
   autoDropOffFood?: boolean;
 };
 
-export type MoveCommandJSON = {
+export type MoveCommandJSON = BaseCommandJSON & {
   className: "MoveCommand";
-  id: string;
   unit: CitizenJSON | FighterJSON;
   args: MoveCommandArgsJSON;
 };
@@ -31,7 +30,7 @@ export default class MoveCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): MoveAction {
     const unit = this.unit as Citizen | Fighter;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
@@ -45,7 +44,7 @@ export default class MoveCommand extends BaseCommand {
     if (position) {
       path = game.pathFinder.getPath(unit, position);
     } else {
-      path = game.getOptimalPathToTarget(unit, target);
+      path = unit.getOptimalPathToTarget(target);
     }
 
     if (!path) return null;
@@ -53,9 +52,8 @@ export default class MoveCommand extends BaseCommand {
     // Note: it is not unit.speed - 1 because PathFinder returns the unit
     // position as the first step in the path
     const newPosition = path[unit.speed] || path[path.length - 1];
-    return new Action({
+    return new MoveAction({
       command: this,
-      type: "move",
       args: { ...this.args, position: newPosition },
       unit
     });

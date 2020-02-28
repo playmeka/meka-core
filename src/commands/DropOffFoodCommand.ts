@@ -1,9 +1,9 @@
 import Game from "../Game";
-import BaseCommand from "./BaseCommand";
+import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import Action from "../Action";
+import { DropOffFoodAction, MoveAction } from "../actions";
 import HQ from "../HQ";
-import Citizen, { CitizenJSON } from "../Citizen";
+import Citizen from "../Citizen";
 import shuffle from "../utils/shuffle";
 
 export type DropOffFoodCommandArgs = {
@@ -16,10 +16,8 @@ export type DropOffFoodCommandArgsJSON = {
   hqId?: string;
 };
 
-export type DropOffFoodCommandJSON = {
+export type DropOffFoodCommandJSON = BaseCommandJSON & {
   className: "DropOffFoodCommand";
-  id: string;
-  unit: CitizenJSON;
   args: DropOffFoodCommandArgsJSON;
 };
 
@@ -34,7 +32,7 @@ export default class DropOffFoodCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): DropOffFoodAction | MoveAction {
     const unit = this.unit as Citizen;
     const food = unit.food;
     if (!unit) return null;
@@ -55,9 +53,8 @@ export default class DropOffFoodCommand extends BaseCommand {
         );
       });
       if (dropOffPosition)
-        return new Action({
+        return new DropOffFoodAction({
           command: this,
-          type: "dropOffFood",
           args: { position: dropOffPosition },
           unit
         });
@@ -65,7 +62,7 @@ export default class DropOffFoodCommand extends BaseCommand {
     } else {
       // TODO: Abstract this logic in `getPathTo`
       const path = hq
-        ? game.getOptimalPathToTarget(unit, hq)
+        ? unit.getOptimalPathToTarget(hq)
         : unit.getPathTo(position);
 
       if (!path) return null;
@@ -74,9 +71,8 @@ export default class DropOffFoodCommand extends BaseCommand {
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
       const newPosition = path[unit.speed] || path[path.length - 1];
-      return new Action({
+      return new MoveAction({
         command: this,
-        type: "move",
         args: {
           position: newPosition,
           autoPickUpFood: false,
