@@ -1,4 +1,9 @@
-export { default as Action, ActionJSON, ActionType } from "./Action";
+export {
+  default as Action,
+  ActionJSON,
+  ActionType,
+  ActionArgs
+} from "./Action";
 export {
   default as CommandResponse,
   CommandResponseJSON

@@ -57,7 +57,7 @@ export default class CommandResponse {
 
     // TODO: Handle commandJSON type
     const command = commandClass.fromJSON(game, json.command as any);
-    const action = Action.fromJSON(game, json.action);
+    const action = json.action ? Action.fromJSON(game, json.action) : undefined;
     return new CommandResponse({ ...json, command, action });
   }
 }
