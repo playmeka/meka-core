@@ -818,12 +818,12 @@ export default class Game {
   }
 
   killFighter(fighter: Fighter) {
-    delete this.fighters[fighter.key];
+    this.clearUnitPosition(fighter, this.fighters);
   }
 
   killCitizen(citizen: Citizen) {
     const food = citizen.food;
-    delete this.citizens[citizen.key];
+    this.clearUnitPosition(citizen, this.citizens);
     if (food) {
       citizen.dropOffFood();
       food.eatenById = null;
