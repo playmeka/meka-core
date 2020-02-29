@@ -1,5 +1,6 @@
 import Game, { Unit } from "../Game";
 import { Position } from "../ObjectWithPosition";
+import isInBounds from "./isInBounds";
 
 export default (
   game: Game,
@@ -7,12 +8,7 @@ export default (
   target: Unit,
   teamId: string
 ) => {
-  if (
-    position.x >= game.width ||
-    position.x < 0 ||
-    position.y >= game.height ||
-    position.y < 0
-  ) {
+  if (!isInBounds(game, position)) {
     return false;
   }
 
