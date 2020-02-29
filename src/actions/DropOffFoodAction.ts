@@ -77,7 +77,6 @@ export default class DropOffFoodAction extends BaseAction {
     const { command, response, unit, className, id } = this;
 
     const args = {
-      ...this.args,
       position: this.args.position.toJSON()
     };
 

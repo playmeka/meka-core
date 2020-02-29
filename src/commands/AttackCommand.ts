@@ -1,6 +1,6 @@
 import Game, { Unit } from "../Game";
 import BaseCommand from "./BaseCommand";
-import { AttackAction, MoveAction } from "../actions";
+import { AttackAction, MoveFighterAction } from "../actions";
 import HQ from "../HQ";
 import { Fighter, BaseFighter, FighterJSON } from "../fighters";
 
@@ -26,7 +26,7 @@ export default class AttackCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): AttackAction | MoveAction {
+  getNextAction(game: Game): AttackAction | MoveFighterAction {
     const { targetId } = this.args;
     const target = game.lookup[targetId] as Unit;
     const unit = this.unit as Fighter | HQ;
@@ -57,7 +57,7 @@ export default class AttackCommand extends BaseCommand {
       const newPosition =
         path[(unit as Fighter).speed] || path[path.length - 1];
 
-      return new MoveAction({
+      return new MoveFighterAction({
         command: this,
         args: {
           position: newPosition,

@@ -1,6 +1,6 @@
 import Game from "../Game";
 import BaseCommand from "./BaseCommand";
-import { PickUpFoodAction, MoveAction } from "../actions";
+import { PickUpFoodAction, MoveCitizenAction } from "../actions";
 import Citizen, { CitizenJSON } from "../Citizen";
 import Food from "../Food";
 
@@ -30,7 +30,7 @@ export default class PickUpFoodCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): PickUpFoodAction | MoveAction {
+  getNextAction(game: Game): PickUpFoodAction | MoveCitizenAction {
     const unit = this.unit as Citizen;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
@@ -55,7 +55,7 @@ export default class PickUpFoodCommand extends BaseCommand {
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
       const newPosition = path[unit.speed] || path[path.length - 1];
-      return new MoveAction({
+      return new MoveCitizenAction({
         command: this,
         args: {
           position: newPosition,

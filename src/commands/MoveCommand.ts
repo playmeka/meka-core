@@ -1,7 +1,7 @@
 import Game, { Unit } from "../Game";
 import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import { MoveAction } from "../actions";
+import { MoveCitizenAction, MoveFighterAction } from "../actions";
 import Citizen, { CitizenJSON } from "../Citizen";
 import { Fighter, FighterJSON } from "../fighters";
 
@@ -31,7 +31,7 @@ export default class MoveCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(game: Game): MoveAction {
+  getNextAction(game: Game) {
     const unit = this.unit as Citizen | Fighter;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
@@ -53,11 +53,19 @@ export default class MoveCommand extends BaseCommand {
     // Note: it is not unit.speed - 1 because PathFinder returns the unit
     // position as the first step in the path
     const newPosition = path[unit.speed] || path[path.length - 1];
-    return new MoveAction({
-      command: this,
-      args: { ...this.args, position: newPosition },
-      unit
-    });
+
+    if (unit instanceof Citizen)
+      return new MoveCitizenAction({
+        command: this,
+        args: { ...this.args, position: newPosition },
+        unit
+      });
+    else
+      return new MoveFighterAction({
+        command: this,
+        args: { ...this.args, position: newPosition },
+        unit
+      });
   }
 
   toJSON() {

@@ -77,7 +77,6 @@ export default class PickUpFoodAction extends BaseAction {
     const { command, response, unit, className, id } = this;
 
     const args = {
-      ...this.args,
       position: this.args.position.toJSON()
     };
 

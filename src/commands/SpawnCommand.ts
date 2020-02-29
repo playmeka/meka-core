@@ -1,7 +1,7 @@
 import Game from "../Game";
 import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import { SpawnAction } from "../actions";
+import { SpawnCitizenAction, SpawnFighterAction } from "../actions";
 import HQ, { HQJSON } from "../HQ";
 import { FighterClassName } from "../fighters";
 
@@ -29,8 +29,9 @@ export default class SpawnCommand extends BaseCommand {
     super(props);
   }
 
-  getNextAction(_game: Game): SpawnAction {
-    const { unit, args } = this;
+  getNextAction(_game: Game): SpawnCitizenAction | SpawnFighterAction {
+    const { args } = this;
+    const unit = this.unit as HQ;
     if (unit.hp <= 0) return null;
 
     const position = this.args.position || (unit as HQ).nextSpawnPosition;
@@ -40,19 +41,27 @@ export default class SpawnCommand extends BaseCommand {
     if (!unit.covering.find(hqPosition => hqPosition.isEqualTo(position)))
       return null;
 
-    return new SpawnAction({
-      command: this,
-      args: { position, unitType: args.unitType },
-      unit
-    });
+    if (args.unitType === "Citizen")
+      return new SpawnCitizenAction({
+        command: this,
+        args: { position, unitType: args.unitType },
+        unit
+      });
+    else
+      return new SpawnFighterAction({
+        command: this,
+        args: { position, unitType: args.unitType },
+        unit
+      });
   }
 
   toJSON() {
     const { className, id, unit } = this;
-    const args = {
-      ...this.args,
-      position: this.args.position.toJSON()
-    };
+
+    const position = this.args.position
+      ? this.args.position.toJSON()
+      : undefined;
+    const args = { ...this.args, position };
 
     return {
       className,

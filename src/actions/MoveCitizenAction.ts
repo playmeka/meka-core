@@ -1,45 +1,44 @@
 import Game from "../Game";
 import Citizen, { CitizenJSON } from "../Citizen";
-import { Fighter, FighterJSON } from "../fighters";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { commandFromJSON, CommandJSON } from "../commands";
 import BaseAction, { BaseActionProps } from "./BaseAction";
 
-export type MoveActionArgs = {
+export type MoveCitizenActionArgs = {
   position: Position;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
 };
 
-export type MoveActionArgsJSON = {
+export type MoveCitizenActionArgsJSON = {
   position: PositionJSON;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
 };
 
-export type MoveActionJSON = {
-  args: MoveActionArgsJSON;
-  className: "MoveAction";
+export type MoveCitizenActionJSON = {
+  args: MoveCitizenActionArgsJSON;
+  className: "MoveCitizenAction";
   command: CommandJSON;
-  response?: CitizenJSON | FighterJSON;
-  unit: CitizenJSON | FighterJSON;
+  response?: CitizenJSON;
+  unit: CitizenJSON;
 };
 
-export type MoveActionProps = BaseActionProps & {
-  unit: Citizen | Fighter;
-  args: MoveActionArgs;
+export type MoveCitizenActionProps = BaseActionProps & {
+  unit: Citizen;
+  args: MoveCitizenActionArgs;
 };
 
-export default class MoveAction extends BaseAction {
-  className: string = "MoveAction";
+export default class MoveCitizenAction extends BaseAction {
+  className: string = "MoveCitizenAction";
 
-  constructor(props: MoveActionProps) {
+  constructor(props: MoveCitizenActionProps) {
     super(props);
     this.unit = props.unit;
   }
 
   async execute(game: Game) {
-    const unit = this.unit as Citizen | Fighter;
+    const unit = this.unit as Citizen;
     if (!unit) throw new Error("Unable to find unit with ID: " + this.unit.id);
     if (unit.hp <= 0) throw new Error("Unit is dead (HP is at or below 0)");
     const { position } = this.args;
@@ -48,38 +47,24 @@ export default class MoveAction extends BaseAction {
 
     if (!unit.isValidMove(position))
       throw new Error("Invalid position: " + JSON.stringify(position.toJSON()));
-    if (unit.className == "Citizen") {
-      this.handleCitizenMove(game, unit as Citizen, position, {
-        autoPickUpFood: this.args.autoPickUpFood,
-        autoDropOffFood: this.args.autoDropOffFood
-      });
-    } else {
-      this.handleFighterMove(game, unit as Fighter, position);
-    }
+    this.mutateGame(game, unit, position, {
+      autoPickUpFood: this.args.autoPickUpFood,
+      autoDropOffFood: this.args.autoDropOffFood
+    });
     this.response = unit.toJSON();
     game.history.pushActions(game.turn, this);
   }
 
   import(game: Game) {
-    const citizenOrFighter = game.lookup[this.unit.id] as Citizen | Fighter;
+    const citizen = game.lookup[this.unit.id] as Citizen;
     const position = Position.fromJSON(this.response.position);
-    if (citizenOrFighter.className === "Citizen") {
-      this.handleCitizenMove(game, citizenOrFighter as Citizen, position, {
-        autoPickUpFood: this.args.autoPickUpFood,
-        autoDropOffFood: this.args.autoDropOffFood
-      });
-    } else {
-      this.handleFighterMove(game, this.unit as Fighter, position);
-    }
+    this.mutateGame(game, citizen as Citizen, position, {
+      autoPickUpFood: this.args.autoPickUpFood,
+      autoDropOffFood: this.args.autoDropOffFood
+    });
   }
 
-  handleFighterMove(game: Game, fighter: Fighter, position: Position) {
-    game.clearUnitPosition(fighter, game.fighters);
-    fighter.move(position);
-    game.registerUnitPosition(fighter, game.fighters);
-  }
-
-  handleCitizenMove(
+  mutateGame(
     game: Game,
     citizen: Citizen,
     position: Position,
@@ -126,16 +111,16 @@ export default class MoveAction extends BaseAction {
       command: command.toJSON(),
       unit: unit.toJSON(),
       args
-    } as MoveActionJSON;
+    } as MoveCitizenActionJSON;
   }
 
-  static fromJSON(game: Game, json: MoveActionJSON) {
+  static fromJSON(game: Game, json: MoveCitizenActionJSON) {
     const command = commandFromJSON(game, json.command);
-    const unit = game.lookup[json.unit.id] as Citizen | Fighter;
+    const unit = game.lookup[json.unit.id] as Citizen;
     const position = json.args.position
       ? Position.fromJSON(json.args.position)
       : undefined;
-    const args: MoveActionArgs = { ...json.args, position };
-    return new MoveAction({ ...json, command, unit, args });
+    const args: MoveCitizenActionArgs = { ...json.args, position };
+    return new MoveCitizenAction({ ...json, command, unit, args });
   }
 }

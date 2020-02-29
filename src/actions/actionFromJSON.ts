@@ -1,9 +1,11 @@
 import Game from "../Game";
 import {
   ActionJSON,
-  MoveAction,
+  MoveCitizenAction,
+  MoveFighterAction,
   AttackAction,
-  SpawnAction,
+  SpawnCitizenAction,
+  SpawnFighterAction,
   DropOffFoodAction,
   PickUpFoodAction,
   Action
@@ -13,9 +15,11 @@ export default (game: Game, actionJson: ActionJSON): Action => {
   if (!actionJson) return undefined;
   if (actionJson) {
     const actionClass = {
-      MoveAction,
+      MoveCitizenAction,
+      MoveFighterAction,
       AttackAction,
-      SpawnAction,
+      SpawnCitizenAction,
+      SpawnFighterAction,
       DropOffFoodAction,
       PickUpFoodAction
     }[actionJson.className];

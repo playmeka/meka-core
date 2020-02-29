@@ -1,25 +1,53 @@
-import { default as MoveCommand, MoveCommandJSON } from "./MoveCommand";
-import { default as AttackCommand, AttackCommandJSON } from "./AttackCommand";
+import {
+  default as MoveCommand,
+  MoveCommandJSON,
+  MoveCommandArgs
+} from "./MoveCommand";
+import {
+  default as AttackCommand,
+  AttackCommandJSON,
+  AttackCommandArgs
+} from "./AttackCommand";
 import {
   default as DropOffFoodCommand,
-  DropOffFoodCommandJSON
+  DropOffFoodCommandJSON,
+  DropOffFoodCommandArgs
 } from "./DropOffFoodCommand";
-import { default as SpawnCommand, SpawnCommandJSON } from "./SpawnCommand";
+import {
+  default as SpawnCommand,
+  SpawnCommandJSON,
+  SpawnCommandArgs
+} from "./SpawnCommand";
 import {
   default as PickUpFoodCommand,
-  PickUpFoodCommandJSON
+  PickUpFoodCommandJSON,
+  PickUpFoodCommandArgs
 } from "./PickUpFoodCommand";
 
-export { default as MoveCommand, MoveCommandJSON } from "./MoveCommand";
-export { default as AttackCommand, AttackCommandJSON } from "./AttackCommand";
+export {
+  default as MoveCommand,
+  MoveCommandJSON,
+  MoveCommandArgs
+} from "./MoveCommand";
+export {
+  default as AttackCommand,
+  AttackCommandJSON,
+  AttackCommandArgs
+} from "./AttackCommand";
 export {
   default as DropOffFoodCommand,
-  DropOffFoodCommandJSON
+  DropOffFoodCommandJSON,
+  DropOffFoodCommandArgs
 } from "./DropOffFoodCommand";
-export { default as SpawnCommand, SpawnCommandJSON } from "./SpawnCommand";
+export {
+  default as SpawnCommand,
+  SpawnCommandJSON,
+  SpawnCommandArgs
+} from "./SpawnCommand";
 export {
   default as PickUpFoodCommand,
-  PickUpFoodCommandJSON
+  PickUpFoodCommandJSON,
+  PickUpFoodCommandArgs
 } from "./PickUpFoodCommand";
 export { default as commandFromJSON } from "./commandFromJSON";
 
@@ -43,3 +71,10 @@ export type CommandJSON =
   | SpawnCommandJSON
   | DropOffFoodCommandJSON
   | PickUpFoodCommandJSON;
+
+export type CommandArgs =
+  | MoveCommandArgs
+  | AttackCommandArgs
+  | SpawnCommandArgs
+  | DropOffFoodCommandArgs
+  | PickUpFoodCommandArgs;

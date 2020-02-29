@@ -364,10 +364,13 @@ export default class Game {
           throw new Error("Duplicate command for unit: " + command.unit.id);
         }
 
-        if (action.className == "AttackAction") {
+        if (action.className === "AttackAction") {
           unitToActionMap[action.unit.id] = action;
           attacks.push(action);
-        } else if (action.className == "MoveAction") {
+        } else if (
+          action.className === "MoveCitizenAction" ||
+          action.className === "MoveFighterAction"
+        ) {
           unitToActionMap[action.unit.id] = action;
           moves.push(action);
         } else if (action.className === "PickUpFoodAction") {
@@ -376,7 +379,10 @@ export default class Game {
         } else if (action.className === "DropOffFoodAction") {
           unitToActionMap[action.unit.id] = action;
           foodDropOffs.push(action);
-        } else if (action.className == "SpawnAction") {
+        } else if (
+          action.className === "SpawnCitizenAction" ||
+          action.className === "SpawnFighterAction"
+        ) {
           unitToActionMap[action.unit.id] = action;
           spawns.push(action);
         }
