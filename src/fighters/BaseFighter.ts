@@ -4,6 +4,7 @@ import ObjectWithPosition, {
   PositionJSON
 } from "../ObjectWithPosition";
 import Game, { Unit } from "../Game";
+import isInBounds from "../utils/isInBounds";
 import isValidPosition from "../utils/isValidPosition";
 import isTargetAtPosition from "../utils/isTargetAtPosition";
 
@@ -79,7 +80,8 @@ export default abstract class BaseFighter extends ObjectWithPosition {
     const positionMap: { [key: string]: Position } = {};
     enemyUnit.covering.forEach(position => {
       position.adjacentsWithinDistance(this.range).forEach(attackPosition => {
-        positionMap[attackPosition.key] = attackPosition;
+        if (isInBounds(this.game, attackPosition))
+          positionMap[attackPosition.key] = attackPosition;
       });
     });
     return Object.values(positionMap);
