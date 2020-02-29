@@ -845,7 +845,6 @@ export default class Game {
       )
     ) {
       const attackPositions = (unit as Fighter).getAttackPositionsFor(target);
-
       allPaths = this.pathFinder.getPaths(unit, attackPositions);
     }
 

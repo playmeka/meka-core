@@ -84,7 +84,7 @@ export default class Command {
       id,
       unit: unit.toJSON(),
       args
-    };
+    } as CommandJSON;
   }
 
   static fromJSON(game: Game, json: CommandClassJSON) {
