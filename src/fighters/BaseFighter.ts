@@ -9,7 +9,7 @@ import isTargetAtPosition from "../utils/isTargetAtPosition";
 
 export type BaseFighterJSON = {
   id: string;
-  className: "BaseFighter";
+  className: string;
   hp: number;
   teamId: string;
   position: PositionJSON;
@@ -25,7 +25,7 @@ export type BaseFighterProps = {
   hp?: number;
 };
 
-export default class BaseFighter extends ObjectWithPosition {
+export default abstract class BaseFighter extends ObjectWithPosition {
   game: Game;
   teamId: string;
   baseAttackDamage: number;
@@ -34,6 +34,7 @@ export default class BaseFighter extends ObjectWithPosition {
   speed: number;
   range: number;
   id: string;
+  className: string = "BaseFighter";
 
   constructor(game: Game, props: BaseFighterProps) {
     super(props);
@@ -56,10 +57,6 @@ export default class BaseFighter extends ObjectWithPosition {
     return this.position
       .adjacentsWithinDistance(this.range)
       .filter(move => isTargetAtPosition(this.game, move, target, this.teamId));
-  }
-
-  getAttackDamageFor(_enemyUnit: Unit) {
-    return 0;
   }
 
   move(position: Position) {
@@ -88,22 +85,33 @@ export default class BaseFighter extends ObjectWithPosition {
     return Object.values(positionMap);
   }
 
-  toJSON() {
-    const { id, hp, teamId, position, speed, range, className, baseHP } = this;
-    return {
-      id,
-      className,
-      hp,
-      teamId,
-      position: position.toJSON(),
-      speed,
-      range,
-      baseHP
-    } as BaseFighterJSON;
+  getPathTo(position: Position): Position[] {
+    return this.game.pathFinder.getPath(this, position);
   }
 
-  static fromJSON(game: Game, json: BaseFighterJSON) {
-    const position = Position.fromJSON(json.position);
-    return new BaseFighter(game, { ...json, position });
+  getPathToTarget(target: Unit) {
+    const attackPositions = this.getAttackPositionsFor(target);
+
+    const allPaths: Position[][] = this.game.pathFinder.getPaths(
+      this,
+      attackPositions
+    );
+
+    if (allPaths.length > 0)
+      return allPaths.reduce((a, b) => (a.length < b.length ? a : b));
+    return null;
   }
+
+  takeDamage(damage: number) {
+    this.hp -= damage;
+    if (this.hp <= 0) this.die();
+  }
+
+  die() {
+    this.game.killFighter(this);
+  }
+
+  abstract toJSON(): BaseFighterJSON;
+
+  abstract getAttackDamageFor(enemyUnit: Unit): number;
 }

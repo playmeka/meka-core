@@ -26,6 +26,7 @@ export {
   InfantryFighterJSON
 } from "./InfantryFighter";
 export { default as RangedFighter, RangedFighterJSON } from "./RangedFighter";
+export { default as fighterFromJSON } from "./fighterFromJSON";
 export type FighterClassName =
   | "InfantryFighter"
   | "RangedFighter"

@@ -1,15 +1,9 @@
-import Game, { Unit } from "../Game";
-import Citizen from "../Citizen";
-import { Fighter } from "../fighters";
+import Game from "../Game";
+import Citizen, { CitizenJSON } from "../Citizen";
+import { Fighter, FighterJSON } from "../fighters";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import {
-  MoveCommand,
-  AttackCommand,
-  SpawnCommand,
-  DropOffFoodCommand,
-  PickUpFoodCommand
-} from "../commands";
-import BaseAction, { BaseActionProps, BaseActionJSON } from "./BaseAction";
+import { commandFromJSON, CommandJSON } from "../commands";
+import BaseAction, { BaseActionProps } from "./BaseAction";
 
 export type MoveActionArgs = {
   position: Position;
@@ -23,13 +17,16 @@ export type MoveActionArgsJSON = {
   autoDropOffFood?: boolean;
 };
 
-export type MoveActionJSON = BaseActionJSON & {
+export type MoveActionJSON = {
   args: MoveActionArgsJSON;
   className: "MoveAction";
+  command: CommandJSON;
+  response?: CitizenJSON | FighterJSON;
+  unit: CitizenJSON | FighterJSON;
 };
 
 export type MoveActionProps = BaseActionProps & {
-  unit: Unit;
+  unit: Citizen | Fighter;
   args: MoveActionArgs;
 };
 
@@ -38,6 +35,7 @@ export default class MoveAction extends BaseAction {
 
   constructor(props: MoveActionProps) {
     super(props);
+    this.unit = props.unit;
   }
 
   async execute(game: Game) {
@@ -60,7 +58,6 @@ export default class MoveAction extends BaseAction {
     }
     this.response = unit.toJSON();
     game.history.pushActions(game.turn, this);
-    return this;
   }
 
   import(game: Game) {
@@ -114,21 +111,30 @@ export default class MoveAction extends BaseAction {
     }
   }
 
-  static fromJSON(game: Game, json: MoveActionJSON) {
-    const commandClass = {
-      MoveCommand,
-      AttackCommand,
-      SpawnCommand,
-      DropOffFoodCommand,
-      PickUpFoodCommand
-    }[json.command.className];
+  toJSON() {
+    const { command, response, unit, className, id } = this;
 
-    // TODO: Handle commandJSON type
-    const command = commandClass.fromJSON(game, json.command as any);
-    const unit = game.lookup[json.unit.id] as Unit;
+    const args = {
+      ...this.args,
+      position: this.args.position.toJSON()
+    };
+
+    return {
+      id,
+      className,
+      response,
+      command: command.toJSON(),
+      unit: unit.toJSON(),
+      args
+    } as MoveActionJSON;
+  }
+
+  static fromJSON(game: Game, json: MoveActionJSON) {
+    const command = commandFromJSON(game, json.command);
+    const unit = game.lookup[json.unit.id] as Citizen | Fighter;
     const position = json.args.position
       ? Position.fromJSON(json.args.position)
-      : null;
+      : undefined;
     const args: MoveActionArgs = { ...json.args, position };
     return new MoveAction({ ...json, command, unit, args });
   }

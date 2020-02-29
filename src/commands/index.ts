@@ -21,6 +21,7 @@ export {
   default as PickUpFoodCommand,
   PickUpFoodCommandJSON
 } from "./PickUpFoodCommand";
+export { default as commandFromJSON } from "./commandFromJSON";
 
 export type CommandClassName =
   | "MoveCommand"

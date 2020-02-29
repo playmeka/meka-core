@@ -1,13 +1,5 @@
 import Game from "./Game";
-import {
-  Action,
-  ActionJSON,
-  MoveAction,
-  AttackAction,
-  SpawnAction,
-  DropOffFoodAction,
-  PickUpFoodAction
-} from "./actions";
+import { Action, ActionJSON, actionFromJSON } from "./actions";
 
 export type HistoryJSON = { [turn: string]: ActionJSON[] };
 type ActionsByTurnMap = { [turn: string]: Action[] };
@@ -45,7 +37,7 @@ export default class History {
     Object.keys(this.actionsByTurn).forEach(turn => {
       json[turn] = this.actionsByTurn[turn].map(action =>
         action.toJSON()
-      ) as any;
+      ) as ActionJSON[];
     });
     return json;
   }
@@ -53,17 +45,9 @@ export default class History {
   static fromJSON(game: Game, json: { [turn: string]: ActionJSON[] }) {
     const actionsByTurn: ActionsByTurnMap = {};
     Object.keys(json).forEach(turn => {
-      actionsByTurn[turn] = json[turn].map(actionJson => {
-        const actionClass = {
-          MoveAction,
-          AttackAction,
-          SpawnAction,
-          DropOffFoodAction,
-          PickUpFoodAction
-        }[actionJson.className];
-        // TODO: Handle actionJSON type
-        return actionClass.fromJSON(game, actionJson as any);
-      });
+      actionsByTurn[turn] = json[turn].map(actionJson =>
+        actionFromJSON(game, actionJson)
+      );
     });
     return new History(game, { actionsByTurn });
   }

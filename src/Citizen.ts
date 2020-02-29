@@ -65,7 +65,7 @@ export default class Citizen extends ObjectWithPosition {
     return this.game.pathFinder.getPath(this, position);
   }
 
-  getOptimalPathToTarget(target: Unit) {
+  getPathToTarget(target: Unit) {
     const allPaths: Position[][] = this.game.pathFinder.getPaths(
       this,
       target.covering

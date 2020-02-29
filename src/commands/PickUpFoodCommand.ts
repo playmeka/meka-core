@@ -1,7 +1,7 @@
 import Game from "../Game";
-import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import BaseCommand from "./BaseCommand";
 import { PickUpFoodAction, MoveAction } from "../actions";
-import Citizen from "../Citizen";
+import Citizen, { CitizenJSON } from "../Citizen";
 import Food from "../Food";
 
 export type PickUpFoodCommandArgs = {
@@ -12,7 +12,9 @@ export type PickUpFoodCommandArgsJSON = {
   foodId: string;
 };
 
-export type PickUpFoodCommandJSON = BaseCommandJSON & {
+export type PickUpFoodCommandJSON = {
+  id: string;
+  unit: CitizenJSON;
   className: "PickUpFoodCommand";
   args: PickUpFoodCommandArgsJSON;
 };
@@ -63,6 +65,17 @@ export default class PickUpFoodCommand extends BaseCommand {
         unit
       });
     }
+  }
+
+  toJSON() {
+    const { className, id, unit, args } = this;
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as PickUpFoodCommandJSON;
   }
 
   static fromJSON(game: Game, json: PickUpFoodCommandJSON) {

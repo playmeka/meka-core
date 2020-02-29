@@ -21,7 +21,8 @@ export {
   default as PickUpFoodAction,
   PickUpFoodActionJSON
 } from "./PickUpFoodAction";
-export { default as BaseAction, BaseActionJSON } from "./BaseAction";
+export { default as BaseAction } from "./BaseAction";
+export { default as actionFromJSON } from "./actionFromJSON";
 
 export type ActionClassName =
   | "AttackAction"

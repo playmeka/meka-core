@@ -1,5 +1,5 @@
 import Game, { Unit } from "../Game";
-import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { MoveAction } from "../actions";
 import Citizen, { CitizenJSON } from "../Citizen";
@@ -17,7 +17,8 @@ export type MoveCommandArgsJSON = {
   autoDropOffFood?: boolean;
 };
 
-export type MoveCommandJSON = BaseCommandJSON & {
+export type MoveCommandJSON = {
+  id: string;
   className: "MoveCommand";
   unit: CitizenJSON | FighterJSON;
   args: MoveCommandArgsJSON;
@@ -44,7 +45,7 @@ export default class MoveCommand extends BaseCommand {
     if (position) {
       path = game.pathFinder.getPath(unit, position);
     } else {
-      path = unit.getOptimalPathToTarget(target);
+      path = unit.getPathToTarget(target);
     }
 
     if (!path) return null;
@@ -57,6 +58,21 @@ export default class MoveCommand extends BaseCommand {
       args: { ...this.args, position: newPosition },
       unit
     });
+  }
+
+  toJSON() {
+    const { className, id, unit } = this;
+    const args: MoveCommandArgsJSON = {
+      ...this.args,
+      position: this.args.position.toJSON()
+    };
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as MoveCommandJSON;
   }
 
   static fromJSON(game: Game, json: MoveCommandJSON) {

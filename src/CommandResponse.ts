@@ -1,21 +1,7 @@
 import { Command, CommandJSON } from "./commands";
 import Game from "./Game";
-import {
-  Action,
-  ActionJSON,
-  MoveAction,
-  AttackAction,
-  SpawnAction,
-  DropOffFoodAction,
-  PickUpFoodAction
-} from "./actions";
-import {
-  MoveCommand,
-  AttackCommand,
-  SpawnCommand,
-  DropOffFoodCommand,
-  PickUpFoodCommand
-} from "./commands";
+import { Action, ActionJSON, actionFromJSON } from "./actions";
+import { commandFromJSON } from "./commands";
 
 export type CommandResponseStatus = "success" | "failure";
 export type CommandResponseProps = {
@@ -55,29 +41,8 @@ export default class CommandResponse {
   }
 
   static fromJSON(game: Game, json: CommandResponseJSON) {
-    const commandClass = {
-      MoveCommand,
-      AttackCommand,
-      SpawnCommand,
-      DropOffFoodCommand,
-      PickUpFoodCommand
-    }[json.command.className];
-
-    // TODO: Handle commandJSON type
-    const command = commandClass.fromJSON(game, json.command as any);
-
-    let action = undefined;
-    if (json.action) {
-      const actionClass = {
-        MoveAction,
-        AttackAction,
-        SpawnAction,
-        DropOffFoodAction,
-        PickUpFoodAction
-      }[json.action.className];
-      // TODO: Handle actionJSON type
-      action = actionClass.fromJSON(game, json.action as any);
-    }
+    const command = commandFromJSON(game, json.command);
+    const action = actionFromJSON(game, json.action);
     return new CommandResponse({ ...json, command, action });
   }
 }

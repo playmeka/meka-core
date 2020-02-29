@@ -1,8 +1,8 @@
 import Game, { Unit } from "../Game";
-import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import BaseCommand from "./BaseCommand";
 import { AttackAction, MoveAction } from "../actions";
 import HQ from "../HQ";
-import { Fighter, BaseFighter } from "../fighters";
+import { Fighter, BaseFighter, FighterJSON } from "../fighters";
 
 export type AttackCommandArgs = {
   targetId: string;
@@ -12,8 +12,10 @@ export type AttackCommandArgsJSON = {
   targetId: string;
 };
 
-export type AttackCommandJSON = BaseCommandJSON & {
+export type AttackCommandJSON = {
+  id: string;
   className: "AttackCommand";
+  unit: FighterJSON;
   args: AttackCommandArgsJSON;
 };
 
@@ -46,7 +48,7 @@ export default class AttackCommand extends BaseCommand {
     } else if (unit.className === "HQ") {
       return null;
     } else if (unit instanceof BaseFighter) {
-      const path = unit.getOptimalPathToTarget(target);
+      const path = unit.getPathToTarget(target);
 
       if (!path) return null;
       // Take unit.speed steps at a time
@@ -65,6 +67,16 @@ export default class AttackCommand extends BaseCommand {
         unit
       });
     }
+  }
+
+  toJSON() {
+    const { className, id, unit, args } = this;
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as AttackCommandJSON;
   }
 
   static fromJSON(game: Game, json: AttackCommandJSON) {

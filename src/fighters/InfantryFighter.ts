@@ -30,32 +30,6 @@ export default class InfantryFighter extends BaseFighter {
     this.speed = this.team.settings.speed["InfantryFighter"];
   }
 
-  getPathTo(position: Position): Position[] {
-    return this.game.pathFinder.getPath(this, position);
-  }
-
-  getOptimalPathToTarget(target: Unit) {
-    const attackPositions = this.getAttackPositionsFor(target);
-
-    const allPaths: Position[][] = this.game.pathFinder.getPaths(
-      this,
-      attackPositions
-    );
-
-    if (allPaths.length > 0)
-      return allPaths.reduce((a, b) => (a.length < b.length ? a : b));
-    return null;
-  }
-
-  takeDamage(damage: number) {
-    this.hp -= damage;
-    if (this.hp <= 0) this.die();
-  }
-
-  die() {
-    this.game.killFighter(this);
-  }
-
   getAttackDamageFor(enemyUnit: Unit) {
     return enemyUnit.className === "CavalryFighter"
       ? this.baseAttackDamage + 5
@@ -63,7 +37,17 @@ export default class InfantryFighter extends BaseFighter {
   }
 
   toJSON() {
-    return super.toJSON() as InfantryFighterJSON;
+    const { id, hp, teamId, position, speed, range, className, baseHP } = this;
+    return {
+      id,
+      className,
+      hp,
+      teamId,
+      position: position.toJSON(),
+      speed,
+      range,
+      baseHP
+    } as InfantryFighterJSON;
   }
 
   static fromJSON(game: Game, json: InfantryFighterJSON) {

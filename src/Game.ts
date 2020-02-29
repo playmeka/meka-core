@@ -11,14 +11,7 @@ import CommandResponse from "./CommandResponse";
 import History, { HistoryJSON } from "./History";
 import PathFinder from "./PathFinder";
 import isValidPosition from "./utils/isValidPosition";
-import {
-  CavalryFighter,
-  RangedFighter,
-  InfantryFighter,
-  Fighter,
-  FighterJSON,
-  BaseFighter
-} from "./fighters";
+import { fighterFromJSON, Fighter, FighterJSON, BaseFighter } from "./fighters";
 import { Command } from "./commands";
 
 export type Unit = Citizen | Fighter | HQ;
@@ -258,14 +251,7 @@ export default class Game {
       json.citizens.map(citizenJson => Citizen.fromJSON(game, citizenJson))
     );
     game.importFighters(
-      json.fighters.map(fighterJson => {
-        if (fighterJson.className === "CavalryFighter")
-          return CavalryFighter.fromJSON(game, fighterJson);
-        else if (fighterJson.className === "RangedFighter")
-          return RangedFighter.fromJSON(game, fighterJson);
-        else if (fighterJson.className === "InfantryFighter")
-          return InfantryFighter.fromJSON(game, fighterJson);
-      })
+      json.fighters.map(fighterJson => fighterFromJSON(game, fighterJson))
     );
     game.importHistory(History.fromJSON(game, json.history));
     return game;
@@ -319,7 +305,10 @@ export default class Game {
     });
   }
 
-  clearUnitPosition(unit: Unit, mapping: { [key: string]: Unit }) {
+  clearUnitPosition(
+    unit: Unit | BaseFighter,
+    mapping: { [key: string]: Unit }
+  ) {
     unit.covering.forEach(position => {
       delete mapping[position.key];
       this.pathFinder.clearPosition(position);
@@ -414,10 +403,10 @@ export default class Game {
       (promise, action) =>
         promise.then(async () => {
           try {
-            const response = await action.execute(this);
+            await action.execute(this);
             commandToResponseMap[action.command.id] = new CommandResponse({
               command: action.command,
-              action: response,
+              action: action,
               status: "success"
             });
           } catch (err) {
@@ -453,7 +442,7 @@ export default class Game {
     this.history.pushActions(turn, ...actions);
   }
 
-  killFighter(fighter: Fighter) {
+  killFighter(fighter: BaseFighter) {
     this.clearUnitPosition(fighter, this.fighters);
   }
 

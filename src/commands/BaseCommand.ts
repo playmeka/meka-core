@@ -14,6 +14,13 @@ export type BaseCommandArgs = {
   hqId?: string;
 };
 
+export type BaseCommandJSON = {
+  id: string;
+  className: string;
+  unit: UnitJSON;
+  args: BaseCommandArgsJSON;
+};
+
 export type BaseCommandArgsJSON = {
   position?: PositionJSON;
   autoPickUpFood?: boolean;
@@ -24,13 +31,7 @@ export type BaseCommandArgsJSON = {
   hqId?: string;
 };
 
-export type BaseCommandJSON = {
-  id: string;
-  unit: UnitJSON;
-  args: BaseCommandArgsJSON;
-};
-
-export default class BaseCommand {
+export default abstract class BaseCommand {
   className: string = "BaseCommand";
   unit: Unit;
   args?: BaseCommandArgs;
@@ -42,26 +43,7 @@ export default class BaseCommand {
     this.args = props.args || {};
   }
 
-  getNextAction(_game: Game): Action {
-    return null;
-  }
+  abstract getNextAction(game: Game): Action;
 
-  toJSON() {
-    const { className, id, unit, args } = this;
-    return {
-      className,
-      id,
-      unit: unit.toJSON(),
-      args
-    };
-  }
-
-  static fromJSON(game: Game, json: BaseCommandJSON) {
-    const unit = game.lookup[json.unit.id] as Unit;
-    const position = json.args.position
-      ? Position.fromJSON(json.args.position)
-      : null;
-    const args: BaseCommandArgs = { ...json.args, position };
-    return new BaseCommand({ ...json, unit, args });
-  }
+  abstract toJSON(): BaseCommandJSON;
 }

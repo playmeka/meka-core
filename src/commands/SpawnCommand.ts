@@ -1,5 +1,5 @@
 import Game from "../Game";
-import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { SpawnAction } from "../actions";
 import HQ, { HQJSON } from "../HQ";
@@ -15,7 +15,8 @@ export type SpawnCommandArgsJSON = {
   unitType: FighterClassName | "Citizen";
 };
 
-export type SpawnCommandJSON = BaseCommandJSON & {
+export type SpawnCommandJSON = {
+  id: string;
   className: "SpawnCommand";
   unit: HQJSON;
   args: SpawnCommandArgsJSON;
@@ -46,11 +47,26 @@ export default class SpawnCommand extends BaseCommand {
     });
   }
 
+  toJSON() {
+    const { className, id, unit } = this;
+    const args = {
+      ...this.args,
+      position: this.args.position.toJSON()
+    };
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as SpawnCommandJSON;
+  }
+
   static fromJSON(game: Game, json: SpawnCommandJSON) {
     const unit = game.lookup[json.unit.id] as HQ;
     const position = json.args.position
       ? Position.fromJSON(json.args.position)
-      : null;
+      : undefined;
     const args: SpawnCommandArgs = { ...json.args, position };
     return new SpawnCommand({ ...json, unit, args });
   }

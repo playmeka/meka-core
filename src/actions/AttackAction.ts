@@ -1,14 +1,8 @@
-import Game, { Unit } from "../Game";
-import HQ from "../HQ";
-import { Fighter } from "../fighters";
-import {
-  MoveCommand,
-  AttackCommand,
-  SpawnCommand,
-  DropOffFoodCommand,
-  PickUpFoodCommand
-} from "../commands";
-import BaseAction, { BaseActionProps, BaseActionJSON } from "./BaseAction";
+import Game, { Unit, UnitJSON } from "../Game";
+import HQ, { HQJSON } from "../HQ";
+import { Fighter, FighterJSON } from "../fighters";
+import { CommandJSON, commandFromJSON } from "../commands";
+import BaseAction, { BaseActionProps } from "./BaseAction";
 
 export type AttackActionArgs = {
   targetId: string;
@@ -18,13 +12,16 @@ export type AttackActionArgsJSON = {
   targetId: string;
 };
 
-export type AttackActionJSON = BaseActionJSON & {
+export type AttackActionJSON = {
   args: AttackActionArgsJSON;
   className: "AttackAction";
+  command: CommandJSON;
+  response?: UnitJSON;
+  unit: FighterJSON | HQJSON;
 };
 
 export type AttackActionProps = BaseActionProps & {
-  unit: Unit;
+  unit: Fighter | HQ;
   args: AttackActionArgs;
 };
 
@@ -52,7 +49,6 @@ export default class AttackAction extends BaseAction {
       this.handleAttack(unit, target);
       this.response = target.toJSON();
       game.history.pushActions(game.turn, this);
-      return this;
     } else {
       throw new Error("Target is not within range: " + target.id); // miss!
     }
@@ -69,18 +65,21 @@ export default class AttackAction extends BaseAction {
     target.takeDamage(fighter.getAttackDamageFor(target));
   }
 
-  static fromJSON(game: Game, json: AttackActionJSON) {
-    const commandClass = {
-      MoveCommand,
-      AttackCommand,
-      SpawnCommand,
-      DropOffFoodCommand,
-      PickUpFoodCommand
-    }[json.command.className];
+  toJSON() {
+    const { command, response, unit, args, className, id } = this;
+    return {
+      id,
+      className,
+      response,
+      command: command.toJSON(),
+      unit: unit.toJSON(),
+      args
+    } as AttackActionJSON;
+  }
 
-    // TODO: Handle commandJSON type
-    const command = commandClass.fromJSON(game, json.command as any);
-    const unit = game.lookup[json.unit.id] as Unit;
+  static fromJSON(game: Game, json: AttackActionJSON) {
+    const command = commandFromJSON(game, json.command);
+    const unit = game.lookup[json.unit.id] as Fighter | HQ;
     return new AttackAction({ ...json, command, unit, args: json.args });
   }
 }

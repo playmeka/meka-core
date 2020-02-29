@@ -1,9 +1,9 @@
 import Game from "../Game";
-import BaseCommand, { BaseCommandJSON } from "./BaseCommand";
+import BaseCommand from "./BaseCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { DropOffFoodAction, MoveAction } from "../actions";
 import HQ from "../HQ";
-import Citizen from "../Citizen";
+import Citizen, { CitizenJSON } from "../Citizen";
 import shuffle from "../utils/shuffle";
 
 export type DropOffFoodCommandArgs = {
@@ -16,8 +16,10 @@ export type DropOffFoodCommandArgsJSON = {
   hqId?: string;
 };
 
-export type DropOffFoodCommandJSON = BaseCommandJSON & {
+export type DropOffFoodCommandJSON = {
+  id: string;
   className: "DropOffFoodCommand";
+  unit: CitizenJSON;
   args: DropOffFoodCommandArgsJSON;
 };
 
@@ -61,9 +63,7 @@ export default class DropOffFoodCommand extends BaseCommand {
       else return null;
     } else {
       // TODO: Abstract this logic in `getPathTo`
-      const path = hq
-        ? unit.getOptimalPathToTarget(hq)
-        : unit.getPathTo(position);
+      const path = hq ? unit.getPathToTarget(hq) : unit.getPathTo(position);
 
       if (!path) return null;
 
@@ -83,11 +83,26 @@ export default class DropOffFoodCommand extends BaseCommand {
     }
   }
 
+  toJSON() {
+    const { className, id, unit } = this;
+    const position = this.args.position
+      ? this.args.position.toJSON()
+      : undefined;
+    const args: DropOffFoodCommandArgsJSON = { ...this.args, position };
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as DropOffFoodCommandJSON;
+  }
+
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
     const position = json.args.position
       ? Position.fromJSON(json.args.position)
-      : null;
+      : undefined;
     const args: DropOffFoodCommandArgs = { ...json.args, position };
 
     return new DropOffFoodCommand({ ...json, unit, args });

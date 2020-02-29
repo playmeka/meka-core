@@ -1,14 +1,8 @@
-import Game, { Unit } from "../Game";
-import Citizen from "../Citizen";
+import Game from "../Game";
+import Citizen, { CitizenJSON } from "../Citizen";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import {
-  MoveCommand,
-  AttackCommand,
-  SpawnCommand,
-  DropOffFoodCommand,
-  PickUpFoodCommand
-} from "../commands";
-import BaseAction, { BaseActionProps, BaseActionJSON } from "./BaseAction";
+import { commandFromJSON, CommandJSON } from "../commands";
+import BaseAction, { BaseActionProps } from "./BaseAction";
 
 export type DropOffFoodActionArgs = {
   position: Position;
@@ -18,13 +12,16 @@ export type DropOffFoodActionArgsJSON = {
   position: PositionJSON;
 };
 
-export type DropOffFoodActionJSON = BaseActionJSON & {
+export type DropOffFoodActionJSON = {
   args: DropOffFoodActionArgsJSON;
   className: "DropOffFoodAction";
+  command: CommandJSON;
+  response?: CitizenJSON;
+  unit: CitizenJSON;
 };
 
 export type DropOffFoodActionProps = BaseActionProps & {
-  unit: Unit;
+  unit: Citizen;
   args: DropOffFoodActionArgs;
 };
 
@@ -53,7 +50,6 @@ export default class DropOffFoodAction extends BaseAction {
       this.handleFoodDropOff(game, unit, position);
       this.response = unit.toJSON();
       game.history.pushActions(game.turn, this);
-      return this;
     } else {
       throw new Error("Unit is not adjacent to the food");
     }
@@ -77,21 +73,30 @@ export default class DropOffFoodAction extends BaseAction {
     }
   }
 
-  static fromJSON(game: Game, json: DropOffFoodActionJSON) {
-    const commandClass = {
-      MoveCommand,
-      AttackCommand,
-      SpawnCommand,
-      DropOffFoodCommand,
-      PickUpFoodCommand
-    }[json.command.className];
+  toJSON() {
+    const { command, response, unit, className, id } = this;
 
-    // TODO: Handle commandJSON type
-    const command = commandClass.fromJSON(game, json.command as any);
-    const unit = game.lookup[json.unit.id] as Unit;
+    const args = {
+      ...this.args,
+      position: this.args.position.toJSON()
+    };
+
+    return {
+      id,
+      className,
+      response,
+      command: command.toJSON(),
+      unit: unit.toJSON(),
+      args
+    } as DropOffFoodActionJSON;
+  }
+
+  static fromJSON(game: Game, json: DropOffFoodActionJSON) {
+    const command = commandFromJSON(game, json.command);
+    const unit = game.lookup[json.unit.id] as Citizen;
     const position = json.args.position
       ? Position.fromJSON(json.args.position)
-      : null;
+      : undefined;
     const args: DropOffFoodActionArgs = { ...json.args, position };
     return new DropOffFoodAction({ ...json, command, unit, args });
   }

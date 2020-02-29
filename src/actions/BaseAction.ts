@@ -1,14 +1,7 @@
+import { v4 as uuidv4 } from "uuid";
 import Game, { Unit, UnitJSON } from "../Game";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import {
-  MoveCommand,
-  AttackCommand,
-  SpawnCommand,
-  DropOffFoodCommand,
-  PickUpFoodCommand,
-  Command,
-  CommandJSON
-} from "../commands";
+import { Command, CommandJSON } from "../commands";
 import { FighterClassName } from "../fighters";
 
 export type BaseActionArgs = {
@@ -17,6 +10,23 @@ export type BaseActionArgs = {
   autoDropOffFood?: boolean;
   unitType?: FighterClassName | "Citizen";
   targetId?: string;
+  id?: string;
+};
+
+export type BaseActionProps = {
+  command: Command;
+  response?: UnitJSON;
+  unit: Unit;
+  args: BaseActionArgs;
+  id?: string;
+};
+
+export type BaseActionJSON = {
+  args: BaseActionArgsJSON;
+  className: string;
+  command: CommandJSON;
+  response?: UnitJSON;
+  unit: UnitJSON;
 };
 
 export type BaseActionArgsJSON = {
@@ -25,69 +35,28 @@ export type BaseActionArgsJSON = {
   autoDropOffFood?: boolean;
   unitType?: FighterClassName | "Citizen";
   targetId?: string;
+  id?: string;
 };
 
-export type BaseActionResponse = UnitJSON;
-export type BaseActionJSON = {
-  command: CommandJSON;
-  response?: any;
-  unit: UnitJSON;
-  args: BaseActionArgsJSON;
-};
-export type BaseActionProps = {
+export default abstract class BaseAction {
+  id: string;
   command: Command;
-  response?: BaseActionResponse;
-  unit: Unit;
-  args: BaseActionArgs;
-};
-
-export default class BaseAction {
-  command: Command;
-  response?: BaseActionResponse;
+  response?: UnitJSON;
   unit: Unit;
   args: BaseActionArgs;
   className: string = "BaseAction";
 
   constructor(props: BaseActionProps) {
+    this.id = props.id || uuidv4();
     this.command = props.command;
     this.response = props.response;
     this.unit = props.unit;
     this.args = props.args;
   }
 
-  async execute(_game: Game): Promise<BaseAction> {
-    return;
-  }
+  abstract async execute(game: Game): Promise<void>;
 
-  import(_game: Game) {}
+  abstract import(game: Game): void;
 
-  toJSON() {
-    const { command, response, unit, args, className } = this;
-    return {
-      className,
-      response,
-      command: command.toJSON(),
-      unit: unit.toJSON(),
-      args
-    };
-  }
-
-  static fromJSON(game: Game, json: BaseActionJSON) {
-    const commandClass = {
-      MoveCommand,
-      AttackCommand,
-      SpawnCommand,
-      DropOffFoodCommand,
-      PickUpFoodCommand
-    }[json.command.className];
-
-    // TODO: Handle commandJSON type
-    const command = commandClass.fromJSON(game, json.command as any);
-    const unit = game.lookup[json.unit.id] as Unit;
-    const position = json.args.position
-      ? Position.fromJSON(json.args.position)
-      : null;
-    const args: BaseActionArgs = { ...json.args, position };
-    return new BaseAction({ ...json, command, unit, args });
-  }
+  abstract toJSON(): BaseActionJSON;
 }
