@@ -1,5 +1,5 @@
 import Game from "../Game";
-import BaseCommand from "./BaseCommand";
+import AbstractCommand from "./AbstractCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { SpawnCitizenAction, SpawnFighterAction } from "../actions";
 import HQ, { HQJSON } from "../HQ";
@@ -22,7 +22,7 @@ export type SpawnCommandJSON = {
   args: SpawnCommandArgsJSON;
 };
 
-export default class SpawnCommand extends BaseCommand {
+export default class SpawnCommand extends AbstractCommand {
   className: string = "SpawnCommand";
 
   constructor(props: { unit: HQ; args?: SpawnCommandArgs; id?: string }) {

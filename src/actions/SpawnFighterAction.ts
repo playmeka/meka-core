@@ -2,7 +2,7 @@ import Game from "../Game";
 import HQ, { HQJSON } from "../HQ";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { commandFromJSON, CommandJSON } from "../commands";
-import BaseAction, { BaseActionProps } from "./BaseAction";
+import AbstractAction, { AbstractActionProps } from "./AbstractAction";
 import {
   FighterJSON,
   FighterProps,
@@ -30,12 +30,12 @@ export type SpawnFighterActionJSON = {
   unit: HQJSON;
 };
 
-export type SpawnFighterActionProps = BaseActionProps & {
+export type SpawnFighterActionProps = AbstractActionProps & {
   unit: HQ;
   args: SpawnFighterActionArgs;
 };
 
-export default class SpawnFighterAction extends BaseAction {
+export default class SpawnFighterAction extends AbstractAction {
   className: string = "SpawnFighterAction";
 
   constructor(props: SpawnFighterActionProps) {

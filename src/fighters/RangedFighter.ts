@@ -1,14 +1,17 @@
 import { Position } from "../ObjectWithPosition";
 import Game, { Unit } from "../Game";
-import BaseFighter, { BaseFighterJSON, BaseFighterProps } from "./BaseFighter";
+import AbstractFighter, {
+  AbstractFighterJSON,
+  AbstractFighterProps
+} from "./AbstractFighter";
 
-export type RangedFighterJSON = BaseFighterJSON & {
+export type RangedFighterJSON = AbstractFighterJSON & {
   className: "RangedFighter";
 };
 
-export type RangedFighterProps = BaseFighterProps;
+export type RangedFighterProps = AbstractFighterProps;
 
-export default class RangedFighter extends BaseFighter {
+export default class RangedFighter extends AbstractFighter {
   className: string = "RangedFighter";
   game: Game;
   teamId: string;

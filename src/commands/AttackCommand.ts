@@ -1,8 +1,8 @@
 import Game, { Unit } from "../Game";
-import BaseCommand from "./BaseCommand";
+import AbstractCommand from "./AbstractCommand";
 import { AttackAction, MoveFighterAction } from "../actions";
 import HQ from "../HQ";
-import { Fighter, BaseFighter, FighterJSON } from "../fighters";
+import { Fighter, AbstractFighter, FighterJSON } from "../fighters";
 
 export type AttackCommandArgs = {
   targetId: string;
@@ -19,7 +19,7 @@ export type AttackCommandJSON = {
   args: AttackCommandArgsJSON;
 };
 
-export default class AttackCommand extends BaseCommand {
+export default class AttackCommand extends AbstractCommand {
   className: string = "AttackCommand";
 
   constructor(props: { unit: Unit; args: AttackCommandArgs; id?: string }) {
@@ -47,7 +47,7 @@ export default class AttackCommand extends BaseCommand {
       });
     } else if (unit.className === "HQ") {
       return null;
-    } else if (unit instanceof BaseFighter) {
+    } else if (unit instanceof AbstractFighter) {
       const path = unit.getPathToTarget(target);
 
       if (!path) return null;

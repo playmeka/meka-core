@@ -69,7 +69,11 @@ export {
   PickUpFoodActionJSON,
   PickUpFoodActionArgs
 } from "./PickUpFoodAction";
-export { default as BaseAction } from "./BaseAction";
+export {
+  default as AbstractAction,
+  AbstractActionArgs,
+  AbstractActionJSON
+} from "./AbstractAction";
 export { default as actionFromJSON } from "./actionFromJSON";
 
 export type ActionClassName =

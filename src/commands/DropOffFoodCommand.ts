@@ -1,5 +1,5 @@
 import Game from "../Game";
-import BaseCommand from "./BaseCommand";
+import AbstractCommand from "./AbstractCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { DropOffFoodAction, MoveCitizenAction } from "../actions";
 import HQ from "../HQ";
@@ -23,7 +23,7 @@ export type DropOffFoodCommandJSON = {
   args: DropOffFoodCommandArgsJSON;
 };
 
-export default class DropOffFoodCommand extends BaseCommand {
+export default class DropOffFoodCommand extends AbstractCommand {
   className: string = "DropOffFoodCommand";
 
   constructor(props: {

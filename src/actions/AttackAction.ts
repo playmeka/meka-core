@@ -2,7 +2,7 @@ import Game, { Unit, UnitJSON } from "../Game";
 import HQ, { HQJSON } from "../HQ";
 import { Fighter, FighterJSON } from "../fighters";
 import { CommandJSON, commandFromJSON } from "../commands";
-import BaseAction, { BaseActionProps } from "./BaseAction";
+import AbstractAction, { AbstractActionProps } from "./AbstractAction";
 
 export type AttackActionArgs = {
   targetId: string;
@@ -20,12 +20,12 @@ export type AttackActionJSON = {
   unit: FighterJSON | HQJSON;
 };
 
-export type AttackActionProps = BaseActionProps & {
+export type AttackActionProps = AbstractActionProps & {
   unit: Fighter | HQ;
   args: AttackActionArgs;
 };
 
-export default class AttackAction extends BaseAction {
+export default class AttackAction extends AbstractAction {
   className: string = "AttackAction";
 
   constructor(props: AttackActionProps) {

@@ -16,7 +16,10 @@ import {
 } from "./RangedFighter";
 
 // Exports
-export { default as BaseFighter, BaseFighterJSON } from "./BaseFighter";
+export {
+  default as AbstractFighter,
+  AbstractFighterJSON
+} from "./AbstractFighter";
 export {
   default as CavalryFighter,
   CavalryFighterJSON

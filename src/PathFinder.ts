@@ -1,7 +1,7 @@
 import * as PathFinding from "pathfinding";
 import Game, { Unit } from "./Game";
 import Team from "./Team";
-import { BaseFighter } from "./fighters";
+import { AbstractFighter } from "./fighters";
 import { Position } from "./ObjectWithPosition";
 
 const createGrid = (game: Game) => {
@@ -35,7 +35,7 @@ export default class PathFinder {
     return grid;
   }
 
-  getPath(unit: Unit | BaseFighter, to: Position) {
+  getPath(unit: Unit | AbstractFighter, to: Position) {
     const finder = new PathFinding.AStarFinder();
     const path = finder
       .findPath(
@@ -49,7 +49,7 @@ export default class PathFinder {
     return path.length ? path : null;
   }
 
-  getPaths(unit: Unit | BaseFighter, toOptions: Position[]) {
+  getPaths(unit: Unit | AbstractFighter, toOptions: Position[]) {
     return toOptions
       .map(position => this.getPath(unit, position))
       .filter(Boolean);

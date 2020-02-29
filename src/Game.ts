@@ -5,13 +5,18 @@ import Team, { TeamJSON } from "./Team";
 import Citizen, { CitizenJSON } from "./Citizen";
 import Wall, { WallJSON } from "./Wall";
 import Food, { FoodJSON } from "./Food";
-import { Action, BaseAction } from "./actions";
+import { Action, AbstractAction } from "./actions";
 import HQ, { HQJSON } from "./HQ";
 import CommandResponse from "./CommandResponse";
 import History, { HistoryJSON } from "./History";
 import PathFinder from "./PathFinder";
 import isValidPosition from "./utils/isValidPosition";
-import { fighterFromJSON, Fighter, FighterJSON, BaseFighter } from "./fighters";
+import {
+  fighterFromJSON,
+  Fighter,
+  FighterJSON,
+  AbstractFighter
+} from "./fighters";
 import { Command } from "./commands";
 
 export type Unit = Citizen | Fighter | HQ;
@@ -168,7 +173,7 @@ export default class Game {
 
   get fightersList() {
     return Object.values(this.lookup).filter(
-      object => object instanceof BaseFighter
+      object => object instanceof AbstractFighter
     ) as Fighter[];
   }
 
@@ -306,7 +311,7 @@ export default class Game {
   }
 
   clearUnitPosition(
-    unit: Unit | BaseFighter,
+    unit: Unit | AbstractFighter,
     mapping: { [key: string]: Unit }
   ) {
     unit.covering.forEach(position => {
@@ -442,13 +447,13 @@ export default class Game {
     this.turn = turn;
     // Iterate through actions
     actions.forEach(action => {
-      if (action instanceof BaseAction) action.import(this);
+      if (action instanceof AbstractAction) action.import(this);
     });
     // Add turn to history
     this.history.pushActions(turn, ...actions);
   }
 
-  killFighter(fighter: BaseFighter) {
+  killFighter(fighter: Fighter | AbstractFighter) {
     this.clearUnitPosition(fighter, this.fighters);
   }
 

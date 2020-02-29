@@ -50,6 +50,11 @@ export {
   PickUpFoodCommandArgs
 } from "./PickUpFoodCommand";
 export { default as commandFromJSON } from "./commandFromJSON";
+export {
+  default as AbstractCommand,
+  AbstractCommandJSON,
+  AbstractCommandArgs
+} from "./AbstractCommand";
 
 export type CommandClassName =
   | "MoveCommand"

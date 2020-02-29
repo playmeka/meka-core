@@ -3,7 +3,7 @@ import Citizen, { CitizenProps, CitizenJSON } from "../Citizen";
 import HQ, { HQJSON } from "../HQ";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { commandFromJSON, CommandJSON } from "../commands";
-import BaseAction, { BaseActionProps } from "./BaseAction";
+import AbstractAction, { AbstractActionProps } from "./AbstractAction";
 
 export type SpawnCitizenActionArgs = {
   position: Position;
@@ -23,12 +23,12 @@ export type SpawnCitizenActionJSON = {
   unit: HQJSON;
 };
 
-export type SpawnCitizenActionProps = BaseActionProps & {
+export type SpawnCitizenActionProps = AbstractActionProps & {
   unit: HQ;
   args: SpawnCitizenActionArgs;
 };
 
-export default class SpawnCitizenAction extends BaseAction {
+export default class SpawnCitizenAction extends AbstractAction {
   className: string = "SpawnCitizenAction";
 
   constructor(props: SpawnCitizenActionProps) {

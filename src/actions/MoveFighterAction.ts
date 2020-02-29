@@ -2,7 +2,7 @@ import Game from "../Game";
 import { Fighter, FighterJSON } from "../fighters";
 import { Position, PositionJSON } from "../ObjectWithPosition";
 import { commandFromJSON, CommandJSON } from "../commands";
-import BaseAction, { BaseActionProps } from "./BaseAction";
+import AbstractAction, { AbstractActionProps } from "./AbstractAction";
 
 export type MoveFighterActionArgs = {
   position: Position;
@@ -20,12 +20,12 @@ export type MoveFighterActionJSON = {
   unit: FighterJSON;
 };
 
-export type MoveFighterActionProps = BaseActionProps & {
+export type MoveFighterActionProps = AbstractActionProps & {
   unit: Fighter;
   args: MoveFighterActionArgs;
 };
 
-export default class MoveFighterAction extends BaseAction {
+export default class MoveFighterAction extends AbstractAction {
   className: string = "MoveFighterAction";
 
   constructor(props: MoveFighterActionProps) {

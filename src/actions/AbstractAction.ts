@@ -4,7 +4,7 @@ import { Position, PositionJSON } from "../ObjectWithPosition";
 import { Command, CommandJSON } from "../commands";
 import { FighterClassName } from "../fighters";
 
-export type BaseActionArgs = {
+export type AbstractActionArgs = {
   position?: Position;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
@@ -13,23 +13,23 @@ export type BaseActionArgs = {
   id?: string;
 };
 
-export type BaseActionProps = {
+export type AbstractActionProps = {
   command: Command;
   response?: UnitJSON;
   unit: Unit;
-  args: BaseActionArgs;
+  args: AbstractActionArgs;
   id?: string;
 };
 
-export type BaseActionJSON = {
-  args: BaseActionArgsJSON;
+export type AbstractActionJSON = {
+  args: AbstractActionArgsJSON;
   className: string;
   command: CommandJSON;
   response?: UnitJSON;
   unit: UnitJSON;
 };
 
-export type BaseActionArgsJSON = {
+export type AbstractActionArgsJSON = {
   position?: PositionJSON;
   autoPickUpFood?: boolean;
   autoDropOffFood?: boolean;
@@ -38,15 +38,15 @@ export type BaseActionArgsJSON = {
   id?: string;
 };
 
-export default abstract class BaseAction {
+export default abstract class AbstractAction {
   id: string;
   command: Command;
   response?: UnitJSON;
   unit: Unit;
-  args: BaseActionArgs;
-  className: string = "BaseAction";
+  args: AbstractActionArgs;
+  className: string = "AbstractAction";
 
-  constructor(props: BaseActionProps) {
+  constructor(props: AbstractActionProps) {
     this.id = props.id || uuidv4();
     this.command = props.command;
     this.response = props.response;
@@ -58,5 +58,5 @@ export default abstract class BaseAction {
 
   abstract import(game: Game): void;
 
-  abstract toJSON(): BaseActionJSON;
+  abstract toJSON(): AbstractActionJSON;
 }

@@ -8,7 +8,7 @@ import isInBounds from "../utils/isInBounds";
 import isValidPosition from "../utils/isValidPosition";
 import isTargetAtPosition from "../utils/isTargetAtPosition";
 
-export type BaseFighterJSON = {
+export type AbstractFighterJSON = {
   id: string;
   className: string;
   hp: number;
@@ -19,14 +19,14 @@ export type BaseFighterJSON = {
   baseHP: number;
 };
 
-export type BaseFighterProps = {
+export type AbstractFighterProps = {
   teamId: string;
   position: Position;
   id?: string;
   hp?: number;
 };
 
-export default abstract class BaseFighter extends ObjectWithPosition {
+export default abstract class AbstractFighter extends ObjectWithPosition {
   game: Game;
   teamId: string;
   baseAttackDamage: number;
@@ -35,9 +35,9 @@ export default abstract class BaseFighter extends ObjectWithPosition {
   speed: number;
   range: number;
   id: string;
-  className: string = "BaseFighter";
+  className: string = "AbstractFighter";
 
-  constructor(game: Game, props: BaseFighterProps) {
+  constructor(game: Game, props: AbstractFighterProps) {
     super(props);
     this.id = props.id || uuidv4();
     this.game = game;
@@ -113,7 +113,7 @@ export default abstract class BaseFighter extends ObjectWithPosition {
     this.game.killFighter(this);
   }
 
-  abstract toJSON(): BaseFighterJSON;
+  abstract toJSON(): AbstractFighterJSON;
 
   abstract getAttackDamageFor(enemyUnit: Unit): number;
 }
