@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
-import Game, { FighterType } from "./Game";
+import Game from "./Game";
+import { FighterClassName } from "./fighters";
 
 const DEFAULT_SETTINGS: TeamSettings = {
   cost: {
@@ -50,11 +51,11 @@ type TeamProps = {
 
 // TODO: Should TeamSettings have settings for each unit type whether it makes sense to include or not?
 type TeamSettings = {
-  cost: { [key in "Citizen" | FighterType]: number };
-  speed: { [key in "Citizen" | FighterType]: number };
-  baseHP: { [key in "Citizen" | "HQ" | FighterType]: number };
-  range: { [key in "HQ" | FighterType]: number };
-  baseAttackDamage: { [key in "HQ" | FighterType]: number };
+  cost: { [key in "Citizen" | FighterClassName]: number };
+  speed: { [key in "Citizen" | FighterClassName]: number };
+  baseHP: { [key in "Citizen" | "HQ" | FighterClassName]: number };
+  range: { [key in "HQ" | FighterClassName]: number };
+  baseAttackDamage: { [key in "HQ" | FighterClassName]: number };
 };
 
 export default class Team {

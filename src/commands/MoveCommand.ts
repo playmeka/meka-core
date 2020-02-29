@@ -1,8 +1,9 @@
-import Game, { Fighter, Unit, FighterJSON } from "../Game";
-import Command from "../Command";
+import Game, { Unit } from "../Game";
+import AbstractCommand from "./AbstractCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import Action from "../Action";
+import { MoveCitizenAction, MoveFighterAction } from "../actions";
 import Citizen, { CitizenJSON } from "../Citizen";
+import { Fighter, FighterJSON } from "../fighters";
 
 export type MoveCommandArgs = {
   position: Position;
@@ -17,20 +18,20 @@ export type MoveCommandArgsJSON = {
 };
 
 export type MoveCommandJSON = {
-  className: "MoveCommand";
   id: string;
+  className: "MoveCommand";
   unit: CitizenJSON | FighterJSON;
   args: MoveCommandArgsJSON;
 };
 
-export default class MoveCommand extends Command {
+export default class MoveCommand extends AbstractCommand {
   className: string = "MoveCommand";
 
   constructor(props: { unit: Unit; args?: MoveCommandArgs; id?: string }) {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game) {
     const unit = this.unit as Citizen | Fighter;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
@@ -44,7 +45,7 @@ export default class MoveCommand extends Command {
     if (position) {
       path = game.pathFinder.getPath(unit, position);
     } else {
-      path = game.getOptimalPathToTarget(unit, target);
+      path = unit.getPathToTarget(target);
     }
 
     if (!path) return null;
@@ -52,12 +53,34 @@ export default class MoveCommand extends Command {
     // Note: it is not unit.speed - 1 because PathFinder returns the unit
     // position as the first step in the path
     const newPosition = path[unit.speed] || path[path.length - 1];
-    return new Action({
-      command: this,
-      type: "move",
-      args: { ...this.args, position: newPosition },
-      unit
-    });
+
+    if (unit instanceof Citizen)
+      return new MoveCitizenAction({
+        command: this,
+        args: { ...this.args, position: newPosition },
+        unit
+      });
+    else
+      return new MoveFighterAction({
+        command: this,
+        args: { ...this.args, position: newPosition },
+        unit
+      });
+  }
+
+  toJSON() {
+    const { className, id, unit } = this;
+    const args: MoveCommandArgsJSON = {
+      ...this.args,
+      position: this.args.position.toJSON()
+    };
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as MoveCommandJSON;
   }
 
   static fromJSON(game: Game, json: MoveCommandJSON) {

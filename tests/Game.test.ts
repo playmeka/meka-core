@@ -1,13 +1,12 @@
 import shuffle from "../src/utils/shuffle";
 import isValidPosition from "../src/utils/isValidPosition";
-import Game, { GameJSON, Fighter } from "../src/Game";
+import Game, { GameJSON } from "../src/Game";
 import Citizen from "../src/Citizen";
 import CommandResponse from "../src/CommandResponse";
-import InfantryFighter from "../src/InfantryFighter";
-import RangedFighter from "../src/RangedFighter";
+import { InfantryFighter, RangedFighter, Fighter } from "../src/fighters";
 import HQ from "../src/HQ";
 import { MoveCommand, SpawnCommand, AttackCommand } from "../src/commands";
-import { CommandChildClass } from "../src/Command";
+import { Command } from "../src/commands";
 import fighterAttackDamageBehavior from "./utils/fighterAttackDamageBehavior";
 import defaultGameProps from "./utils/defaultGameProps";
 
@@ -46,7 +45,7 @@ describe("Sending valid move command with position that's adjacent to the unit",
   let game: Game,
     json: GameJSON,
     citizen: Citizen,
-    command: CommandChildClass,
+    command: Command,
     responses: CommandResponse[];
 
   beforeEach(async () => {
@@ -104,7 +103,7 @@ describe("Sending valid move command with position that's adjacent to the unit",
 describe("Sending valid move command with position that's not adjacent to the unit", () => {
   let game: Game,
     citizen: Citizen,
-    command: CommandChildClass,
+    command: Command,
     responses: CommandResponse[];
 
   beforeEach(async () => {
@@ -150,10 +149,7 @@ describe("Sending valid move command with position that's not adjacent to the un
 });
 
 describe("Sending valid attack command", () => {
-  let game: Game,
-    fighter: InfantryFighter,
-    target: HQ,
-    command: CommandChildClass;
+  let game: Game, fighter: InfantryFighter, target: HQ, command: Command;
 
   beforeEach(() => {
     game = Game.generate(defaultGameProps);
@@ -201,10 +197,7 @@ describe("Fighter attack damage behavior", () => {
 });
 
 describe("Fighter range behavior", () => {
-  let game: Game,
-    fighter: Fighter,
-    target: Fighter | Citizen,
-    command: CommandChildClass;
+  let game: Game, fighter: Fighter, target: Fighter | Citizen, command: Command;
 
   beforeEach(() => {
     game = Game.generate({ ...defaultGameProps, wallCount: 0 });

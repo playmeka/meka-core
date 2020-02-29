@@ -1,7 +1,8 @@
-import Game, { Fighter, Unit, UnitJSON } from "../Game";
-import Command from "../Command";
-import Action from "../Action";
+import Game, { Unit } from "../Game";
+import AbstractCommand from "./AbstractCommand";
+import { AttackAction, MoveFighterAction } from "../actions";
 import HQ from "../HQ";
+import { Fighter, AbstractFighter, FighterJSON } from "../fighters";
 
 export type AttackCommandArgs = {
   targetId: string;
@@ -12,20 +13,20 @@ export type AttackCommandArgsJSON = {
 };
 
 export type AttackCommandJSON = {
-  className: "AttackCommand";
   id: string;
-  unit: UnitJSON;
+  className: "AttackCommand";
+  unit: FighterJSON;
   args: AttackCommandArgsJSON;
 };
 
-export default class AttackCommand extends Command {
+export default class AttackCommand extends AbstractCommand {
   className: string = "AttackCommand";
 
   constructor(props: { unit: Unit; args: AttackCommandArgs; id?: string }) {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): AttackAction | MoveFighterAction {
     const { targetId } = this.args;
     const target = game.lookup[targetId] as Unit;
     const unit = this.unit as Fighter | HQ;
@@ -39,20 +40,15 @@ export default class AttackCommand extends Command {
     );
 
     if (isTargetInRange) {
-      return new Action({
+      return new AttackAction({
         command: this,
-        type: "attack",
         args: { targetId },
         unit
       });
     } else if (unit.className === "HQ") {
       return null;
-    } else if (
-      ["InfantryFighter", "RangedFighter", "CavalryFighter"].includes(
-        unit.className
-      )
-    ) {
-      const path = game.getOptimalPathToTarget(unit as Fighter, target);
+    } else if (unit instanceof AbstractFighter) {
+      const path = unit.getPathToTarget(target);
 
       if (!path) return null;
       // Take unit.speed steps at a time
@@ -61,9 +57,8 @@ export default class AttackCommand extends Command {
       const newPosition =
         path[(unit as Fighter).speed] || path[path.length - 1];
 
-      return new Action({
+      return new MoveFighterAction({
         command: this,
-        type: "move",
         args: {
           position: newPosition,
           autoDropOffFood: false,
@@ -72,6 +67,16 @@ export default class AttackCommand extends Command {
         unit
       });
     }
+  }
+
+  toJSON() {
+    const { className, id, unit, args } = this;
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as AttackCommandJSON;
   }
 
   static fromJSON(game: Game, json: AttackCommandJSON) {

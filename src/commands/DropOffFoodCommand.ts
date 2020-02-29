@@ -1,7 +1,7 @@
 import Game from "../Game";
-import Command from "../Command";
+import AbstractCommand from "./AbstractCommand";
 import { Position, PositionJSON } from "../ObjectWithPosition";
-import Action from "../Action";
+import { DropOffFoodAction, MoveCitizenAction } from "../actions";
 import HQ from "../HQ";
 import Citizen, { CitizenJSON } from "../Citizen";
 import shuffle from "../utils/shuffle";
@@ -17,13 +17,13 @@ export type DropOffFoodCommandArgsJSON = {
 };
 
 export type DropOffFoodCommandJSON = {
-  className: "DropOffFoodCommand";
   id: string;
+  className: "DropOffFoodCommand";
   unit: CitizenJSON;
   args: DropOffFoodCommandArgsJSON;
 };
 
-export default class DropOffFoodCommand extends Command {
+export default class DropOffFoodCommand extends AbstractCommand {
   className: string = "DropOffFoodCommand";
 
   constructor(props: {
@@ -34,7 +34,7 @@ export default class DropOffFoodCommand extends Command {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): DropOffFoodAction | MoveCitizenAction {
     const unit = this.unit as Citizen;
     const food = unit.food;
     if (!unit) return null;
@@ -55,18 +55,15 @@ export default class DropOffFoodCommand extends Command {
         );
       });
       if (dropOffPosition)
-        return new Action({
+        return new DropOffFoodAction({
           command: this,
-          type: "dropOffFood",
           args: { position: dropOffPosition },
           unit
         });
       else return null;
     } else {
       // TODO: Abstract this logic in `getPathTo`
-      const path = hq
-        ? game.getOptimalPathToTarget(unit, hq)
-        : unit.getPathTo(position);
+      const path = hq ? unit.getPathToTarget(hq) : unit.getPathTo(position);
 
       if (!path) return null;
 
@@ -74,9 +71,8 @@ export default class DropOffFoodCommand extends Command {
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
       const newPosition = path[unit.speed] || path[path.length - 1];
-      return new Action({
+      return new MoveCitizenAction({
         command: this,
-        type: "move",
         args: {
           position: newPosition,
           autoPickUpFood: false,
@@ -87,11 +83,26 @@ export default class DropOffFoodCommand extends Command {
     }
   }
 
+  toJSON() {
+    const { className, id, unit } = this;
+    const position = this.args.position
+      ? this.args.position.toJSON()
+      : undefined;
+    const args: DropOffFoodCommandArgsJSON = { ...this.args, position };
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as DropOffFoodCommandJSON;
+  }
+
   static fromJSON(game: Game, json: DropOffFoodCommandJSON) {
     const unit = game.lookup[json.unit.id] as Citizen;
     const position = json.args.position
       ? Position.fromJSON(json.args.position)
-      : null;
+      : undefined;
     const args: DropOffFoodCommandArgs = { ...json.args, position };
 
     return new DropOffFoodCommand({ ...json, unit, args });

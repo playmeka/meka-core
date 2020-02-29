@@ -3,7 +3,7 @@ import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
-import Game from "./Game";
+import Game, { Unit } from "./Game";
 import Food from "./Food";
 import isValidPosition from "./utils/isValidPosition";
 
@@ -63,6 +63,16 @@ export default class Citizen extends ObjectWithPosition {
 
   getPathTo(position: Position) {
     return this.game.pathFinder.getPath(this, position);
+  }
+
+  getPathToTarget(target: Unit) {
+    const allPaths: Position[][] = this.game.pathFinder.getPaths(
+      this,
+      target.covering
+    );
+    if (allPaths.length > 0)
+      return allPaths.reduce((a, b) => (a.length < b.length ? a : b));
+    return null;
   }
 
   takeDamage(damage: number) {

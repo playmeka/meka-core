@@ -1,6 +1,6 @@
 import Game from "../Game";
-import Command from "../Command";
-import Action from "../Action";
+import AbstractCommand from "./AbstractCommand";
+import { PickUpFoodAction, MoveCitizenAction } from "../actions";
 import Citizen, { CitizenJSON } from "../Citizen";
 import Food from "../Food";
 
@@ -13,13 +13,13 @@ export type PickUpFoodCommandArgsJSON = {
 };
 
 export type PickUpFoodCommandJSON = {
-  className: "PickUpFoodCommand";
   id: string;
   unit: CitizenJSON;
+  className: "PickUpFoodCommand";
   args: PickUpFoodCommandArgsJSON;
 };
 
-export default class PickUpFoodCommand extends Command {
+export default class PickUpFoodCommand extends AbstractCommand {
   className: string = "PickUpFoodCommand";
 
   constructor(props: {
@@ -30,7 +30,7 @@ export default class PickUpFoodCommand extends Command {
     super(props);
   }
 
-  getNextAction(game: Game): Action {
+  getNextAction(game: Game): PickUpFoodAction | MoveCitizenAction {
     const unit = this.unit as Citizen;
     if (!unit) return null;
     if (unit.hp <= 0) return null;
@@ -41,9 +41,8 @@ export default class PickUpFoodCommand extends Command {
     if (!food || food.eatenBy) return null;
 
     if (unit.position.isAdjacentTo(food.position)) {
-      return new Action({
+      return new PickUpFoodAction({
         command: this,
-        type: "pickUpFood",
         args: { position: food.position },
         unit
       });
@@ -56,9 +55,8 @@ export default class PickUpFoodCommand extends Command {
       // Note: it is not unit.speed - 1 because PathFinder returns the unit
       // position as the first step in the path
       const newPosition = path[unit.speed] || path[path.length - 1];
-      return new Action({
+      return new MoveCitizenAction({
         command: this,
-        type: "move",
         args: {
           position: newPosition,
           autoPickUpFood: false,
@@ -67,6 +65,17 @@ export default class PickUpFoodCommand extends Command {
         unit
       });
     }
+  }
+
+  toJSON() {
+    const { className, id, unit, args } = this;
+
+    return {
+      className,
+      id,
+      unit: unit.toJSON(),
+      args
+    } as PickUpFoodCommandJSON;
   }
 
   static fromJSON(game: Game, json: PickUpFoodCommandJSON) {
