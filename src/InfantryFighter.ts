@@ -3,7 +3,7 @@ import ObjectWithPosition, {
   Position,
   PositionJSON
 } from "./ObjectWithPosition";
-import { isInBounds } from "./utils/isValidPosition";
+import isInBounds from "./utils/isInBounds";
 import Game, { Unit } from "./Game";
 import isValidPosition from "./utils/isValidPosition";
 import isTargetAtPosition from "./utils/isTargetAtPosition";

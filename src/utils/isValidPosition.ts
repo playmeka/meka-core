@@ -1,14 +1,6 @@
 import Game from "../Game";
 import { Position } from "../ObjectWithPosition";
-
-export const isInBounds = (game: Game, position: Position) => {
-  return (
-    position.x < game.width &&
-    position.x >= 0 &&
-    position.y < game.height &&
-    position.y >= 0
-  );
-};
+import isInBounds from "./isInBounds";
 
 export default (game: Game, position: Position, teamId: string = null) => {
   if (!isInBounds(game, position)) {
