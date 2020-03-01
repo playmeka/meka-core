@@ -69,7 +69,46 @@ A map for looking up an arbitrary HQ, citizen, fighter, or food by its ID.
 Look up a team by its ID.
 
 ## Position
+The `Position` class wraps a particular x, y coordinate pair. Nearly everything in MEKA has a position.
+```
+import { Position } from "@meka-js/core";
+const position = new Position(2, 5);
+```
 
+### Properties
+#### `x: number`
+The `x` coordinate for the position.
+
+#### `y: number`
+The `y` coordinate for the position.
+
+#### `key: string`
+A standardized `key` that is used in maps indexed by positions, like `foods` on `Game`. Returns a string of format `<x>,<y>`.
+
+#### `adjacents: Position[]`
+Returns list of directly adjacent positions. For example:
+```
+const position = new Position(4, 4);
+position.adjacents
+> [
+  Position { x: 5, y: 4 },
+  Position { x: 3, y: 4 },
+  Position { x: 4, y: 5 },
+  Position { x: 4, y: 3 }
+]
+```
+### Methods
+#### `isEqualTo(position: Position | PositionJSON): boolean`
+Compares position with another position (either as an instance of `Position` or serialized `Position`).
+
+#### `isAdjacentTo(position: Position): boolean`
+Checks whether position is adjacent to provided position (structured as `Position`).
+
+#### `isAdjacentToAny(positions: Position[] | Position): boolean`
+Takes any number of positions and checks whether any of them are adjacent to the position.
+
+#### `adjacentsWithinDistance(distance: number): Position[]`
+Like the `adjacents` property, but it returns a list of positions that are within `distance` steps from the position.
 
 ## Food
 
