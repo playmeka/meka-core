@@ -70,6 +70,7 @@ Look up a team by its ID.
 
 ## Position
 
+
 ## Food
 
 ## Wall
