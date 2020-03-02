@@ -244,7 +244,7 @@ If a path is available from the citizen's position to the `position` argument, t
 Returns the shortest path from the citizen's current position to any of the positions covered by the specified `target`. For instance, if an instance of `HQ` with width of 2 and height of 2 is passed as `target`, then this method will return the shortest path to any of the HQs four positions.
 
 ## Fighter
-The `Fighter` class is not itself a class, but there are various properties and methods shared by the fighter classes: `InfantryFighter`, `RangedFighter`, and `CavalryFighter`.
+The `Fighter` class is not itself a class, but there are various properties and methods shared by the fighter classes: `InfantryFighter`, `RangedFighter`, and `CavalryFighter`. All fighter classes extend `ObjectWithPosition`, so all properties and methods on `ObjectWithPosition` are also available in `Fighter`.
 
 ### Properties
 #### `id: string`
@@ -297,6 +297,33 @@ Returns an array of positions representing a path from the fighter's current pos
 Returns an array of positions representing the shortest path to any of the positions covered by the given `target`. 
 
 ## HQ
+The `HQ` class. The `HQ` class extends `ObjectWithPosition`, so all properties and methods on `ObjectWithPosition` are also available on `HQ`. By default instances of `HQ` have width of `2` and height of `2`.
+
+### Properties
+#### `id: string`
+The ID of the HQ.
+
+#### `hp: number`
+The current hit points (HP) for the HQ.
+
+#### `baseHP: number`
+The original hit points (HP) for the HQ.
+
+#### `baseAttackDamage: number`
+The HQ's default damage when attacking another unit. While fighters have attack bonuses versus other classes, the HQ has the same attack against all types. The default is `6`.
+
+#### `range: number`
+The range (represented as number of positions) of the HQ.
+
+#### `team: Team`
+The HQ's team.
+
+#### `nextSpawnPosition: Position`
+Returns one of the unoccupied positions covered by the HQ, selected at random. If there are no open positions, this property returns `null`.
+
+### Methods
+#### `isValidAttack(target: Unit, position: Position): boolean`
+Checks whether the given `target` and `position` would be a valid attack, meaning the `target` is in range of the HQ and the given `position` would hit the target. 
 
 ## Command
 
