@@ -446,9 +446,67 @@ const hq = new HQ(...)
 const command = new DropOffFoodCommand({ unit: citizen, args: { hqId: hq.id } });
 ```
 
+### `commandFromJSON(game: Game, json: CommandJSON): Command`
+To de-serialize a command, you can look at the `className` property to determine the right constructor. Or you can use the `commandfromJSON` helper function, which will select the right command class for you and return the command. 
+
 ## Action
+Actions are how the game state is mutated. Each tick, commands provide the game with actions based on the current state. Actions can also be used to recreate the state of a game. 
+
+### Properties
+#### `id: string`
+The ID of the action.
+
+#### `command: Command`
+A reference to the command that initiated the action.
+
+#### `unit: Unit`
+The unit responsible for undertaking the action.
+
+#### `args: AbstractActionArgs`
+An object with data particular to the given action class.
+
+#### `className: string`
+A string representation of the action child class (i.e. `"AttackAction"`).
+
+### AttackAction
+`AttackAction` executes an attack from the `unit` to a target. The `response` is the new state of the `target`.
+
+### DropOffFoodAction
+`DropOffFoodAction` directs a citizen (as `unit`) to drop-off food at a position. The `response` is the new state of the citizen.
+
+### MoveCitizenAction
+`MoveCitizenAction` directs a citizen to move to a position. The `response` is the new state of the citizen.
+
+### MoveFighterAction
+`MoveFighterAction` directs a fighter to move to a position (within the range of its speed). The `response` is the new state of the fighter. 
+
+### PickUpFoodAction
+`PickUpFoodAction` directs a citizen to pick-up a food at a particular position. The `response` is the new state of the citizen.
+
+### SpawnCitizenAction
+`SpawnCitizenAction` executes a spawn of a new citizen by an HQ. The `response` is the newly spawned citizen.
+
+### SpawnFighterAction
+`SpawnFighterAction` executes a spawn of a new fighter by an HQ. The `response` is the newly spawned fighter.
+
+### `actionFromJSON(game: Game, json: ActionJSON): Action`
+If you want to de-serialize an action, you can look at the `className` property to determine the right constructor. Or you can use `actionfromJSON`, which will select the right action class for you and return the action.
 
 ## CommandResponse
+The `CommandResponse` class is used to tell a user what happened for a particular command.
+
+### Properties
+#### `command: Command`
+The command that this object is in response to.
+
+#### `status: "success" | "failure"`
+The status of the command. A `failure` status either means no action was generated for the command or there was an issue with the action. A `success` status means the associated action was implemented in the game.
+
+#### `action?: Action`
+The action created by the command.
+
+#### `error?: string`
+Any error message for describing why the command or action may have failed.
 
 # Helpers
 
