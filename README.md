@@ -110,9 +110,43 @@ Takes any number of positions and checks whether any of them are adjacent to the
 #### `adjacentsWithinDistance(distance: number): Position[]`
 Like the `adjacents` property, but it returns a list of positions that are within `distance` steps from the position.
 
+## ObjectWithPosition
+The `ObjectWithPosition` is a generic class extended by classes which have a position, like `Food`, `Citizen`, `Fighter`, and `HQ`. All of the properties and methods below are available in those classes too.
+
+### Properties
+#### `position: Position`
+The position of the object.
+
+#### `key: string`
+The `key` property of the object's position.
+
+#### `x: number`
+The `x` coordinate of the object's position.
+
+#### `y: number`
+The `y` coordinate of the object's position.
+
+#### `width: number`
+The number of positions the object covers on the x-axis.
+
+#### `height: number`
+The number of positions the object covers on the y-xis.
+
+#### `covering: Position[]`
+An array of the positions covered by the object. Note that instances of `ObjectWithPosition` are anchored to their top-left corner. So an `HQ` with position `{x: 2, y: 2}`, width `2`, and height `2` would cover `{x: 2, y: 2}`, `{x: 3, y: 2}`, `{x: 2, y: 3}`, and `{x: 3, y: 3}`.
+
 ## Food
+The `Food` class represents the primary resource in MEKA. Food can be collected by citizens, dropped off at HQs, and used to pay for spawning new units. `Food` is an extension of `ObjectWithPosition`, so it has access to all the same properties. 
+
+### Properties
+#### `id: string`
+The ID of the food, which is used to reference the food when it's picked up by a citizen or looked up in `Game#lookup`.
+
+#### `eatenBy: Citizen`
+If the food has been collected (or "eaten") by a citizen, `eatenBy` will return that citizen.
 
 ## Wall
+Walls are blockages on the map, and units or food cannot be placed on positions with a wall. The `Wall` class extends `ObjectWithPosition`, so all properties and methods from `ObjectWithPosition` are available on an instance of `Wall` too. Note that while a unit cannot move through a wall, ranged fighters can still attack over a wall.
 
 ## Team
 
