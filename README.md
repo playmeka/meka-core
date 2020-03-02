@@ -244,6 +244,57 @@ If a path is available from the citizen's position to the `position` argument, t
 Returns the shortest path from the citizen's current position to any of the positions covered by the specified `target`. For instance, if an instance of `HQ` with width of 2 and height of 2 is passed as `target`, then this method will return the shortest path to any of the HQs four positions.
 
 ## Fighter
+The `Fighter` class is not itself a class, but there are various properties and methods shared by the fighter classes: `InfantryFighter`, `RangedFighter`, and `CavalryFighter`.
+
+### Properties
+#### `id: string`
+The ID for the fighter.
+
+#### `className: ["InfantryFighter", "CavalryFighter", "RangedFighter"]`
+The child class name of the fighter (i.e. `"InfantryFighter"`).
+
+#### `team: Team`
+The team for the fighter.
+
+#### `baseAttackDamage: number`
+The fighter's default damage when attacking another unit. Note that fighters have attack bonuses versus other fighter classes. Here is a table of the default HP, attack, and bonus for the three fighter classes:
+
+Unit | Class | HP | Attack | Bonus
+--- | --- | --- | --- | ---
+Infantry | `InfantryFighter` | 32 | 10 | +5 against Cavalry
+Cavalry | `CavalryFighter` | 30 | 6 | +6 attack against Ranged
+Ranged | `RangedFighter` | 24 | 7 | +4 attack against Infantry
+
+#### `hp: number`
+The current hit points (HP) for the fighter.
+
+#### `baseHP: number`
+The original hit points (HP) for the fighter.
+
+#### `speed: number`
+The speed (represented as positions to move per tick) of the fighter.
+
+#### `range: number`
+The range (represented as number of positions) of the fighter.
+
+#### `validMoves: Position[]`
+An array of in-range positions that would be valid moves for the fighter.
+
+### Methods
+#### `isValidMove(position: Position): boolean`
+Checks whether the given `position` would be a valid move for the fighter.
+
+#### `isValidAttack(target: Unit, position: Position): boolean`
+Checks whether the given `target` and `position` would be a valid attack, meaning the `target` is in range and the given `position` would hit the target. 
+
+#### `getAttackPositionsFor(unit: Unit): Position[]`
+Returns an array of positions from which the fighter can attack the given `unit`. For a fighter of range `1` (like infantry or cavalry), this method returns the positions adjacent to the target unit. However, there are more options for a ranged fighter, for instance.
+
+#### `getPathTo(position: Position): Position[]`
+Returns an array of positions representing a path from the fighter's current position to the given `position`. The first position in the array is the fighter's current position, the last position is the target position, and each position in between represents a step in the path. If the method returns `null`, it means there is no current path between the two positions.
+
+#### `getPathToTarget(target: Unit): Position[]`
+Returns an array of positions representing the shortest path to any of the positions covered by the given `target`. 
 
 ## HQ
 
