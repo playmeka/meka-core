@@ -149,8 +149,99 @@ If the food has been collected (or "eaten") by a citizen, `eatenBy` will return 
 Walls are blockages on the map, and units or food cannot be placed on positions with a wall. The `Wall` class extends `ObjectWithPosition`, so all properties and methods from `ObjectWithPosition` are available on an instance of `Wall` too. Note that while a unit cannot move through a wall, ranged fighters can still attack over a wall.
 
 ## Team
+The `Team` class holds information about each player and references to that team's units and HQ.
+
+### Properties
+#### `id: string`
+The ID of the team. This ID is the same as the given user's ID.
+
+#### `color: string`
+The color of the team. This is used primarily for rendering on the game map.
+
+#### `pop: number`
+Returns the population of the team, including citizens and fighters.
+
+#### `hq: HQ`
+A reference for the team's HQ. Each team has one HQ.
+
+#### `citizens: Citizen[]`
+An array of citizens for the team.
+
+#### `fighters: Fighter[]`
+An array of fighters for the team. This list includes fighters of all types: `InfantryFighter`, `RangedFighter`, and `CavalryFighter`.
+
+#### `foodCount: number`
+Returns the amount of food the team has available to spend. This number increases when citizens drop-off additional food.
+
+#### `settings: SettingsObject`
+Returns an object with default values for the cost, speed, HP, range, and attack damage of each unit. You can use this object for checking the cost of future units, for instance. Here's the default for a team:
+```
+{
+  cost: {
+    Citizen: 2,
+    InfantryFighter: 4,
+    RangedFighter: 4,
+    CavalryFighter: 3
+  },
+  speed: {
+    Citizen: 1,
+    InfantryFighter: 1,
+    RangedFighter: 1,
+    CavalryFighter: 2
+  },
+  baseHP: {
+    Citizen: 10,
+    HQ: 500,
+    InfantryFighter: 32,
+    RangedFighter: 24,
+    CavalryFighter: 30
+  },
+  range: {
+    HQ: 3,
+    InfantryFighter: 1,
+    RangedFighter: 3,
+    CavalryFighter: 1
+  },
+  baseAttackDamage: {
+    HQ: 6,
+    InfantryFighter: 10,
+    RangedFighter: 7,
+    CavalryFighter: 6
+  }
+}
+```
 
 ## Citizen
+Citizens are responsible for collecting food. They don't have any attack ability, but they're the only unit that can pick-up food. In a typical game, each team starts with one citizen. The `Citizen` class extends `ObjectWithPosition`, so all properties and methods on `ObjectWithPosition` are also available on `Citizen`.
+
+### Properties
+#### `id: string`
+The ID for the citizen, used for identification across the game.
+
+#### `food: Food`
+If a citizen has collected a food, the `food` property will return it.
+
+#### `validMoves: Position[]`
+An array of adjacent positions that would be valid moves for the citizen. Note that a citizen cannot move onto a wall, onto another unit, or onto the opponent's HQ (though it can be positioned on its own HQ). 
+
+#### `team: Team`
+Returns the citizen's team.
+
+#### `hp: number`
+The current hit points (HP) of the citizen.
+
+#### `baseHP: number`
+The original hit points (HP) of the citizen. Citizen's normally start with `10 HP`, as you can see in the team's `settings` object.
+
+#### `speed: number`
+The speed of the citizen, structured as positions available to move per tick. The default is `1`.
+
+### Methods
+#### `getPathTo(position: Position)`
+If a path is available from the citizen's position to the `position` argument, this method returns that path as an array of positions. The first position in the array is the citizen's current position, the second position is the first move, and the last position is the target position. If no path is available, this method returns `null`.
+
+#### `getPathToTarget(target: Unit)`
+Returns the shortest path from the citizen's current position to any of the positions covered by the specified `target`. For instance, if an instance of `HQ` with width of 2 and height of 2 is passed as `target`, then this method will return the shortest path to any of the HQs four positions.
 
 ## Fighter
 
