@@ -510,9 +510,21 @@ Any error message for describing why the command or action may have failed.
 
 # Helpers
 
-## isInBounds
+### `isInBounds(game: Game, position: Position): boolean`
+The `isInBounds` helper function checks whether a position is inside the game board.
+```
+import { isInBounds } from "@meka-js/core";
 
-## isValidPosition
+const game = new Game({width: 10, height: 10});
+const inPosition = new Position(2, 2);
+const outPosition = new Position(20, 20);
+isInBounds(game, inPosition); // TRUE
+isInBounds(game, outPosition); // FALSE
+```
+
+### `isValidPosition(game: Game, position: Position, teamId?: string)`
+The `isValidPosition` function checks whether a position is available for a unit to move to. The function will return false if the position is out of bounds, has a wall, has another unit, or has an HQ. The one exception is when `teamId` is specified, a position inside the team's HQ will be valid when it otherwise would not. A position with a food will be valid, because units can move on top of foods.
 
 ## isValidFoodPosition
+The `isValidFoodPosition` function checks whether a position is available for a food to be placed. The function will return false if the position is out of bounds, has a wall, or has another food already on it. 
 
