@@ -326,6 +326,125 @@ Returns one of the unoccupied positions covered by the HQ, selected at random. I
 Checks whether the given `target` and `position` would be a valid attack, meaning the `target` is in range of the HQ and the given `position` would hit the target. 
 
 ## Command
+There are multiple types of commands that extend a shared `AbstractCommand` class: `MoveCommand`, `AttackCommand`, `SpawnCommand`, `DropOffFoodCommand`, and `PickUpFoodCommand`. When a command is processed, it provides the game engine with an action (see types of actions below), depending on the current state of the game. 
+
+### Properties
+#### `id: string`
+The ID of the command.
+
+#### `unit: Unit`
+The `unit` is the subject of the command (i.e. the unit who is performing an action as a result of the command).
+
+#### `args: {...}`
+The `args` object provides the command with whatever custom data is needed for execution. Each child command specifies its own format for `args`.
+
+### MoveCommand
+The `MoveCommand` tells a unit to move to a particular position. The `unit` for `MoveCommand` should be a `Fighter` or `Citizen`.
+
+#### `args` format
+```
+{
+  position: Position;
+  autoPickUpFood?: boolean = false;
+  autoDropOffFood?: boolean = false;
+}
+```
+The `position` is the position the unit should move to. If `autoPickUpFood` (default is `false`) is set to `true` and the unit is a citizen, the citizen will pick-up food if it moves over it. If `autoDropOffFood` (default is `false`) is set to `true` and the unit is a citizen, the citizen will drop-off food when it moves over its own HQ and has foo to drop-off.
+
+#### `getNextAction(game: Game): MoveCitizenAction | MoveFighterAction`
+An instance of `MoveCommand` will try to create a `MoveAction` each tick. If a path cannot be found between the unit's current position and `args.position`, no action is returned.
+
+#### Example
+```
+const citizen = new Citizen(...)
+const position = new Position(...)
+const command = new MoveCommand({ unit: citizen, args: { position: position } })
+```
+
+### AttackCommand
+The `AttackCommand` tells a unit to attack a particular target unit. The `unit` for `AttackCommand` should be a `Fighter` or `HQ`.
+
+#### `args` format
+```
+{
+  targetId: string;
+}
+```
+`targetId` is the ID of the target unit.
+
+#### `getNextAction(game: Game): MoveFighterAction | AttackAction`
+If the target is in range of the unit, the command will return an `AttackAction`. Otherwise (and only if the unit is a fighter) it will try to find a path to a position in range of the target and return a `MoveFighterAction` with the next move in that path.
+
+#### Example
+```
+const fighter = new InfantryFighter(...)
+const enemyFighter = new CavalryFighter(...)
+const command = new AttackCommand({ unit: fighter, args: { targetId: enemyFighter.id } })
+```
+
+### SpawnCommand
+The `SpawnCommand` tells an HQ (the `unit`) to spawn (i.e. create) a new unit.
+
+#### `args` format
+```
+{
+  position?: Position;
+  unitType: "Citizen" | "InfantryFighter" | "RangedFighter" | "CavalryFighter";
+}
+```
+The `position` argument is optional, but if it is included, the command will try to spawn the new unit on the given position if it is one of the positions covered by the HQ. The `unitType` argument specifies what kind of unit to spawn.
+
+#### `getNextAction(game: Game): SpawnCitizenAction | SpawnFighterAction`
+If the HQ has enough food to pay for the new unit, this method returns either a `SpawnCitizenAction` or a `SpawnFighterAction`.
+
+#### Example
+```
+const hq = new HQ(...)
+const command = new SpawnCommand({ unit: hq, args: { unitType: "RangedFighter" } })
+```
+
+### PickUpFoodCommand
+The `PickUpFoodCommand` tells a citizen (as `unit`) to pick-up a given food.
+
+#### `args` format
+```
+{
+  foodId: string;
+}
+```
+The `foodId` argument is the ID of the food to pick-up.
+
+#### `getNextAction(game: Game): PickUpFoodAction | MoveCitizenAction`
+If the specified food is adjacent to the citizen, the command returns a `PickUpFoodAction`. Otherwise, the shortest path to a position adjacent to the given food is found, and a `MoveCitizenAction` is returned. If no path is found, no action is returned.
+
+#### Example
+```
+const citizen = new Citizen(...)
+const food = new Food(...)
+const command = new PickUpFoodCommand({ unit: citizen, args: { foodId: food.id } });
+```
+
+### DropOffFoodCommand
+The `DropOffFoodCommand` tells a citizen (as `unit`) to drop-off their food at a position or HQ.
+
+#### `args` format
+```
+{
+  position?: Position;
+  hqId?: string;
+}
+```
+Either `position` or `hqId` must be included. A citizen can drop-off a food at an arbitrary position, which is specified by `position`. Otherwise, `hqId` specifies the HQ where the food should be dropped off.
+
+#### `getNextAction(game: Game): DropOffFoodAction | MoveCitizenAction`
+If the citizen is adjacent to the HQ or drop-off position, a `DropOffFoodAction` is returned by the command. Otherwise, a path is found from the citizen's current position to a position adjacent to the drop-off spot and `MoveCitizenAction` is returned. If no path is found, no action is returned.
+
+#### Example
+```
+const citizen = new Citizen(...) // Citizen has food
+const hq = new HQ(...)
+const command = new DropOffFoodCommand({ unit: citizen, args: { hqId: hq.id } });
+```
 
 ## Action
 
