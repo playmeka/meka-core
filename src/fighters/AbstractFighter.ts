@@ -65,13 +65,13 @@ export default abstract class AbstractFighter extends ObjectWithPosition {
   }
 
   isValidMove(position: Position) {
-    return this.validMoves.find(
+    return !!this.validMoves.find(
       move => move.x == position.x && move.y == position.y
     );
   }
 
   isValidAttack(target: Unit, position: Position) {
-    return this.validAttackPositionsWithTargets(target).find(
+    return !!this.validAttackPositionsWithTargets(target).find(
       move => move.x == position.x && move.y == position.y
     );
   }
