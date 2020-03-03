@@ -193,8 +193,8 @@ export default class Game {
   }
 
   get winnerId() {
+    if (!this.isOver) return;
     if (
-      !this.isOver ||
       this.teams.every(team => team.hq.hp <= 0) ||
       this.teams.every(team => team.hq.hp > 0)
     ) {
