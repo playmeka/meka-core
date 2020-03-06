@@ -24,5 +24,6 @@ export * from "./fighters";
 export { default as Team, TeamJSON } from "./Team";
 export { default as Wall, WallJSON } from "./Wall";
 export { default as isValidPosition } from "./utils/isValidPosition";
+export { default as isInBounds } from "./utils/isInBounds";
 export { default as isValidFoodPosition } from "./utils/isValidFoodPosition";
 export { default as isTargetAtPosition } from "./utils/isTargetAtPosition";

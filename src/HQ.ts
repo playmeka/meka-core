@@ -100,7 +100,7 @@ export default class HQ extends ObjectWithPosition {
   }
 
   isValidAttack(target: Unit, position: Position) {
-    return this.validAttackPositionsWithTargets(target).find(
+    return !!this.validAttackPositionsWithTargets(target).find(
       move => move.x == position.x && move.y == position.y
     );
   }
