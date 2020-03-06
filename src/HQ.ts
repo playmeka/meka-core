@@ -46,7 +46,7 @@ export default class HQ extends ObjectWithPosition {
     this.id = props.id || uuidv4();
     this.width = props.width || 2;
     this.height = props.height || 2;
-    this.hp = props.hp || this.team.settings.baseHP["HQ"];
+    this.hp = props.hp >= 0 ? props.hp : this.team.settings.baseHP["HQ"];
     this.baseHP = this.team.settings.baseHP["HQ"];
     this.baseAttackDamage = this.team.settings.baseAttackDamage["HQ"];
     this.range = this.team.settings.range["HQ"];
