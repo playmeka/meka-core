@@ -24,7 +24,8 @@ export default class RangedFighter extends AbstractFighter {
 
   constructor(game: Game, props: RangedFighterProps) {
     super(game, props);
-    this.hp = props.hp || this.team.settings.baseHP["RangedFighter"];
+    this.hp =
+      props.hp >= 0 ? props.hp : this.team.settings.baseHP["RangedFighter"];
     this.baseHP = this.team.settings.baseHP["RangedFighter"];
     this.baseAttackDamage = this.team.settings.baseAttackDamage[
       "RangedFighter"
