@@ -42,7 +42,10 @@ export default class Citizen extends ObjectWithPosition {
     this.teamId = props.teamId;
     this.id = props.id || uuidv4();
     this.foodId = props.foodId;
-    this.hp = props.hp >= 0 ? props.hp : this.team.settings.baseHP["Citizen"];
+    this.hp =
+      props.hp || props.hp === 0
+        ? props.hp
+        : this.team.settings.baseHP["Citizen"];
     this.baseHP = this.team.settings.baseHP["Citizen"];
     this.speed = this.team.settings.speed["Citizen"];
   }
