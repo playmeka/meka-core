@@ -104,15 +104,6 @@ export default abstract class AbstractFighter extends ObjectWithPosition {
     return null;
   }
 
-  takeDamage(damage: number) {
-    this.hp -= damage;
-    if (this.hp <= 0) this.die();
-  }
-
-  die() {
-    this.game.killFighter(this);
-  }
-
   abstract toJSON(): AbstractFighterJSON;
 
   abstract getAttackDamageFor(enemyUnit: Unit): number;

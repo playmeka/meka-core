@@ -53,6 +53,15 @@ export default class InfantryFighter extends AbstractFighter {
     } as InfantryFighterJSON;
   }
 
+  takeDamage(damage: number) {
+    this.hp -= damage;
+    if (this.hp <= 0) this.die();
+  }
+
+  die() {
+    this.game.killFighter(this);
+  }
+
   static fromJSON(game: Game, json: InfantryFighterJSON) {
     const position = Position.fromJSON(json.position);
     return new InfantryFighter(game, { ...json, position });

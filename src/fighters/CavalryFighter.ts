@@ -53,6 +53,15 @@ export default class CavalryFighter extends AbstractFighter {
     } as CavalryFighterJSON;
   }
 
+  takeDamage(damage: number) {
+    this.hp -= damage;
+    if (this.hp <= 0) this.die();
+  }
+
+  die() {
+    this.game.killFighter(this);
+  }
+
   static fromJSON(game: Game, json: CavalryFighterJSON) {
     const position = Position.fromJSON(json.position);
     return new CavalryFighter(game, { ...json, position });
