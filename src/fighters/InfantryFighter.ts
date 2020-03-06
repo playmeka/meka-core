@@ -25,7 +25,9 @@ export default class InfantryFighter extends AbstractFighter {
   constructor(game: Game, props: InfantryFighterProps) {
     super(game, props);
     this.hp =
-      props.hp >= 0 ? props.hp : this.team.settings.baseHP["InfantryFighter"];
+      props.hp || props.hp === 0
+        ? props.hp
+        : this.team.settings.baseHP["InfantryFighter"];
     this.baseHP = this.team.settings.baseHP["InfantryFighter"];
     this.baseAttackDamage = this.team.settings.baseAttackDamage[
       "InfantryFighter"
